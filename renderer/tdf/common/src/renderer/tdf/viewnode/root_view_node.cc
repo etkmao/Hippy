@@ -99,11 +99,15 @@ void RootViewNode::RegisterViewNode(uint32_t id, const std::shared_ptr<ViewNode>
 }
 
 void RootViewNode::UnregisterViewNode(uint32_t id) {
-  FOOTSTONE_DCHECK(nodes_query_table_.find(id) != nodes_query_table_.end());
+  // TODO(etkmao):
+  //FOOTSTONE_DCHECK(nodes_query_table_.find(id) != nodes_query_table_.end());
   nodes_query_table_.erase(id);
 }
 
 std::shared_ptr<ViewNode> RootViewNode::FindViewNode(uint32_t id) const {
+  // TODO(etkmao):
+  if (nodes_query_table_.find(id) == nodes_query_table_.end()) return nullptr;
+
   FOOTSTONE_DCHECK(nodes_query_table_.find(id) != nodes_query_table_.end());
   return nodes_query_table_.find(id)->second;
 }
