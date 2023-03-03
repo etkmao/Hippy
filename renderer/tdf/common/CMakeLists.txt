@@ -57,11 +57,26 @@ if (ANDROID)
 elseif (IOS)
   message(FATAL_ERROR "unsupport platform")
 endif()
-InfraPackage_Add(TDF
-  REMOTE "renderer/tdf/third_party/tdfcore/${TDF_CORE_VERSION}/${TDFCORE_LIB_NAME}"
-  LOCAL "${PROJECT_ROOT_DIR}/third_party/tdfcore")
-target_link_libraries(${PROJECT_NAME} PUBLIC tdf)
+#InfraPackage_Add(TDF
+#  REMOTE "renderer/tdf/third_party/tdfcore/${TDF_CORE_VERSION}/${TDFCORE_LIB_NAME}"
+#  LOCAL "${PROJECT_ROOT_DIR}/third_party/tdfcore")
+#target_link_libraries(${PROJECT_NAME} PUBLIC tdf)
 # endregion
+
+get_filename_component(TDF_RENDER_DIR "${PROJECT_ROOT_DIR}/renderer/tdf" REALPATH)
+get_filename_component(TDF_CORE_DIR "${TDF_RENDER_DIR}/core" REALPATH)
+target_include_directories(${PROJECT_NAME} PUBLIC ${TDF_CORE_DIR}/include)
+target_include_directories(${PROJECT_NAME} PUBLIC ${TDF_CORE_DIR}/modules)
+target_include_directories(${PROJECT_NAME} PUBLIC ${TDF_CORE_DIR}/modules/tdfui/include)
+target_include_directories(${PROJECT_NAME} PUBLIC ${TDF_CORE_DIR}/third_party/skia)
+target_include_directories(${PROJECT_NAME} PUBLIC ${TDF_CORE_DIR}/third_party/angle/include)
+target_include_directories(${PROJECT_NAME} PUBLIC ${TDF_CORE_DIR}/third_party/json/single_include)
+target_include_directories(${PROJECT_NAME} PUBLIC ${TDF_CORE_DIR}/third_party/refl-cpp/include)
+target_include_directories(${PROJECT_NAME} PUBLIC ${TDF_CORE_DIR}/third_party/tracy)
+target_include_directories(${PROJECT_NAME} PUBLIC ${TDF_CORE_DIR}/third_party/libpag/tgfx/include)
+add_subdirectory(${TDF_CORE_DIR} tdfcore/build)
+target_link_libraries(${PROJECT_NAME} PUBLIC tdfcore tdfui)
+
 
 # region source set
 set(SRC_SET

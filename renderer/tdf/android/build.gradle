@@ -25,7 +25,7 @@ android {
   }
   sourceSets {
     main {
-      java.srcDirs = [ 'src/main/java',]
+      java.srcDirs = [ 'src/main/java', '/Users/etuoke/hippy_git/Hippy0222/renderer/tdf/core/src/platform/android/java']
     }
   }
 
@@ -37,11 +37,13 @@ android {
 }
 
 dependencies {
+  implementation 'androidx.core:core:1.9.0'
+  implementation 'androidx.fragment:fragment:1.5.5'
   compileOnly project(path: ':vfs')
   compileOnly project(path: ':hippy-support')
   compileOnly project(path: ':serialization')
   // tdf render need ControllerManager from native manager
   compileOnly project(path: ':renderer-native')
-  compileOnly "com.tencent.tdfcore:embedder:0.0.4"
+  // compileOnly "com.tencent.tdfcore:embedder:0.0.4"
   compileOnly deps.annotation
 }

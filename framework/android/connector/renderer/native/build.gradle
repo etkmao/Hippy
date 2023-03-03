@@ -39,7 +39,8 @@ android {
 }
 
 dependencies {
-    embed project(path: ':renderer-native', configuration: 'default')
+    // embed project(path: ':renderer-native', configuration: 'default')
+    compileOnly project(path: ':renderer-native')
 
     compileOnly project(path: ':connector-support')
     compileOnly project(path: ':hippy-support')

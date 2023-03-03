@@ -61,7 +61,8 @@ android {
 }
 
 dependencies {
-    embed project(path: ':renderer-tdf', configuration: 'default')
+    // embed project(path: ':renderer-tdf', configuration: 'default')
+    compileOnly project(path: ':renderer-tdf')
 
     compileOnly project(path: ':renderer-native')
     compileOnly project(path: ':connector-support')
