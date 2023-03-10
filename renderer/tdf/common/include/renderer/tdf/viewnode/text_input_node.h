@@ -30,8 +30,8 @@
 #pragma clang diagnostic ignored "-Wimplicit-int-conversion"
 #pragma clang diagnostic ignored "-Wfloat-conversion"
 #pragma clang diagnostic ignored "-Wshadow"
-#pragma clang diagnostic ignored "-Wdeprecated-copy-with-dtor"
-#pragma clang diagnostic ignored "-Wdeprecated-copy"
+// #pragma clang diagnostic ignored "-Wdeprecated-copy-with-dtor"
+// #pragma clang diagnostic ignored "-Wdeprecated-copy"
 #pragma clang diagnostic ignored "-Wshorten-64-to-32"
 #include "tdfui/view/text/text_input_view.h"
 #pragma clang diagnostic pop

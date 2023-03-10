@@ -32,7 +32,7 @@
 #pragma clang diagnostic ignored "-Wimplicit-int-conversion"
 #pragma clang diagnostic ignored "-Wfloat-conversion"
 #pragma clang diagnostic ignored "-Wshadow"
-#pragma clang diagnostic ignored "-Wdeprecated-copy"
+// #pragma clang diagnostic ignored "-Wdeprecated-copy"
 #include "core/common/reflection.h"
 #include "tdfui/view/view.h"
 #include "tdfui/view/view_context.h"

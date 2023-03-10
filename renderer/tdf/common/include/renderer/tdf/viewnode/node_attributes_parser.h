@@ -30,7 +30,7 @@
 #pragma clang diagnostic ignored "-Wimplicit-int-conversion"
 #pragma clang diagnostic ignored "-Wfloat-conversion"
 #pragma clang diagnostic ignored "-Wshadow"
-#pragma clang diagnostic ignored "-Wdeprecated-copy"
+// #pragma clang diagnostic ignored "-Wdeprecated-copy"
 #include "tdfui/view/view.h"
 #pragma clang diagnostic pop
 

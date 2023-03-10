@@ -33,7 +33,7 @@
 #pragma clang diagnostic ignored "-Wimplicit-int-conversion"
 #pragma clang diagnostic ignored "-Wfloat-conversion"
 #pragma clang diagnostic ignored "-Wshadow"
-#pragma clang diagnostic ignored "-Wdeprecated-copy"
+// #pragma clang diagnostic ignored "-Wdeprecated-copy"
 #include "core/support/animation/ticker.h"
 #include "core/support/physics/scroll_physics.h"
 #include "tdfui/view/scroll_view.h"
