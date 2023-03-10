@@ -24,6 +24,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <chrono>
 #include "api/adapter/data/serializable.h"
 #include "api/notification/data/devtools_network_enum.h"
 

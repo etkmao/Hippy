@@ -27,7 +27,7 @@ public class HippyScrollViewEventHelper {
 
     public static final long MOMENTUM_DELAY = 20;
 
-    protected static void emitScrollEvent(@NonNull ViewGroup view, @NonNull String eventName) {
+    public static void emitScrollEvent(@NonNull ViewGroup view, @NonNull String eventName) {
         if (!EventUtils.checkRegisteredEvent(view, eventName)) {
             return;
         }
