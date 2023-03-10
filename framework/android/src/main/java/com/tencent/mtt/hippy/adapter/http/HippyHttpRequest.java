@@ -54,7 +54,7 @@ public class HippyHttpRequest {
     public HippyHttpRequest(@Nullable HashMap<String, String> headers,
             @Nullable HashMap<String, String> initParams,
             @Nullable Map<String, Object> nativeParams) {
-        mHeaders = (headers == null) ? new HashMap<>() : headers;
+        mHeaders = (headers == null) ? new HashMap<String, String>() : headers;
         mInitParams = initParams;
         mNativeParams = nativeParams;
         initUserAgent();

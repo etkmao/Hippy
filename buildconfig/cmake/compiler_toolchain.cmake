@@ -68,7 +68,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang") # based on LLVM 12
       # [1] https://reviews.llvm.org/rGcce4a7258b81159e57a411896011ee2742f17def
       # [2] https://bugs.chromium.org/p/chromium/issues/detail?id=1272795
       if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 14)
-        list(APPEND COMPILE_OPTIONS -mno-outline-atomics)
+        list(APPEND COMPILE_OPTIONS)
       endif ()
     elseif (${ANDROID_ABI} STREQUAL "x86")
       list(APPEND COMPILE_OPTIONS
