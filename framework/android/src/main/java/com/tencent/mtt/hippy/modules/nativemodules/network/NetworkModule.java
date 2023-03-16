@@ -127,7 +127,7 @@ public class NetworkModule extends HippyNativeModuleBase {
             }
         }
         responseObject.set(HTTP_RESPONSE_STATUS_CODE, statusCode);
-        responseObject.set("statusLine", responseMessage);
+        responseObject.set("statusLine", responseMessage != null ? responseMessage : "");
         responseObject.set("respHeaders", headerObject);
         String body = "";
         try {
