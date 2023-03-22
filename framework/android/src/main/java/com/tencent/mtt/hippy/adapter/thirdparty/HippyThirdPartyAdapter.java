@@ -32,6 +32,10 @@ public abstract class HippyThirdPartyAdapter {
         return null;
     }
 
+    public abstract void setExtraData(JSONObject extraData);
+
+    public abstract void setPageUrl(String url);
+
     @Nullable
     public String getPageUrl() {
         return null;

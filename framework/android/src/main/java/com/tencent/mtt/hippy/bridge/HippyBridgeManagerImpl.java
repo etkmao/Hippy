@@ -562,6 +562,13 @@ public class HippyBridgeManagerImpl implements HippyBridgeManager, HippyBridge.B
             }
         }
 
+        HippyMap tkd = new HippyMap();
+        tkd.pushString("url", (pageUrl == null) ? "" : pageUrl);
+        tkd.pushString("appName", (packageName == null) ? "" : packageName);
+        tkd.pushString("appVersion", (versionName == null) ? "" : versionName);
+        tkd.pushMap("extra", extraDataMap);
+        globalParams.pushMap("tkd", tkd);
+
         try {
             PackageManager packageManager = context.getPackageManager();
             PackageInfo packageInfo = packageManager.getPackageInfo(
