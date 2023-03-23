@@ -28,6 +28,10 @@ import android.view.ViewParent;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.openhippy.pool.BasePool.PoolType;
+import com.openhippy.pool.Pool;
+import com.openhippy.pool.PreCreateViewPool;
+import com.openhippy.pool.RecycleViewPool;
 import com.tencent.mtt.hippy.annotation.HippyController;
 import com.tencent.mtt.hippy.common.HippyArray;
 import com.tencent.mtt.hippy.dom.node.NodeProps;
@@ -60,10 +64,6 @@ import com.tencent.renderer.NativeRendererManager;
 import com.tencent.renderer.Renderer;
 import com.tencent.renderer.node.VirtualNode;
 import com.tencent.renderer.node.RenderNode;
-import com.tencent.renderer.pool.NativeRenderPool.PoolType;
-import com.tencent.renderer.pool.Pool;
-import com.tencent.renderer.pool.PreCreateViewPool;
-import com.tencent.renderer.pool.RecycleViewPool;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -488,7 +488,7 @@ public class ControllerManager {
                 NativeRendererManager.removeSnapshotRootNode();
                 deleteRootView(SCREEN_SNAPSHOT_ROOT_ID);
             }
-        }, 50);
+        }, 100);
 
     }
 
@@ -509,6 +509,13 @@ public class ControllerManager {
         if (view != null && controller != null && !className.equals(NodeProps.ROOT_NODE)) {
             controller.onBatchComplete(view);
         }
+    }
+
+    private boolean checkRecyclable(@Nullable HippyViewController controller, boolean recyclable) {
+        if (controller == null) {
+            return recyclable;
+        }
+        return controller.isRecyclable() && recyclable;
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -552,7 +559,7 @@ public class ControllerManager {
             parent.removeView(child);
         }
         mControllerRegistry.removeView(rootId, child.getId());
-        if (recyclable && childTag != null) {
+        if (checkRecyclable(childController, recyclable) && childTag != null) {
             Pool<String, View> pool = mRecycleViewPools.get(rootId);
             if (pool == null) {
                 pool = new RecycleViewPool();

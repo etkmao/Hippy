@@ -22,6 +22,7 @@ import android.graphics.drawable.Drawable;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import com.openhippy.pool.RecycleObject;
 
 public interface ImageDataSupplier {
 
@@ -51,13 +52,7 @@ public interface ImageDataSupplier {
 
     int getLayoutHeight();
 
-    void clear();
-
     void attached();
 
     void detached();
-
-    void cached();
-
-    void evicted();
 }

@@ -38,12 +38,10 @@ Engine::Engine()
     : js_runner_(nullptr),
       worker_task_runner_(nullptr),
       vm_(nullptr),
-      map_(),
-      scope_cnt_(0) {}
+      map_() {}
 
 Engine::~Engine() {
   FOOTSTONE_DLOG(INFO) << "~Engine";
-  FOOTSTONE_DCHECK(scope_cnt_ == 0) << "this engine is in use";
 }
 
 void Engine::AsyncInit(std::shared_ptr<TaskRunner> js,
@@ -65,14 +63,13 @@ void Engine::AsyncInit(std::shared_ptr<TaskRunner> js,
   js_runner_->PostTask(std::move(cb));
 }
 
-std::shared_ptr<Scope> Engine::CreateScope(const std::string& name,
+std::shared_ptr<Scope> Engine::AsyncCreateScope(const std::string& name,
                                            std::unique_ptr<RegisterMap> map) {
   FOOTSTONE_DLOG(INFO) << "Engine CreateScope";
-  std::shared_ptr<Scope> scope =
-      std::make_shared<Scope>(this, name, std::move(map));
+  std::shared_ptr<Scope> scope = std::make_shared<Scope>(weak_from_this(), name, std::move(map));
   scope->wrapper_ = std::make_unique<ScopeWrapper>(scope);
 
-  auto cb = [scope_ = scope] { scope_->Initialized(); };
+  auto cb = [scope_ = scope] { scope_->Init(); };
   if (footstone::Worker::IsTaskRunning() && js_runner_ == footstone::runner::TaskRunner::GetCurrentTaskRunner()) {
     cb();
   } else {
@@ -81,9 +78,68 @@ std::shared_ptr<Scope> Engine::CreateScope(const std::string& name,
   return scope;
 }
 
+std::any Engine::GetClassTemplate(void* key, const string_view& name) {
+  FOOTSTONE_DCHECK(HasClassTemplate(key, name));
+  return class_template_holder_map_[key][name];
+}
+
+bool Engine::HasClassTemplate(void* key, const string_view& name) {
+  auto it = class_template_holder_map_.find(key);
+  if (it == class_template_holder_map_.end()) {
+    return false;
+  }
+  return it->second.find(name) != it->second.end();
+}
+
+void Engine::SaveClassTemplate(void* key, const string_view& name, std::any&& class_template) {
+  auto it = class_template_holder_map_.find(key);
+  if (it == class_template_holder_map_.end()) {
+    class_template_holder_map_[key] = {{name, std::move(class_template)}};
+  } else {
+    it->second[name] = class_template;
+  }
+}
+
+void Engine::ClearClassTemplate(void* key) {
+  auto it = class_template_holder_map_.find(key);
+  if (it != class_template_holder_map_.end()) {
+    class_template_holder_map_.erase(it);
+  }
+}
+
+void Engine::SaveFunctionWrapper(void* key, std::unique_ptr<FunctionWrapper> wrapper) {
+  auto it = function_wrapper_holder_map_.find(key);
+  if (it == function_wrapper_holder_map_.end()) {
+    function_wrapper_holder_map_[key] = std::vector<std::unique_ptr<FunctionWrapper>>{};
+  }
+  function_wrapper_holder_map_[key].push_back(std::move(wrapper));
+}
+
+void Engine::ClearFunctionWrapper(void* key) {
+  auto it = function_wrapper_holder_map_.find(key);
+  if (it == function_wrapper_holder_map_.end()) {
+    function_wrapper_holder_map_.erase(it);
+  }
+}
+
+void Engine::SaveWeakCallbackWrapper(void* key, std::unique_ptr<WeakCallbackWrapper> wrapper) {
+  auto it = weak_callback_holder_map_.find(key);
+  if (it == weak_callback_holder_map_.end()) {
+    weak_callback_holder_map_[key] = std::vector<std::unique_ptr<WeakCallbackWrapper>>{};
+  }
+  weak_callback_holder_map_[key].push_back(std::move(wrapper));
+}
+
+void Engine::ClearWeakCallbackWrapper(void* key) {
+  auto it = weak_callback_holder_map_.find(key);
+  if (it == weak_callback_holder_map_.end()) {
+    weak_callback_holder_map_.erase(it);
+  }
+}
+
 void Engine::CreateVM(const std::shared_ptr<VMInitParam>& param) {
   FOOTSTONE_DLOG(INFO) << "Engine CreateVM";
-  vm_ = hippy::napi::CreateVM(param);
+  vm_ = hippy::CreateVM(param);
 
   auto it = map_->find(hippy::base::kVMCreateCBKey);
   if (it != map_->end()) {
@@ -95,16 +151,6 @@ void Engine::CreateVM(const std::shared_ptr<VMInitParam>& param) {
       map_->erase(it);
     }
   }
-}
-
-void Engine::Enter() {
-  FOOTSTONE_DLOG(INFO) << "Engine Enter, scope_cnt_ = " << scope_cnt_;
-  ++scope_cnt_;
-}
-
-void Engine::Exit() {
-  FOOTSTONE_DLOG(INFO) << "Engine Exit, scope_cnt_ = " << scope_cnt_;
-  --scope_cnt_;
 }
 
 }
