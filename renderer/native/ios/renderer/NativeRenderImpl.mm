@@ -39,7 +39,6 @@
 #import "UIView+DomEvent.h"
 #import "UIView+NativeRender.h"
 #import "UIView+Render.h"
-
 #include <mutex>
 
 #include "dom/root_node.h"
@@ -58,13 +57,33 @@ using CallFunctionCallback = hippy::CallFunctionCallback;
 using DomEvent = hippy::DomEvent;
 using RootNode = hippy::RootNode;
 
+static NSMutableArray<Class> *NativeRenderViewManagerClasses = nil;
+NSArray<Class> *NativeRenderGetViewManagerClasses(void) {
+    return NativeRenderViewManagerClasses;
+}
+
+HP_EXTERN void NativeRenderRegisterView(Class);
+void NativeRenderRegisterView(Class moduleClass) {
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        NativeRenderViewManagerClasses = [NSMutableArray new];
+    });
+    HPAssert([moduleClass respondsToSelector:@selector(viewName)], @"%@ must respond to selector viewName", NSStringFromClass(moduleClass));
+    [NativeRenderViewManagerClasses addObject:moduleClass];
+}
+
+static NSString *GetViewNameFromViewManagerClass(Class cls) {
+    HPAssert([cls respondsToSelector:@selector(viewName)], @"%@ must respond to selector viewName", NSStringFromClass(cls));
+    NSString *viewName = [cls performSelector:@selector(viewName)];
+    return viewName;
+}
+
 using HPViewBinding = std::unordered_map<int32_t, std::tuple<std::vector<int32_t>, std::vector<int32_t>>>;
 
 constexpr char kVSyncKey[] = "frameupdate";
 
 @interface NativeRenderViewsRelation : NSObject {
     HPViewBinding _viewRelation;
-
 }
 
 - (void)addViewTag:(int32_t)viewTag forSuperViewTag:(int32_t)superviewTag atIndex:(int32_t)index;
@@ -152,7 +171,7 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
     std::weak_ptr<DomManager> _domManager;
     std::mutex _renderQueueLock;
     NSMutableDictionary<NSString *, id> *_viewManagers;
-    NSDictionary<NSString *, Class> *_extraComponent;
+    NSArray<Class> *_extraComponents;
     
     std::weak_ptr<VFSUriLoader> _VFSUriLoader;
     NSMutableArray<Class<HPImageProviderProtocol>> *_imageProviders;
@@ -313,6 +332,8 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
             renderObject.frame = frame;
             renderObject.backgroundColor = backgroundColor;
             renderObject.viewName = rootViewClassName;
+            renderObject.rootNode = rootNode;
+            renderObject.domNode = rootNode;
             [strongSelf->_renderObjectRegistry addRootComponent:renderObject rootNode:rootNode forTag:componentTag];
             NSDictionary *userInfo = @{ NativeRenderUIManagerRootViewTagKey: componentTag,
                                         NativeRenderUIManagerKey: strongSelf};
@@ -321,13 +342,7 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
                                                               userInfo:userInfo];
         }
     };
-    auto domManager = self.domManager.lock();
-    if (domManager) {
-        domManager->PostTask(hippy::Scene({registerRootViewFunction}));
-    }
-    else {
-        registerRootViewFunction();
-    }
+    registerRootViewFunction();
 }
 
 - (void)unregisterRootViewFromTag:(NSNumber *)rootTag {
@@ -456,9 +471,10 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
 
 - (UIView *)createViewFromRenderObject:(NativeRenderObjectView *)renderObject {
     AssertMainQueue();
+    HPAssert(renderObject.viewName, @"view name is needed for creating a view");
     NativeRenderComponentData *componentData = [self componentDataForViewName:renderObject.viewName];
     UIView *view = [self createViewByComponentData:componentData
-                                          componentTag:renderObject.componentTag
+                                      componentTag:renderObject.componentTag
                                            rootTag:renderObject.rootTag
                                         properties:renderObject.props
                                           viewName:renderObject.viewName];
@@ -528,6 +544,8 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
         renderObject.viewName = viewName;
         renderObject.tagName = tagName;
         renderObject.props = props;
+        renderObject.domNode = domNode;
+        renderObject.rootNode = rootNode;
         renderObject.domManager = _domManager;
         renderObject.nodeLayoutResult = domNode->GetLayoutResult();
         renderObject.frame = CGRectMakeFromLayoutResult(domNode->GetLayoutResult());
@@ -595,33 +613,33 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
 }
 
 #pragma mark Render Context Implementation
-#define Init(Component) NSClassFromString(@#Component)
 - (__kindof NativeRenderViewManager *)renderViewManagerForViewName:(NSString *)viewName {
     if (!_viewManagers) {
-        _viewManagers = [@{@"View": Init(NativeRenderViewManager),
-                          @"WaterfallItem": Init(NativeRenderWaterfallItemViewManager),
-                          @"WaterfallView": Init(NativeRenderWaterfallViewManager),
-                          @"PullFooterView": Init(NativeRenderFooterRefreshManager),
-                          @"PullHeaderView": Init(NativeRenderHeaderRefreshManager),
-                          @"ScrollView": Init(NativeRenderScrollViewManager),
-                          @"RefreshWrapperItemView": Init(NativeRenderRefreshWrapperItemViewManager),
-                          @"RefreshWrapper": Init(NativeRenderRefreshWrapperViewManager),
-                          @"ViewPager": Init(NativeRenderViewPagerManager),
-                          @"ViewPagerItem": Init(NativeRenderViewPagerItemManager),
-                          @"TextInput": Init(NativeRenderTextViewManager),
-                          @"WebView": Init(NativeRenderSimpleWebViewManager),
-                          @"Image": Init(NativeRenderImageViewManager),
-                          @"ListViewItem": Init(NativeRenderBaseListItemViewManager),
-                          @"ListView": Init(NativeRenderBaseListViewManager),
-                          @"SmartViewPager": Init(NativeRenderSmartViewPagerViewManager),
-                          @"Navigator": Init(NativeRenderNavigatorViewManager),
-                          @"Text": Init(NativeRenderTextManager),
-                          @"Modal": Init(NativeRenderModalHostViewManager)
-                 } mutableCopy];
-        if (_extraComponent) {
-            [_viewManagers addEntriesFromDictionary:_extraComponent];
-            _extraComponent = nil;
+        _viewManagers = [NSMutableDictionary dictionaryWithCapacity:64];
+        if (_extraComponents) {
+            for (Class cls in _extraComponents) {
+                NSString *viewName = GetViewNameFromViewManagerClass(cls);
+                HPAssert(![_viewManagers objectForKey:viewName],
+                         @"duplicated component %@ for class %@ and %@", viewName,
+                         NSStringFromClass(cls),
+                         NSStringFromClass([_viewManagers objectForKey:viewName]));
+                [_viewManagers setObject:cls forKey:viewName];
+            }
         }
+        NSArray<Class> *classes = NativeRenderGetViewManagerClasses();
+        NSMutableDictionary *defaultViewManagerClasses = [NSMutableDictionary dictionaryWithCapacity:[classes count]];
+        for (Class cls in classes) {
+            if ([_extraComponents containsObject:cls]) {
+                continue;
+            }
+            NSString *viewName = GetViewNameFromViewManagerClass(cls);
+            HPAssert(![defaultViewManagerClasses objectForKey:viewName],
+                     @"duplicated component %@ for class %@ and %@", viewName,
+                     NSStringFromClass(cls),
+                     NSStringFromClass([defaultViewManagerClasses objectForKey:viewName]));
+            [defaultViewManagerClasses setObject:cls forKey:viewName];
+        }
+        [_viewManagers addEntriesFromDictionary:defaultViewManagerClasses];
     }
     id object = [_viewManagers objectForKey:viewName];
     if (object_isClass(object)) {
@@ -704,11 +722,17 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
  * 4.set views hierarchy
  */
 - (void)createRenderNodes:(std::vector<std::shared_ptr<DomNode>> &&)nodes
-                onRootNode:(std::weak_ptr<hippy::RootNode>)rootNode {
+               onRootNode:(std::weak_ptr<hippy::RootNode>)rootNode {
     auto strongRootNode = rootNode.lock();
     if (!strongRootNode) {
         return;
     }
+#if HP_DEBUG
+    auto &nodeMap = _domNodesMap[strongRootNode->GetId()];
+    for (auto node : nodes) {
+        nodeMap[node->GetId()] = node;
+    }
+#endif
     NSNumber *rootNodeTag = @(strongRootNode->GetId());
     std::lock_guard<std::mutex> lock([self renderQueueLock]);
     NativeRenderViewsRelation *manager = [[NativeRenderViewsRelation alloc] init];
@@ -732,11 +756,8 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
         NativeRenderObjectView *renderObject = [_renderObjectRegistry componentForTag:componentTag onRootTag:rootNodeTag];
         if (NativeRenderCreationTypeInstantly == [renderObject creationType] && !_uiCreationLazilyEnabled) {
             NSString *viewName = [NSString stringWithUTF8String:node->GetViewName().c_str()];
-            NSDictionary *props = [dicProps objectForKey:@(node->GetId())];
-            NativeRenderComponentData *componentData = [self componentDataForViewName:viewName];
             [self addUIBlock:^(NativeRenderImpl *renderContext, __unused NSDictionary<NSNumber *,UIView *> *viewRegistry) {
-                NativeRenderImpl *uiManager = (NativeRenderImpl *)renderContext;
-                UIView *view = [uiManager createViewByComponentData:componentData componentTag:componentTag rootTag:rootNodeTag properties:props viewName:viewName];
+                UIView *view = [renderContext createViewFromRenderObject:renderObject];
                 view.nativeRenderObjectView = renderObject;
                 view.renderImpl = renderContext;
             }];
@@ -765,6 +786,12 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
     if (!strongRootNode) {
         return;
     }
+#if HP_DEBUG
+    auto &nodeMap = _domNodesMap[strongRootNode->GetId()];
+    for (auto node : nodes) {
+        nodeMap[node->GetId()] = node;
+    }
+#endif
     std::lock_guard<std::mutex> lock([self renderQueueLock]);
     NSNumber *rootTag = @(strongRootNode->GetId());
     for (const auto &node : nodes) {
@@ -783,6 +810,12 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
     if (!strongRootNode) {
         return;
     }
+#if HP_DEBUG
+    auto &nodeMap = _domNodesMap[strongRootNode->GetId()];
+    for (auto node : nodes) {
+        nodeMap[node->GetId()] = nullptr;
+    }
+#endif
     std::lock_guard<std::mutex> lock([self renderQueueLock]);
     NSNumber *rootTag = @(strongRootNode->GetId());
     for (auto dom_node : nodes) {
@@ -921,8 +954,8 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
     }
 }
 
-- (void)registerExtraComponent:(NSDictionary<NSString *, Class> *)extraComponent {
-    _extraComponent = extraComponent;
+- (void)registerExtraComponent:(NSArray<Class> *)extraComponents {
+    _extraComponents = extraComponents;
 }
 
 #pragma mark -
@@ -1346,6 +1379,25 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
 - (void)setRootViewSizeChangedEvent:(std::function<void(int32_t rootTag, NSDictionary *)>)cb {
     _rootViewSizeChangedCb = cb;
 }
+
+#if HP_DEBUG
+- (std::shared_ptr<hippy::DomNode>)domNodeForTag:(int32_t)dom_tag onRootNode:(int32_t)root_tag {
+    auto find = _domNodesMap.find(root_tag);
+    if (_domNodesMap.end() == find) {
+        return nullptr;
+    }
+    auto map = find->second;
+    auto domFind = map.find(dom_tag);
+    if (map.end() == domFind) {
+        return nullptr;
+    }
+    return domFind->second;
+}
+- (std::vector<std::shared_ptr<hippy::DomNode>>)childrenForNodeTag:(int32_t)tag onRootNode:(int32_t)root_tag {
+    auto node = [self domNodeForTag:tag onRootNode:root_tag];
+    return node ? node->GetChildren() : std::vector<std::shared_ptr<hippy::DomNode>>{};
+}
+#endif
 
 @end
 

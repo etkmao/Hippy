@@ -42,6 +42,7 @@ let _Vue;
  * @returns {Object} decl - Processed declaration, original declaration by default.
  */
 let _beforeLoadStyle = decl => decl;
+let _beforeRenderToNative = () => {};
 
 function setVue(Vue) {
   _Vue = Vue;
@@ -65,6 +66,14 @@ function setBeforeLoadStyle(beforeLoadStyle) {
 
 function getBeforeLoadStyle() {
   return _beforeLoadStyle;
+}
+
+function setBeforeRenderToNative(beforeRenderToNative) {
+  _beforeRenderToNative = beforeRenderToNative;
+}
+
+function getBeforeRenderToNative() {
+  return _beforeRenderToNative;
 }
 
 const infoTrace = once(() => {
@@ -221,17 +230,6 @@ function deepCopy(data, hash = new WeakMap()) {
   return newData;
 }
 
-/**
- * Detect if the param is falsy or empty
- * @param {any} any
- */
-function isEmpty(any) {
-  if (!any || typeof any !== 'object') {
-    return true;
-  }
-  return Object.keys(any).length === 0;
-}
-
 function isNullOrUndefined(value) {
   return typeof value === 'undefined' || value === null;
 }
@@ -250,7 +248,6 @@ function whitespaceFilter(str) {
 export {
   VUE_VERSION,
   HIPPY_VUE_VERSION,
-  isEmpty,
   isDev,
   setVue,
   getVue,
@@ -258,6 +255,8 @@ export {
   getApp,
   setBeforeLoadStyle,
   getBeforeLoadStyle,
+  setBeforeRenderToNative,
+  getBeforeRenderToNative,
   trace,
   warn,
   isTraceEnabled,

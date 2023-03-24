@@ -25,7 +25,11 @@
  * Virtual DOM to Native DOM
  */
 
-import { GLOBAL_STYLE_NAME, GLOBAL_DISPOSE_STYLE_NAME, ROOT_VIEW_ID } from '../../runtime/constants';
+import {
+  GLOBAL_STYLE_NAME,
+  GLOBAL_DISPOSE_STYLE_NAME,
+  ROOT_VIEW_ID,
+} from '../../runtime/constants';
 import {
   getApp,
   trace,
@@ -35,11 +39,18 @@ import {
   convertImageLocalPath,
   deepCopy,
   isTraceEnabled,
+  getBeforeRenderToNative,
 } from '../../util';
+import {
+  eventHandlerType,
+  nativeEventMap,
+  translateToNativeEventName,
+  isNativeGesture,
+} from '../../util/event';
 import {
   isRTL,
 } from '../../util/i18n';
-import { isStyleMatched, preCacheNode, eventHandlerType, nativeEventMap, translateToNativeEventName } from '../../util/node';
+import { isStyleMatched, preCacheNode } from '../../util/node';
 import { fromAstNodes, SelectorsMap } from './style';
 
 const componentName = ['%c[native]%c', 'color: red', 'color: auto'];
@@ -84,10 +95,6 @@ function chunkNodes(batchNodes) {
     }
   }
   return result;
-}
-
-function isNativeGesture(name) {
-  return !!nativeEventMap[name];
 }
 
 function handleEventListeners(eventNodes = [], sceneBuilder) {
@@ -321,6 +328,27 @@ function parseViewComponent(targetNode, nativeNode, style) {
   }
 }
 
+
+/**
+ * getElemCss
+ * @param {ElementNode} element
+ * @returns {{}}
+ */
+function getElemCss(element) {
+  const style = Object.create(null);
+  try {
+    getCssMap().query(element).selectors.forEach((matchedSelector) => {
+      if (!isStyleMatched(matchedSelector, element)) return;
+      matchedSelector.ruleSet.declarations.forEach((cssStyle) => {
+        style[cssStyle.property] = cssStyle.value;
+      });
+    });
+  } catch (err) {
+    console.error('getDomCss Error:', err);
+  }
+  return style;
+}
+
 /**
  * Get target node attributes, use to chrome devTool tag attribute show while debugging
  * @param targetNode
@@ -330,8 +358,10 @@ function getTargetNodeAttributes(targetNode) {
   try {
     const targetNodeAttributes = deepCopy(targetNode.attributes);
     const classInfo = Array.from(targetNode.classList || []).join(' ');
+    const { id, nodeId } = targetNode;
     const attributes = {
-      id: targetNode.id,
+      id,
+      hippyNodeId: `${nodeId}`,
       class: classInfo,
       ...targetNodeAttributes,
     };
@@ -407,22 +437,15 @@ function renderToNative(rootViewId, targetNode, refInfo = {}) {
   if (!targetNode.meta.component) {
     throw new Error(`Specific tag is not supported yet: ${targetNode.tagName}`);
   }
-  let style = {};
-  // Apply styles when the targetNode attach to document at first time.
-  if (targetNode.meta.component.defaultNativeStyle) {
-    style = { ...targetNode.meta.component.defaultNativeStyle };
-  }
-  // Apply styles from CSS
-  const matchedSelectors = getCssMap().query(targetNode);
-  matchedSelectors.selectors.forEach((matchedSelector) => {
-    if (!isStyleMatched(matchedSelector, targetNode)) return;
-    matchedSelector.ruleSet.declarations.forEach((cssStyle) => {
-      style[cssStyle.property] = cssStyle.value;
-    });
-  });
-  // Apply style from style attribute.
-  style = { ...style, ...targetNode.style };
 
+  let style = getElemCss(targetNode);
+  style = { ...style, ...targetNode.style };
+  getBeforeRenderToNative()(targetNode, style);
+  // use defaultNativeStyle later to avoid incorrect compute style from inherit node
+  // in beforeRenderToNative hook
+  if (targetNode.meta.component.defaultNativeStyle) {
+    style = { ...targetNode.meta.component.defaultNativeStyle, ...style };
+  }
   // Convert to real native event
   const eventNode = getEventNode(targetNode);
   // Translate to native node
@@ -507,12 +530,9 @@ function isLayout(node, rootView) {
   return node.id === rootView.slice(1 - rootView.length);
 }
 
-function insertChild(parentNode, childNode, atIndex = -1, refInfo = {}) {
+function insertChild(parentNode, childNode, refInfo = {}) {
   if (!parentNode || !childNode) {
     return;
-  }
-  if (parentNode.meta && isFunction(parentNode.meta.insertChild)) {
-    parentNode.meta.insertChild(parentNode, childNode, atIndex);
   }
   if (childNode.meta.skipAddToDom) {
     return;
@@ -548,15 +568,11 @@ function insertChild(parentNode, childNode, atIndex = -1, refInfo = {}) {
   }
 }
 
-function removeChild(parentNode, childNode, index) {
-  if (parentNode && parentNode.meta && isFunction(parentNode.meta.removeChild)) {
-    parentNode.meta.removeChild(parentNode, childNode);
-  }
+function removeChild(parentNode, childNode) {
   if (!childNode || childNode.meta.skipAddToDom) {
     return;
   }
   childNode.isMounted = false;
-  childNode.index = index;
   const app = getApp();
   const { $options: { rootViewId } } = app;
   const nativeNode =    {
@@ -579,7 +595,7 @@ function removeChild(parentNode, childNode, index) {
   endBatch(app);
 }
 
-function moveChild(parentNode, childNode, index, refInfo = {}) {
+function moveChild(parentNode, childNode, refInfo = {}) {
   if (parentNode && parentNode.meta && isFunction(parentNode.meta.removeChild)) {
     parentNode.meta.removeChild(parentNode, childNode);
   }
@@ -587,7 +603,6 @@ function moveChild(parentNode, childNode, index, refInfo = {}) {
     return;
   }
   childNode.isMounted = false;
-  childNode.index = index;
   const app = getApp();
   const { $options: { rootViewId } } = app;
   const nativeNode =  {
@@ -600,7 +615,7 @@ function moveChild(parentNode, childNode, index, refInfo = {}) {
       refInfo,
     ],
   ];
-  const printedNodes = isDev() ? [nativeNode] : [];
+  const printedNodes = isDev() ? [{ ...nativeNode, ...refInfo }] : [];
   batchNodes.push({
     printedNodes,
     type: NODE_OPERATION_TYPES.moveNode,
@@ -653,4 +668,5 @@ export {
   updateChild,
   moveChild,
   updateWithChildren,
+  getElemCss,
 };
