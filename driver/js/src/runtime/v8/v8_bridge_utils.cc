@@ -389,9 +389,13 @@ void V8BridgeUtils::HandleUncaughtJsError(v8::Local<v8::Message> message,
     return;
   }
 
-  auto context = runtime->GetScope()->GetContext();
+  auto context = std::static_pointer_cast<V8Ctx>(runtime->GetScope()->GetContext());
 //  V8BridgeUtils::on_throw_exception_to_js_(runtime, ctx->GetMsgDesc(message),
 //                                           ctx->GetStackInfo(message));
+
+  FOOTSTONE_DLOG(ERROR) << "HandleUncaughtJsError error, MsgDesc: " << context->GetMsgDesc(message);
+  FOOTSTONE_DLOG(ERROR) << "HandleUncaughtJsError error, StackInfo: " << context->GetStackInfo(message);
+
   VM::HandleUncaughtException(context, std::make_shared<hippy::napi::V8CtxValue>(isolate, error));
 
   FOOTSTONE_DLOG(INFO) << "HandleUncaughtJsError end";
