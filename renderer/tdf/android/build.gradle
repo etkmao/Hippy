@@ -25,7 +25,7 @@ android {
   }
   sourceSets {
     main {
-      java.srcDirs = [ 'src/main/java', '/Users/etuoke/hippy_git/Hippy0222/renderer/tdf/core/src/platform/android/java']
+      java.srcDirs = [ 'src/main/java', '/Users/etuoke/hippy_git/Hippy0309_qq2/renderer/tdf/core/src/platform/android/java']
     }
   }
 

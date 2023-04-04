@@ -77,7 +77,7 @@ ViewNode::DomStyleMap ViewNode::GenerateStyleInfo(const std::shared_ptr<hippy::D
 void ViewNode::OnCreate() {
   auto parent = GetRootNode()->FindViewNode(GetRenderInfo().pid);
   // TODO(etkmao):
-  if(!parent) return;
+//  if(!parent) return;
 
   parent->AddChildAt(shared_from_this(), render_info_.index);
 }
@@ -96,9 +96,9 @@ void ViewNode::OnUpdate(hippy::DomNode& dom_node) {
 void ViewNode::HandleStyleUpdate(const DomStyleMap& dom_style, const DomDeleteProps& dom_delete_props) {
   FOOTSTONE_DCHECK(IsAttached());
   // TODO(etkmao):
-  if (!attached_view_.lock()) {
-    return;
-  }
+//  if (!attached_view_.lock()) {
+//    return;
+//  }
 
   auto view = GetView();
   auto const map_end = dom_style.cend();
@@ -301,9 +301,9 @@ void ViewNode::HandleLayoutUpdate(hippy::LayoutResult layout_result) {
       tdfcore::TRect::MakeXYWH(layout_result.left, layout_result.top, layout_result.width, layout_result.height);
 
   // TODO(etkmao):20230208 我的Tab crash
-  if (!attached_view_.lock()) {
-    return;
-  }
+//  if (!attached_view_.lock()) {
+//    return;
+//  }
 
   GetView()->SetFrame(new_frame);
   FOOTSTONE_LOG(INFO) << "ViewNode::HandleLayoutUpdate: " << render_info_.id << " |" << new_frame.X() << " | "
@@ -339,9 +339,9 @@ void ViewNode::OnRemoveEventListener(uint32_t id, const std::string& name) {
 
 void ViewNode::HandleEventInfoUpdate() {
   // TODO(etkmao):
-  if (!attached_view_.lock()) {
-    return;
-  }
+//  if (!attached_view_.lock()) {
+//    return;
+//  }
 
   if (supported_events_.find(hippy::kClickEvent) != supported_events_.end() ||
       supported_events_.find(hippy::kPressIn) != supported_events_.end() ||
@@ -551,8 +551,12 @@ std::shared_ptr<RootViewNode> ViewNode::GetRootNode() const {
 
 void ViewNode::AddChildAt(const std::shared_ptr<ViewNode>& child, int32_t index) {
   FOOTSTONE_DCHECK(!child->GetParent());
-  // FOOTSTONE_DCHECK(index >= 0 && static_cast<uint32_t>(index) <= children_.size());
-  if(static_cast<uint32_t>(index) > children_.size()) return;
+  //FOOTSTONE_DCHECK(index >= 0 && static_cast<uint32_t>(index) <= children_.size());
+  if(static_cast<uint32_t>(index) > children_.size()) {
+    FOOTSTONE_LOG(INFO) << "xxx tdf multi thread - ViewNode::AddChildAt error index, index:"
+                        << index << ", children_ size:" << children_.size();
+    return;
+  }
   // update related filed
   children_.insert(children_.begin() + index, child);
   child->SetParent(shared_from_this());
@@ -601,13 +605,18 @@ void ViewNode::Attach(const std::shared_ptr<tdfcore::View>& view) {
   FOOTSTONE_DCHECK(parent_.lock()->IsAttached());
   auto dom_node = GetDomNode();
   if (!dom_node) {
+    FOOTSTONE_LOG(INFO) << "xxx tdf multi thread - ViewNode::Attach, dom_node nullptr, id:"
+                        << render_info_.id << ", pid:" << render_info_.pid << ", index:" << render_info_.index;
     return;
   }
 
+  FOOTSTONE_LOG(INFO) << "xxx tdf multi thread - ViewNode::Attach, do attach, id:"
+                      << render_info_.id << ", pid:" << render_info_.pid << ", index:" << render_info_.index;
+
   // TODO(etkmao):
-  if (!parent_.lock()->attached_view_.lock()) {
-    return;
-  }
+//  if (!parent_.lock()->attached_view_.lock()) {
+//    return;
+//  }
 
   is_attached_ = true;
   if (view) {

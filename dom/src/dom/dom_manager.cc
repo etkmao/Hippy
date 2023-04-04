@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-#define EXPERIMENT_LAYER_OPTIMIZATION
+//#define EXPERIMENT_LAYER_OPTIMIZATION
 
 #include "dom/dom_manager.h"
 

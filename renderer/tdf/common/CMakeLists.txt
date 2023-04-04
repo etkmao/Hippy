@@ -64,7 +64,7 @@ endif()
 # endregion
 
 get_filename_component(TDF_RENDER_DIR "${PROJECT_ROOT_DIR}/renderer/tdf" REALPATH)
-get_filename_component(TDF_CORE_DIR "/Users/ivanfanwu/Documents/tencent/innersource/hippy/core" REALPATH)
+get_filename_component(TDF_CORE_DIR "${TDF_RENDER_DIR}/core" REALPATH)
 target_include_directories(${PROJECT_NAME} PUBLIC ${TDF_CORE_DIR}/include)
 target_include_directories(${PROJECT_NAME} PUBLIC ${TDF_CORE_DIR}/modules)
 target_include_directories(${PROJECT_NAME} PUBLIC ${TDF_CORE_DIR}/modules/tdfui/include)
@@ -74,13 +74,14 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${TDF_CORE_DIR}/third_party/js
 target_include_directories(${PROJECT_NAME} PUBLIC ${TDF_CORE_DIR}/third_party/refl-cpp/include)
 target_include_directories(${PROJECT_NAME} PUBLIC ${TDF_CORE_DIR}/third_party/tracy)
 target_include_directories(${PROJECT_NAME} PUBLIC ${TDF_CORE_DIR}/third_party/libpag/tgfx/include)
-add_subdirectory(${TDF_CORE_DIR} ${TDF_CORE_DIR}/build)
+add_subdirectory(${TDF_CORE_DIR} tdfcore/build)
 target_link_libraries(${PROJECT_NAME} PUBLIC tdfcore tdfui)
 
 
 # region source set
 set(SRC_SET
         src/renderer/tdf/tdf_render_manager.cc
+        src/renderer/tdf/tdf_task_runner.cc
         src/renderer/tdf/viewnode/net_image_loader.cc
         src/renderer/tdf/viewnode/scroll_view_node.cc
         src/renderer/tdf/viewnode/root_view_node.cc

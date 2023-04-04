@@ -75,6 +75,8 @@ void RootNode::CreateDomNodes(std::vector<std::shared_ptr<DomInfo>>&& nodes) {
     if (parent_node == nullptr) {
       continue;
     }
+    FOOTSTONE_LOG(INFO) << "xxx tdf multi thread - RootNode::CreateDomNodes, node id:"
+                        << node->GetId();
     nodes_to_create.push_back(node);
     // 解析布局属性
     node->ParseLayoutStyleInfo();
@@ -190,6 +192,8 @@ void RootNode::DeleteDomNodes(std::vector<std::shared_ptr<DomInfo>>&& nodes) {
     }
     auto event = std::make_shared<DomEvent>(kDomDeleted, node, nullptr);
     node->HandleEvent(event);
+    FOOTSTONE_LOG(INFO) << "xxx tdf multi thread - RootNode::DeleteDomNodes, node id:"
+                        << node->GetId();
     OnDomNodeDeleted(node);
   }
 
@@ -230,10 +234,13 @@ void RootNode::CallFunction(uint32_t id, const std::string& name, const DomArgum
 }
 
 void RootNode::SyncWithRenderManager(const std::shared_ptr<RenderManager>& render_manager) {
+  FOOTSTONE_LOG(INFO) << "xxx tdf multi thread - RootNode::SyncWithRenderManager, begin";
   FlushDomOperations(render_manager);
   FlushEventOperations(render_manager);
   DoAndFlushLayout(render_manager);
+  FOOTSTONE_LOG(INFO) << "xxx tdf multi thread - RootNode::SyncWithRenderManager, to EndBatch";
   render_manager->EndBatch(GetWeakSelf());
+  FOOTSTONE_LOG(INFO) << "xxx tdf multi thread - RootNode::SyncWithRenderManager, end";
 }
 
 void RootNode::AddEvent(uint32_t id, const std::string& event_name) {
@@ -417,9 +424,13 @@ void RootNode::OnDomNodeDeleted(const std::shared_ptr<DomNode>& node) {
   if (node) {
     for (const auto& child : node->GetChildren()) {
       if (child) {
+        FOOTSTONE_LOG(INFO) << "xxx tdf multi thread - RootNode::OnDomNodeDeleted, child id:"
+                            << child->GetId();
         OnDomNodeDeleted(child);
       }
     }
+    FOOTSTONE_LOG(INFO) << "xxx tdf multi thread - RootNode::OnDomNodeDeleted, node id:"
+                        << node->GetId();
     nodes_.erase(node->GetId());
   }
 }

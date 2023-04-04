@@ -40,6 +40,7 @@
 #include "renderer/tdf/viewnode/text_view_node.h"
 #include "renderer/tdf/viewnode/view_names.h"
 #include "renderer/tdf/viewnode/view_pager_node.h"
+#include "renderer/tdf/tdf_task_runner.h"
 
 namespace hippy {
 inline namespace render {
@@ -128,6 +129,13 @@ TDFRenderManager::TDFRenderManager() : RenderManager("TDFRenderManager") {
 }
 
 void TDFRenderManager::RegisterShell(uint32_t root_id, const std::shared_ptr<tdfcore::Shell>& shell) {
+  //
+  auto clock = TDF_MAKE_SHARED(tdfcore::EngineClock);
+  auto tdf_task_runner = TDF_MAKE_SHARED(TDFTaskRunner, tdfcore::kUITaskRunnerName, clock, shell, GetDomManager());
+  auto task_runner = std::static_pointer_cast<tdfcore::TaskRunner>(tdf_task_runner);
+  shell->SetExternalUITaskRunner(task_runner);
+  shell->GetRenderPipeline()->Init2();
+
   auto uri_data_getter =  [WEAK_THIS](const string_view &uri, const RootViewNode::DataCb& callback) {
     DEFINE_AND_CHECK_SELF(TDFRenderManager);
     auto uri_loader = self->GetUriLoader();
@@ -181,6 +189,19 @@ void TDFRenderManager::RegisterShell(uint32_t root_id, const std::shared_ptr<tdf
 void TDFRenderManager::CreateRenderNode(std::weak_ptr<RootNode> root_node,
                                       std::vector<std::shared_ptr<hippy::dom::DomNode>>&& nodes) {
   CHECK_ROOT()
+
+  // log
+  auto len = nodes.size();
+  for (uint32_t i = 0; i < len; i++) {
+    const auto& render_info = nodes[i]->GetRenderInfo();
+    FOOTSTONE_DLOG(INFO) << "xxx tdf CreateRenderNode - len:" << len << ", i:" << i
+                         << ", id:" << footstone::value::HippyValue(render_info.id)
+                         << ", pid:" << footstone::value::HippyValue(render_info.pid)
+                         << ", index:" << footstone::value::HippyValue(render_info.index)
+                         << ", viewType:" << footstone::value::HippyValue(nodes[i]->GetViewName());
+  }
+
+
   FOR_EACH_TEXT_NODE(
       auto view_node = GetNodeCreator(node->GetViewName())(node->GetRenderInfo(), node->GetViewName());
       auto text_view_node = std::static_pointer_cast<tdf::TextViewNode>(view_node);
@@ -199,7 +220,7 @@ void TDFRenderManager::CreateRenderNode(std::weak_ptr<RootNode> root_node,
   }
 
   GET_SHELL();
-  shell->GetUITaskRunner()->PostTask([nodes, shell, root_view_node] {
+//  shell->GetUITaskRunner()->PostTask([nodes, shell, root_view_node] {
     FOOTSTONE_LOG(INFO) << "CreateNode: BEGIN";
     for (auto const& node : nodes) {
       FOOTSTONE_LOG(INFO) << "CreateNode: id:" << node->GetRenderInfo().id << " |pid:" << node->GetRenderInfo().pid;
@@ -214,7 +235,7 @@ void TDFRenderManager::CreateRenderNode(std::weak_ptr<RootNode> root_node,
       view_node->OnCreate();
     }
     FOOTSTONE_LOG(INFO) << "CreateNode: END";
-  });
+//  });
 }
 
 void TDFRenderManager::UpdateRenderNode(std::weak_ptr<RootNode> root_node,
@@ -224,7 +245,7 @@ void TDFRenderManager::UpdateRenderNode(std::weak_ptr<RootNode> root_node,
       tdf::TextViewNode::FindLayoutTextViewNode(node)->SyncTextAttributes(node);
   )
   GET_SHELL();
-  shell->GetUITaskRunner()->PostTask([nodes, root_view_node] {
+//  shell->GetUITaskRunner()->PostTask([nodes, root_view_node] {
     FOOTSTONE_LOG(INFO) << "UpdateRenderNode: BEGIN";
     for (auto const& node : nodes) {
       FOOTSTONE_DCHECK(node->GetId() == node->GetRenderInfo().id);
@@ -232,18 +253,42 @@ void TDFRenderManager::UpdateRenderNode(std::weak_ptr<RootNode> root_node,
       view_node->OnUpdate(*node);
     }
     FOOTSTONE_LOG(INFO) << "UpdateRenderNode: END";
-  });
+//  });
 }
 
 void TDFRenderManager::MoveRenderNode(std::weak_ptr<RootNode> root_node,
-                                      std::vector<std::shared_ptr<DomNode>>&& nodes) {}
+                                      std::vector<std::shared_ptr<DomNode>>&& nodes) {
+  // log
+  auto len = nodes.size();
+  for (uint32_t i = 0; i < len; i++) {
+    const auto& render_info = nodes[i]->GetRenderInfo();
+    FOOTSTONE_DLOG(INFO) << "xxx tdf MoveRenderNode - len:" << len << ", i:" << i
+                         << ", id:" << footstone::value::HippyValue(render_info.id)
+                         << ", pid:" << footstone::value::HippyValue(render_info.pid)
+                         << ", index:" << footstone::value::HippyValue(render_info.index)
+                         << ", viewType:" << footstone::value::HippyValue(nodes[i]->GetViewName());
+  }
+
+}
 
 void TDFRenderManager::DeleteRenderNode(std::weak_ptr<RootNode> root_node,
                                         std::vector<std::shared_ptr<DomNode>>&& nodes) {
   CHECK_ROOT()
+
+  // log
+  auto len = nodes.size();
+  for (uint32_t i = 0; i < len; i++) {
+    const auto& render_info = nodes[i]->GetRenderInfo();
+    FOOTSTONE_DLOG(INFO) << "xxx tdf DeleteRenderNode - len:" << len << ", i:" << i
+                         << ", id:" << footstone::value::HippyValue(render_info.id)
+                         << ", pid:" << footstone::value::HippyValue(render_info.pid)
+                         << ", index:" << footstone::value::HippyValue(render_info.index)
+                         << ", viewType:" << footstone::value::HippyValue(nodes[i]->GetViewName());
+  }
+
   FOR_EACH_TEXT_NODE(tdf::TextViewNode::UnregisterMeasureFunction(node);)
   GET_SHELL();
-  shell->GetUITaskRunner()->PostTask([nodes, root_view_node] {
+//  shell->GetUITaskRunner()->PostTask([nodes, root_view_node] {
     FOOTSTONE_LOG(INFO) << "DeleteRenderNode: BEGIN";
     for (auto const& node : nodes) {
       FOOTSTONE_DCHECK(node->GetId() == node->GetRenderInfo().id);
@@ -251,19 +296,19 @@ void TDFRenderManager::DeleteRenderNode(std::weak_ptr<RootNode> root_node,
       root_view_node->FindViewNode(id)->OnDelete();
     }
     FOOTSTONE_LOG(INFO) << "DeleteRenderNode: END";
-  });
+//  });
 }
 
 void TDFRenderManager::UpdateLayout(std::weak_ptr<RootNode> root_node,
                                     const std::vector<std::shared_ptr<DomNode>>& nodes) {
   CHECK_ROOT()
   GET_SHELL();
-  shell->GetUITaskRunner()->PostTask([nodes, root_view_node] {
+//  shell->GetUITaskRunner()->PostTask([nodes, root_view_node] {
     for (auto const& node : nodes) {
       FOOTSTONE_DCHECK(node->GetId() == node->GetRenderInfo().id);
       root_view_node->FindViewNode(node->GetRenderInfo().id)->HandleLayoutUpdate(node->GetRenderLayoutResult());
     }
-  });
+//  });
 }
 
 void TDFRenderManager::MoveRenderNode(std::weak_ptr<RootNode> root_node, std::vector<int32_t>&& moved_ids,
@@ -280,7 +325,9 @@ void TDFRenderManager::EndBatch(std::weak_ptr<RootNode> root_node) {
   auto result = root_view_nodes_map_.Find(root->GetId(), root_view_node);
   FOOTSTONE_CHECK(result);
   auto shell = root_view_node->GetShell();
-  shell->GetUITaskRunner()->PostTask([root_view_node] { root_view_node->EndBatch(); });
+//  shell->GetUITaskRunner()->PostTask([root_view_node] {
+    root_view_node->EndBatch();
+//  });
 }
 
 void TDFRenderManager::BeforeLayout(std::weak_ptr<RootNode> root_node) { }
@@ -300,7 +347,7 @@ void TDFRenderManager::AddEventListener(std::weak_ptr<RootNode> root_node, std::
   if (name == kUpdateFrame) {
     root_view_node->SetEnableUpdateAnimation(true);
   }
-  shell->GetUITaskRunner()->PostTask([dom_node, root_view_node, name] {
+//  shell->GetUITaskRunner()->PostTask([dom_node, root_view_node, name] {
     if (auto node = dom_node.lock(); node != nullptr) {
       auto id = node->GetId();
       root_view_node->FindViewNode(id)->OnAddEventListener(id, name);
@@ -308,7 +355,7 @@ void TDFRenderManager::AddEventListener(std::weak_ptr<RootNode> root_node, std::
     }
 
     FOOTSTONE_DCHECK(false);
-  });
+//  });
 }
 
 void TDFRenderManager::RemoveEventListener(std::weak_ptr<RootNode> root_node, std::weak_ptr<DomNode> dom_node,
@@ -338,14 +385,14 @@ void TDFRenderManager::CallFunction(std::weak_ptr<RootNode> root_node, std::weak
   auto result = root_view_nodes_map_.Find(root->GetId(), root_view_node);
   FOOTSTONE_CHECK(result);
   auto shell = root_view_node->GetShell();
-  shell->GetUITaskRunner()->PostTask([dom_node, root_view_node, name, param, cb_id] {
+//  shell->GetUITaskRunner()->PostTask([dom_node, root_view_node, name, param, cb_id] {
     if (auto dom_node_ptr = dom_node.lock()) {
       auto view_node = root_view_node->FindViewNode(dom_node_ptr->GetId());
       if (view_node) {
         view_node->CallFunction(name, param, cb_id);
       }
     }
-  });
+//  });
 }
 
 #undef GET_SHELL

@@ -16,6 +16,7 @@
 
 package com.tencent.renderer;
 
+import android.os.Debug;
 import android.app.Activity;
 import android.content.Context;
 import android.view.View;
@@ -78,6 +79,7 @@ public class TDFRenderer extends Renderer implements RenderProxy {
 
     @NonNull @Override
     public View createRootView(@NonNull Context context) {
+        Debug.waitForDebugger();
         if (mVfsManager == null) {
             mVfsManager = mFrameworkProxy.getVfsManager();
             registerUriLoader(mInstanceId, mVfsManager.getId());
