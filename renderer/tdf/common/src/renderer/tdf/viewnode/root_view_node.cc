@@ -164,6 +164,9 @@ void RootViewNode::UpdateDomeRootNodeSize(tdfcore::ViewportMetrics viewport_metr
     auto& root_map = hippy::dom::RootNode::PersistentMap();
     std::shared_ptr<hippy::RootNode> root_node;
     root_map.Find(self->render_info_.id, root_node);
+    if (!root_node) {
+      return;
+    }
     root_node->GetLayoutNode()->SetScaleFactor(static_cast<float>(device_pixel_ratio));
     self->dom_manager_.lock()->SetRootSize(root_node, static_cast<float>(width), static_cast<float>(height));
     self->dom_manager_.lock()->DoLayout(root_node);
