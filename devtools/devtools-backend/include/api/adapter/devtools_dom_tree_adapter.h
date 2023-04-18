@@ -23,6 +23,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <functional>
 
 #include "api/adapter/data/dom_node_metas.h"
 #include "api/adapter/data/update_dom_node_metas.h"

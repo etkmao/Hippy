@@ -21,7 +21,7 @@
 #include "module/request/network_response_body_request.h"
 #include <string>
 #include "module/util/parse_json_util.h"
-#include "nlohmann/json.hpp"
+#include "module/util/nlohmann_util.h"
 
 constexpr char kFrontendRequestId[] = "requestId";
 

@@ -18,24 +18,9 @@
  * limitations under the License.
  */
 
-#include "tunnel/net_channel.h"
-#include "tunnel/ws/web_socket_channel.h"
-#include "footstone/macros.h"
-#ifndef WIN32
-#include "tunnel/tcp/tcp_channel.h"
-#endif
+#pragma once
 
-namespace hippy::devtools {
-std::shared_ptr<NetChannel> NetChannel::CreateChannel(const DevtoolsConfig& config) {
-  switch (config.tunnel) {
-    case Tunnel::kWebSocket:
-      return std::make_shared<WebSocketChannel>(config.ws_url);
-#ifndef WIN32
-    case Tunnel::kTcp:
-      return std::make_shared<TcpChannel>();
-#endif
-    default:
-      FOOTSTONE_UNREACHABLE();
-  }
-}
-}  // namespace hippy::devtools
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated"
+#include "nlohmann/json.hpp"
+#pragma clang diagnostic pop

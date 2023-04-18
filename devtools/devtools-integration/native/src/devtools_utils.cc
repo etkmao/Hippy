@@ -21,6 +21,8 @@
 #include "api/devtools_define.h"
 #include "devtools/devtools_utils.h"
 
+#include <string>
+
 namespace hippy::devtools {
 constexpr char kDefaultNodeName[] = "DefaultNode";
 constexpr char kAttributes[] = "attributes";
@@ -102,7 +104,17 @@ DomNodeLocation DevToolsUtil::GetNodeIdByDomLocation(const std::shared_ptr<DomNo
   return node_location;
 }
 
-DomPushNodePathMetas DevToolsUtil::GetPushNodeByPath(const std::shared_ptr<DomNode>& dom_node,
+#ifdef WIN32
+ static int strcasecmp(const char* s1, const char* s2) {
+  while (toupper((unsigned char)*s1) == toupper((unsigned char)*s2++))
+    if (*s1++ == '\0')
+      return 0;
+
+  return (toupper((unsigned char)*s1) - toupper((unsigned char)*--s2));
+}
+#endif  // WIN32
+
+ DomPushNodePathMetas DevToolsUtil::GetPushNodeByPath(const std::shared_ptr<DomNode>& dom_node,
                                                      std::vector<std::map<std::string, int32_t>> path) {
   auto temp_node = dom_node;
   DomPushNodePathMetas metas;

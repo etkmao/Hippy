@@ -22,6 +22,7 @@
 
 #include <ctime>
 #include <string>
+#include <chrono>
 #include "api/adapter/data/serializable.h"
 
 namespace hippy::devtools {

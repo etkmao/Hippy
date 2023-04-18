@@ -45,7 +45,7 @@ WebSocketChannel::WebSocketChannel(const std::string& ws_uri) {
 
 void WebSocketChannel::Connect(ReceiveDataHandler handler) {
   if (ws_uri_.empty()) {
-    FOOTSTONE_DLOG(ERROR) << kDevToolsTag << "websocket uri is empty, connect error";
+    FOOTSTONE_DLOG(INFO) << kDevToolsTag << "websocket uri is empty, connect error";
     return;
   }
   FOOTSTONE_DLOG(INFO) << kDevToolsTag << "websocket connect url:" << ws_uri_.c_str();
@@ -88,7 +88,7 @@ void WebSocketChannel::Send(const std::string& rsp_data) {
 
 void WebSocketChannel::Close(int32_t code, const std::string& reason) {
   if (!connection_hdl_.lock()) {
-    FOOTSTONE_DLOG(ERROR) << kDevToolsTag << "send message error, handler is null";
+    FOOTSTONE_DLOG(INFO) << kDevToolsTag << "send message error, handler is null";
     return;
   }
   FOOTSTONE_DLOG(INFO) << kDevToolsTag << "close websocket, code: %d, reason: " << code << reason.c_str();

@@ -37,7 +37,7 @@
 #include "module/domain_propos.h"
 #include "module/domain_register.h"
 #include "module/inspect_props.h"
-#include "nlohmann/json.hpp"
+#include "module/util/nlohmann_util.h"
 #include "tunnel/tunnel_service.h"
 
 namespace hippy::devtools {
