@@ -23,6 +23,7 @@
 #include <ctime>
 #include <string>
 #include <vector>
+#include <chrono>
 #include <unordered_map>
 #include "api/adapter/data/serializable.h"
 #include "api/notification/data/devtools_network_enum.h"
@@ -33,7 +34,7 @@ namespace hippy::devtools {
  * @see https://chromedevtools.github.io/devtools-protocol/tot/Network/#type-Initiator
  */
 struct Initiator : public Serializable {
-  std::string Serialize() const;
+  std::string Serialize() const override;
   /**
    * Type of this initiator. Allowed Values: parser, script, preload, SignedExchange, preflight, other
    */

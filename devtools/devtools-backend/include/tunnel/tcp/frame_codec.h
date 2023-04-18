@@ -20,6 +20,7 @@
 
 #pragma once
 
+#ifndef WIN32
 #include <endian.h>
 #include <functional>
 #include <vector>
@@ -63,3 +64,4 @@ class FrameCodec {
   std::vector<char> stream_buffer_ = std::vector<char>();
 };
 }  // namespace hippy::devtools
+#endif

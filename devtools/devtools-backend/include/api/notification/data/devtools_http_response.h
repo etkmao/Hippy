@@ -22,6 +22,7 @@
 
 #include <ctime>
 #include <string>
+#include <chrono>
 #include "api/adapter/data/serializable.h"
 #include "api/notification/data/devtools_http_request.h"
 #include "api/notification/data/devtools_network_enum.h"

@@ -22,11 +22,11 @@
 
 #include "footstone/logging.h"
 #include "module/domain_register.h"
-#include "nlohmann/json.hpp"
-#include "libbase64.h"
+#include "module/util/nlohmann_util.h"
+//#include "libbase64.h"
 
 namespace hippy::devtools {
-constexpr char kResponseBody[] = "body";
+//constexpr char kResponseBody[] = "body";
 constexpr char kResponseBase64Encoded[] = "base64Encoded";
 
 std::string NetworkDomain::GetDomainName() { return kFrontendKeyDomainNameNetwork; }
@@ -52,14 +52,14 @@ void NetworkDomain::GetResponseBody(const NetworkResponseBodyRequest& request) {
       auto is_encode_base64 = response.IsBodyBase64();
       auto body_data = response.GetBodyData();
       response_json[kResponseBase64Encoded] = is_encode_base64;
-      if (is_encode_base64) {
-        size_t out_len = 4 * ((body_data.length() + 2) / 3);
-        std::string encode_body(out_len, '\0');
-        base64_encode(body_data.c_str(), body_data.length(), encode_body.data(), &out_len, 0);
-        response_json[kResponseBody] = encode_body;
-      } else {
-        response_json[kResponseBody] = body_data;
-      }
+//      if (is_encode_base64) {
+//        size_t out_len = 4 * ((body_data.length() + 2) / 3);
+//        std::string encode_body(out_len, '\0');
+//        base64_encode(body_data.c_str(), body_data.length(), encode_body.data(), &out_len, 0);
+//        response_json[kResponseBody] = encode_body;
+//      } else {
+//        response_json[kResponseBody] = body_data;
+//      }
       ResponseResultToFrontend(request.GetId(), response_json.dump());
       response_map_.erase(find_response);
     }

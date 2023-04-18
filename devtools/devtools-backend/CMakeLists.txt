@@ -55,10 +55,10 @@ target_link_libraries(${PROJECT_NAME} PRIVATE footstone)
 # endregion
 
 # region base64
-InfraPackage_Add(base64
-        REMOTE "global_packages/base64/v0.5.0/git-repo.tgz"
-        LOCAL "third_party/base64")
-target_link_libraries(${PROJECT_NAME} PRIVATE base64)
+#InfraPackage_Add(base64
+#        REMOTE "global_packages/base64/v0.5.0/git-repo.tgz"
+#        LOCAL "third_party/base64")
+#target_link_libraries(${PROJECT_NAME} PRIVATE base64)
 # endregion
 
 # region asio
@@ -149,10 +149,14 @@ set(SOURCE_SET
     src/module/request/dom_push_nodes_request.cc
     src/module/request/dom_push_node_by_path_request.cc
     src/tunnel/net_channel.cc
-    src/tunnel/tcp/frame_codec.cc
-    src/tunnel/tcp/tcp_channel.cc
     src/tunnel/tunnel_service.cc
     src/tunnel/ws/web_socket_channel.cc
+)
+if (!WIN32)
+  list(APPEND SOURCE_SET
+    src/tunnel/tcp/frame_codec.cc
+    src/tunnel/tcp/tcp_channel.cc
     src/tunnel/tcp/socket.cc)
+endif ()
 target_sources(${PROJECT_NAME} PRIVATE ${SOURCE_SET})
 # endregion

@@ -31,6 +31,13 @@
 #pragma clang diagnostic ignored "-Wconversion"
 #pragma clang diagnostic ignored "-Wunknown-warning-option"
 #pragma clang diagnostic ignored "-Wextra"
+#pragma clang diagnostic ignored "-Wtautological-type-limit-compare"
+#pragma clang diagnostic ignored "-Wzero-as-null-pointer-constant"
+#pragma clang diagnostic ignored "-Wnonportable-system-include-path"
+#pragma clang diagnostic ignored "-Wlanguage-extension-token"
+#pragma clang diagnostic ignored "-Wcast-align"
+#pragma clang diagnostic ignored "-Wunused-private-field"
+#pragma clang diagnostic ignored "-Wsuggest-override"
 #define ASIO_STANDALONE
 #include "websocketpp/client.hpp"
 #include "websocketpp/config/asio_no_tls_client.hpp"
@@ -75,7 +82,7 @@ namespace detail {
  */
 template<typename Exception>
 inline void throw_exception(const Exception &e) {
-  FOOTSTONE_DLOG(ERROR) << " asio exception:" << e.what();
+  FOOTSTONE_DLOG(INFO) << " asio exception:" << e.what();
 }
 } // namespace detail
 } // namespace asio
