@@ -20,6 +20,8 @@
 
 #pragma once
 
+#ifndef WIN32
+
 #include <netinet/in.h>
 #include <list>
 #include <mutex>
@@ -58,3 +60,5 @@ class TcpChannel : public hippy::devtools::NetChannel, public std::enable_shared
   ReceiveDataHandler data_handler_;
 };
 }  // namespace hippy::devtools
+
+#endif

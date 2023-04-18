@@ -27,7 +27,7 @@ namespace hippy::devtools {
 constexpr const char *kLogSeverityNames[footstone::TDF_LOG_NUM_SEVERITIES] = {"INFO", "WARNING", "ERROR",
                                                                                     "FATAL"};
 constexpr char kSeverityUnknown[] = "UNKNOWN";
-const char *GetNameForLogSeverity(footstone::LogSeverity severity) {
+static const char *GetNameForLogSeverity(footstone::LogSeverity severity) {
   if (severity >= footstone::TDF_LOG_INFO && severity < footstone::TDF_LOG_NUM_SEVERITIES) {
     return kLogSeverityNames[severity];
   }
