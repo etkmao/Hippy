@@ -17,34 +17,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-cmake_minimum_required(VERSION 3.0)
 
-project(tdf)
+cmake_minimum_required(VERSION 3.14)
 
+project("devtools_integration")
+
+get_filename_component(PROJECT_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../.." REALPATH)
+
+set(CMAKE_CXX_STANDARD 17)
+
+# region library
 add_library(${PROJECT_NAME} INTERFACE)
-target_include_directories(${PROJECT_NAME}
-  INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/include"
-)
+# endregion
 
-macro(AddLinkLibrary name)
-  set(LIB_NAME "${PROJECT_NAME}_${name}")
-  add_library(${LIB_NAME} STATIC IMPORTED)
-  set_property(TARGET ${LIB_NAME} PROPERTY
-    IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/lib/${name}.lib")
-  target_link_libraries(${PROJECT_NAME}
-    INTERFACE ${LIB_NAME})
-endmacro()
-
-AddLinkLibrary(tdfui)
-AddLinkLibrary(tdfcore)
-AddLinkLibrary(tdfmetric)
-AddLinkLibrary(skia)
-AddLinkLibrary(tdfshaper)
-AddLinkLibrary(tgfx)
-AddLinkLibrary(giflib)
-AddLinkLibrary(tdfcodec)
-AddLinkLibrary(libEGL.dll)
-AddLinkLibrary(libGLESv2.dll)
-AddLinkLibrary(TracyClient)
-
-target_link_libraries(tdf INTERFACE )
+# region devtools_integration
+add_subdirectory(${PROJECT_ROOT_DIR}/devtools/devtools-integration/native ${CMAKE_CURRENT_BINARY_DIR}/devtools-integration/native)
+target_link_libraries(${PROJECT_NAME} INTERFACE devtools_integration_native)
+# endregion

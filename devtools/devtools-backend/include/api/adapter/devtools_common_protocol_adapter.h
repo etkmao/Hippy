@@ -21,7 +21,7 @@
 #pragma once
 
 #include <string>
-#include "nlohmann/json.hpp"
+#include "module/util/nlohmann_util.h"
 
 namespace hippy::devtools {
 /**

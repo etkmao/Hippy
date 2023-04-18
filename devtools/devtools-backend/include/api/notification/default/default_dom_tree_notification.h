@@ -29,7 +29,7 @@ class DefaultDomTreeNotification : public DomTreeNotification {
   using DocumentUpdateHandler = std::function<void()>;
   explicit DefaultDomTreeNotification(DocumentUpdateHandler document_update_Handler)
       : document_update_Handler_(std::move(document_update_Handler)) {}
-  inline void NotifyDocumentUpdate() { document_update_Handler_(); }
+  inline void NotifyDocumentUpdate() override { document_update_Handler_(); }
 
  private:
   DocumentUpdateHandler document_update_Handler_;

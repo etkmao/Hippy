@@ -5,8 +5,8 @@
 #include "footstone/macros.h"
 #include "footstone/worker_impl.h"
 #ifdef ENABLE_INSPECTOR
-#  include "devtools/devtools_data_source.h"
-#  include "devtools/vfs/devtools_handler.h"
+#include "devtools/devtools_data_source.h"
+#include "devtools/vfs/devtools_handler.h"
 #endif
 
 namespace hippy {
@@ -95,6 +95,14 @@ uint32_t FrameWork::CreateDevtools() {
   auto devtools_data_source = std::make_shared<hippy::devtools::DevtoolsDataSource>(ws_url, worker_manager);
   uint32_t id = devtools::DevtoolsDataSource::Insert(devtools_data_source);
   return id;
+}
+
+uint32_t FrameWork::CreateDevtools() {
+    std::string ws_url = "ws://127.0.0.1:38989/debugger-proxy?role=android_client&clientId=%s&hash=%s&contextName=%s";
+    auto worker_manager = std::make_shared<footstone::WorkerManager>(kPoolSize);
+    auto devtools_data_source = std::make_shared<hippy::devtools::DevtoolsDataSource>(ws_url, worker_manager);
+    uint32_t id = devtools::DevtoolsDataSource::Insert(devtools_data_source);
+    return id;
 }
 
 void FrameWork::CreateRenderManager() { render_manager_ = std::make_shared<hippy::render::tdf::TDFRenderManager>(); }

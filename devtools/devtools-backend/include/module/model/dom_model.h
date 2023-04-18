@@ -23,7 +23,7 @@
 #include <string>
 #include <vector>
 #include "module/model/base_model.h"
-#include "nlohmann/json.hpp"
+#include "module/util/nlohmann_util.h"
 
 namespace hippy::devtools {
 
