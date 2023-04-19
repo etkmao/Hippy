@@ -120,9 +120,9 @@ HP_EXTERN NSString *HippyBridgeModuleNameForClass(Class bridgeModuleClass);
 @property (nonatomic, strong) NSString *moduleName;
 
 /**
- * URL of the script that was first loaded into the bridge.
+ * URLs of the script that was loaded into the bridge.
  */
-@property (nonatomic, strong, readonly) NSURL *bundleURL;
+@property (nonatomic, copy, readonly) NSArray<NSURL *> *bundleURLs;
 
 /**
  * Set debug url for devtools
@@ -276,13 +276,13 @@ HP_EXTERN NSString *HippyBridgeModuleNameForClass(Class bridgeModuleClass);
  */
 @property (nonatomic, strong) NSURL *sandboxDirectory;
 
-/**
- * get absolute url string relative to param 'string'
- * @param string a relative url path to secondary bundle path
- */
-- (NSString *)absoluteStringFromHippyLocalFileURLString:(NSString *)string;
+#pragma mark event dispatcher
+- (void)sendEvent:(NSString *)eventName params:(NSDictionary *_Nullable)params;
 
-+ (BOOL)isHippyLocalFileURLString:(NSString *)string;
+#pragma mark snapshot
+- (NSData *)snapShotData;
+
+- (void)setSnapShotData:(NSData *)data;
 
 @end
 

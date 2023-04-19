@@ -33,7 +33,7 @@
 
 static NSString *const engineKey = @"Demo";
 
-@interface ViewController ()<HippyMethodInterceptorProtocol, HippyConvenientBridgeDelegate> {
+@interface ViewController ()<HippyMethodInterceptorProtocol, HippyBridgeDelegate> {
     HippyConvenientBridge *_connector;
 }
 
@@ -60,7 +60,6 @@ static NSString *const engineKey = @"Demo";
         NSLog(@"hippy says:%@ in file %@ at line %@", message, fileName, lineNumber);
     });
     [self runCommonDemo];
-    // [self runDemoWithoutRuntime];
 }
 
 - (void)runCommonDemo {
@@ -70,7 +69,7 @@ static NSString *const engineKey = @"Demo";
 #ifdef HIPPYDEBUG
     NSString *bundleStr = [HippyBundleURLProvider sharedInstance].bundleURLString;
     NSURL *bundleUrl = [NSURL URLWithString:bundleStr];
-    launchOptions = @{@"EnableTurbo": @(DEMO_ENABLE_TURBO), @"DebugMode": @(YES)};
+    launchOptions = @{@"EnableTurbo": @(DEMO_ENABLE_TURBO), @"DebugMode": @(YES), @"DebugURL": bundleUrl};
     sandboxDirectory = [bundleUrl URLByDeletingLastPathComponent];
 #else
     launchOptions = @{@"EnableTurbo": @(DEMO_ENABLE_TURBO)};
@@ -80,7 +79,7 @@ static NSString *const engineKey = @"Demo";
     _connector = [[HippyConvenientBridge alloc] initWithDelegate:self moduleProvider:nil extraComponents:nil launchOptions:launchOptions engineKey:engineKey];
     //set custom vfs loader
     _connector.sandboxDirectory = sandboxDirectory;
-    _connector.contextName = @"Hippy:Demo";
+    _connector.contextName = @"Demo";
     _connector.moduleName = @"Demo";
     _connector.methodInterceptor = self;
     [self mountConnector:_connector];
@@ -93,8 +92,8 @@ static NSString *const engineKey = @"Demo";
 #endif
 
 #ifdef HIPPYDEBUG
-    NSString *bundleStr = [HippyBundleURLProvider sharedInstance].bundleURLString;
-    NSURL *bundleUrl = [NSURL URLWithString:bundleStr];
+//    NSString *bundleStr = [HippyBundleURLProvider sharedInstance].bundleURLString;
+//    NSURL *bundleUrl = [NSURL URLWithString:bundleStr];
 #else
     NSString *commonBundlePath = [[NSBundle mainBundle] pathForResource:@"vendor.ios" ofType:@"js" inDirectory:@"res"];
     NSString *businessBundlePath = [[NSBundle mainBundle] pathForResource:@"index.ios" ofType:@"js" inDirectory:@"res"];
@@ -105,8 +104,8 @@ static NSString *const engineKey = @"Demo";
     [_connector setRootView:rootView];
     NSNumber *rootTag = [rootView componentTag];
 #ifdef HIPPYDEBUG
-    [connector loadBundleURL:bundleUrl completion:^(NSURL * _Nullable, NSError * _Nullable) {
-        NSLog(@"url %@ load finish", bundleStr);
+    [connector loadDebugBundleCompletion:^(NSURL * _Nullable url, NSError * _Nullable error) {
+        NSLog(@"url %@ load finish", url);
         [connector loadInstanceForRootViewTag:rootTag props:@{@"isSimulator": @(isSimulator)}];
     }];
 #else
@@ -121,16 +120,16 @@ static NSString *const engineKey = @"Demo";
     [self.view addSubview:rootView];
 }
 
-- (void)reload:(HippyConvenientBridge *)connector {
-    [self mountConnector:connector];
+- (void)reload:(HippyBridge *)bridge {
+    [self mountConnector:_connector];
 }
 
-- (void)removeRootView:(NSNumber *)rootTag connector:(HippyConvenientBridge *)connector {
+- (void)removeRootView:(NSNumber *)rootTag bridge:(HippyBridge *)bridge {
     [[[self.view subviews] firstObject] removeFromSuperview];
 }
 
-- (BOOL)shouldStartInspector:(HippyConvenientBridge *)connector {
-    return connector.bridge.debugMode;
+- (BOOL)shouldStartInspector:(HippyBridge *)bridge {
+    return bridge.debugMode;
 }
 
 - (BOOL)shouldInvokeWithModuleName:(NSString *)moduleName methodName:(NSString *)methodName arguments:(NSArray<id<HippyBridgeArgument>> *)arguments argumentsValues:(NSArray *)argumentsValue containCallback:(BOOL)containCallback {

@@ -64,6 +64,10 @@ void RootNode::RemoveEventListener(const std::string& name, uint64_t listener_id
   RemoveEvent(GetId(), name);
 }
 
+void RootNode::ReleaseResources() {
+  animation_manager_->RemoveVSyncEventListener();
+}
+
 void RootNode::CreateDomNodes(std::vector<std::shared_ptr<DomInfo>>&& nodes) {
   for (const auto& interceptor : interceptors_) {
     interceptor->OnDomNodeCreate(nodes);
@@ -368,6 +372,7 @@ void RootNode::DoAndFlushLayout(const std::shared_ptr<RenderManager>& render_man
 
 void RootNode::FlushDomOperations(const std::shared_ptr<RenderManager>& render_manager) {
   for (auto& dom_operation : dom_operations_) {
+    MarkLayoutNodeDirty(dom_operation.nodes);
     switch (dom_operation.op) {
       case DomOperation::Op::kOpCreate:
         render_manager->CreateRenderNode(GetWeakSelf(), std::move(dom_operation.nodes));
@@ -386,6 +391,22 @@ void RootNode::FlushDomOperations(const std::shared_ptr<RenderManager>& render_m
     }
   }
   dom_operations_.clear();
+}
+
+void RootNode::MarkLayoutNodeDirty(const std::vector<std::shared_ptr<DomNode>>& nodes) {
+  for (const auto& node: nodes) {
+    if (node && node->GetLayoutNode() && !node->GetLayoutNode()->HasParentEngineNode()) {
+      auto parent = node->GetParent();
+      while (parent) {
+        auto layout_node = parent->GetLayoutNode();
+        if (layout_node->HasParentEngineNode() && layout_node->HasMeasureFunction()) {
+          layout_node->MarkDirty();
+          break;
+        }
+        parent = parent->GetParent();
+      }
+    }
+  }
 }
 
 void RootNode::FlushEventOperations(const std::shared_ptr<RenderManager>& render_manager) {

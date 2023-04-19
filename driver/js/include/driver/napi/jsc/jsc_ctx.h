@@ -23,6 +23,7 @@
 #pragma once
 
 #include <JavaScriptCore/JavaScriptCore.h>
+#include <CoreFoundation/CoreFoundation.h>
 #include <stdio.h>
 
 #include <mutex>
@@ -52,9 +53,13 @@ class JSCCtxValue;
 struct ConstructorData {
   void* function_wrapper;
   std::shared_ptr<JSCCtxValue> prototype;
-  void* private_data;
   void* weak_callback_wrapper;
-  ConstructorData(void* func_wrapper, std::shared_ptr<JSCCtxValue>prototype): function_wrapper(func_wrapper), prototype(prototype), private_data(nullptr), weak_callback_wrapper(nullptr) {}
+  JSClassRef class_ref;
+  std::unordered_map<JSObjectRef, void*> object_data_map;
+  ConstructorData(void* func_wrapper, std::shared_ptr<JSCCtxValue>prototype, JSClassRef ref): function_wrapper(func_wrapper), prototype(prototype), weak_callback_wrapper(nullptr), class_ref(ref), object_data_map({}) {}
+  ~ConstructorData() {
+    JSClassRelease(class_ref);
+  }
 };
 
 class JSCCtx : public Ctx {
@@ -85,15 +90,15 @@ public:
     is_exception_handled_ = is_exception_handled;
   }
   
-  inline void SetName(const char *name) {
+  inline void SetName(const CFStringRef name) {
     if (!name) {
       return;
     }
-    JSStringRef js_name = JSStringCreateWithUTF8CString(name);
+    JSStringRef js_name = JSStringCreateWithCFString(name);
     JSGlobalContextSetName(context_, js_name);
     JSStringRelease(js_name);
   }
-  
+    
   virtual std::shared_ptr<CtxValue> DefineProxy(const std::unique_ptr<FunctionWrapper>& wrapper) override;
   
   virtual std::shared_ptr<CtxValue> DefineClass(string_view name,
@@ -193,7 +198,7 @@ public:
   virtual void SetExternalData(void* data) override;
   virtual void SetWeak(std::shared_ptr<CtxValue> value, const std::unique_ptr<WeakCallbackWrapper>& wrapper) override;
   
-  string_view GetExceptionMsg(const std::shared_ptr<CtxValue>& exception);
+  string_view GetExceptionMessage(const std::shared_ptr<CtxValue>& exception);
   void* GetPrivateData(const std::shared_ptr<CtxValue>& value);
   void SaveConstructorData(std::unique_ptr<ConstructorData> constructor_data);
   

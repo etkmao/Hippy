@@ -75,9 +75,9 @@ public class JsDriver implements Connector {
 
     public void initialize(byte[] globalConfig, boolean useLowMemoryMode,
             boolean enableV8Serialization, boolean isDevModule, NativeCallback callback,
-            long groupId, int domManagerId, V8InitParams v8InitParams, int devtoolsId) {
+            long groupId, int domManagerId, V8InitParams v8InitParams, int vfsId, int devtoolsId) {
         mInstanceId = onCreate(globalConfig, useLowMemoryMode, enableV8Serialization,
-                isDevModule, callback, groupId, domManagerId, v8InitParams, devtoolsId);
+                isDevModule, callback, groupId, domManagerId, v8InitParams, vfsId, devtoolsId);
     }
 
     public void onDestroy(boolean useLowMemoryMode, boolean isReload,
@@ -101,8 +101,8 @@ public class JsDriver implements Connector {
                 callback);
     }
 
-    public void loadInstance(byte[] buffer, int offset, int length) {
-        loadInstance(mInstanceId, buffer, offset, length);
+    public void loadInstance(byte[] buffer, int offset, int length, NativeCallback callback) {
+        loadInstance(mInstanceId, buffer, offset, length, callback);
     }
 
     public void unloadInstance(byte[] buffer, int offset, int length) {
@@ -129,12 +129,12 @@ public class JsDriver implements Connector {
 
     private native int onCreate(byte[] globalConfig, boolean useLowMemoryMode,
             boolean enableV8Serialization, boolean isDevModule, NativeCallback callback,
-            long groupId, int domManagerId, V8InitParams v8InitParams, int devtoolsId);
+            long groupId, int domManagerId, V8InitParams v8InitParams, int vfs_id, int devtoolsId);
 
     private native void onDestroy(int instanceId, boolean useLowMemoryMode, boolean isReload,
             NativeCallback callback);
 
-    private native void loadInstance(int instanceId, byte[] buffer, int offset, int length);
+    private native void loadInstance(int instanceId, byte[] buffer, int offset, int length, NativeCallback callback);
 
     private native void unloadInstance(int instanceId, byte[] buffer, int offset, int length);
 

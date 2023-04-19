@@ -39,6 +39,7 @@ jint CreateJsDriver(JNIEnv* j_env,
                     jlong j_group_id,
                     jint j_dom_manager_id,
                     jobject j_vm_init_param,
+                    jint j_vfs_id,
                     jint j_devtools_id);
 
 void DestroyJsDriver(JNIEnv* j_env,
@@ -53,7 +54,8 @@ void LoadInstance(JNIEnv* j_env,
                   jint j_runtime_id,
                   jbyteArray j_byte_array,
                   jint j_offset,
-                  jint j_length);
+                  jint j_length,
+                  jobject j_callback);
 
 void UnloadInstance(JNIEnv* j_env,
                     __unused jobject j_obj,

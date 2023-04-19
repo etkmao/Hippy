@@ -72,7 +72,6 @@ public class RenderNode {
     protected int mY;
     protected int mWidth;
     protected int mHeight;
-    protected int mIndex;
     protected final int mId;
     protected final int mRootId;
     protected final String mClassName;
@@ -202,19 +201,8 @@ public class RenderNode {
         return mHeight;
     }
 
-    public int getIndex() {
-        return mIndex;
-    }
-
-    public void setIndex(int index) {
-        mIndex = index;
-    }
-
-    protected int indexFromParent() {
-        if (mParent != null) {
-            return mParent.mChildren.indexOf(this);
-        }
-        return 0;
+    public int indexFromParent() {
+        return (mParent != null) ? mParent.mChildren.indexOf(this) : 0;
     }
 
     protected boolean isRoot() {
@@ -229,12 +217,23 @@ public class RenderNode {
         }
     }
 
+    public void resetChildIndex(RenderNode child, int index) {
+        if (mChildren.contains(child)) {
+            removeChild(child);
+            addChild(child, index);
+        }
+    }
+
     public boolean removeChild(@Nullable RenderNode node) {
         if (node != null) {
             node.mParent = null;
             return mChildren.remove(node);
         }
         return false;
+    }
+
+    public void addChild(@NonNull RenderNode node) {
+        addChild(node, mChildren.size());
     }
 
     public void addChild(@NonNull RenderNode node, int index) {
@@ -315,10 +314,14 @@ public class RenderNode {
     }
 
     public void onHostViewAttachedToWindow() {
+        LogUtils.d(TAG, "onHostViewAttachedToWindow: id " + mId + ", class name " + mClassName);
         for (int i = 0; i < getChildCount(); i++) {
             RenderNode child = getChildAt(i);
             if (child != null && child.getHostView() == null) {
-                child.onHostViewAttachedToWindow();
+                Component component = child.getComponent();
+                if (component != null) {
+                    component.onHostViewAttachedToWindow();
+                }
             }
         }
         if (mComponent != null) {
@@ -519,13 +522,51 @@ public class RenderNode {
         }
     }
 
-    public void checkPropsDifference(@NonNull Map<String, Object> newProps) {
-        if (mProps != null && !checkNodeFlag(FLAG_UPDATE_TOTAL_PROPS)) {
-            mPropsToUpdate = DiffUtils.diffMap(mProps, newProps);
-        } else {
-            mPropsToUpdate = newProps;
+    public static void resetProps(@NonNull Map<String, Object> props, @Nullable Map<String, Object> diffProps,
+            @Nullable List<Object> delProps) {
+        try {
+            if (diffProps != null) {
+                for (Map.Entry<String, Object> entry : diffProps.entrySet()) {
+                    props.put(entry.getKey(), entry.getValue());
+                }
+            }
+            if (delProps != null) {
+                for (Object key : delProps) {
+                    props.remove(key.toString());
+                }
+            }
+        } catch (Exception e) {
+            LogUtils.e(TAG, "updateProps error：" + e.getMessage());
         }
-        mProps = newProps;
+    }
+
+    public void checkPropsToUpdate(@Nullable Map<String, Object> diffProps,
+            @Nullable List<Object> delProps) {
+        if (mProps == null) {
+            mProps = new HashMap<>();
+        }
+        resetProps(mProps, diffProps, delProps);
+        if (!checkNodeFlag(FLAG_UPDATE_TOTAL_PROPS)) {
+            if (mPropsToUpdate == null) {
+                mPropsToUpdate = diffProps;
+            } else {
+                if (diffProps != null) {
+                    for (Map.Entry<String, Object> entry : diffProps.entrySet()) {
+                        mPropsToUpdate.put(entry.getKey(), entry.getValue());
+                    }
+                }
+            }
+            if (delProps != null) {
+                if (mPropsToUpdate == null) {
+                    mPropsToUpdate = new HashMap<>();
+                }
+                for (Object key : delProps) {
+                    mPropsToUpdate.put(key.toString(), null);
+                }
+            }
+        } else {
+            mPropsToUpdate = mProps;
+        }
     }
 
     public void updateEventListener(@NonNull Map<String, Object> newEvents) {

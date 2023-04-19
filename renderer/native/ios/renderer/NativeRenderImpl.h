@@ -27,6 +27,7 @@
 
 #include <memory>
 #include <unordered_map>
+#include <functional>
 
 @class NativeRenderAnimationViewParams, NativeRenderObjectView, NativeRenderImpl,NativeRenderViewManager;
 @class NativeRenderReusePool, NativeRenderComponentMap;
@@ -163,8 +164,11 @@ class HippyValue;
 - (void)renderMoveViews:(const std::vector<int32_t> &&)ids
           fromContainer:(int32_t)fromContainer
             toContainer:(int32_t)toContainer
+                  index:(int32_t)index
              onRootNode:(std::weak_ptr<hippy::RootNode>)rootNode;
 
+- (void)renderMoveNodes:(std::vector<std::shared_ptr<hippy::DomNode>> &&)nodes
+             onRootNode:(std::weak_ptr<hippy::RootNode>)rootNode;
 /**
  * update layout for view
  *

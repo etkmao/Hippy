@@ -21,18 +21,22 @@ import static com.tencent.renderer.NativeRenderException.ExceptionCode.ON_CREATE
 
 import android.text.TextUtils;
 import android.view.View;
+import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.tencent.mtt.hippy.uimanager.ControllerManager;
 import com.tencent.mtt.hippy.uimanager.RenderManager;
+import com.tencent.mtt.hippy.utils.LogUtils;
 import com.tencent.mtt.hippy.views.list.IRecycleItemTypeChange;
 import com.tencent.renderer.NativeRenderException;
 import com.tencent.renderer.utils.MapUtils;
+import java.util.List;
 import java.util.Map;
 
 public class ListItemRenderNode extends RenderNode {
 
+    private static final String TAG = "ListItemRenderNode";
     public static final String ITEM_VIEW_TYPE = "type";
     public static final String ITEM_STICKY = "sticky";
     public static final String ITEM_VIEW_TYPE_NEW = "itemViewType";
@@ -95,6 +99,20 @@ public class ListItemRenderNode extends RenderNode {
         removeView();
     }
 
+    public void onBindViewHolder(@NonNull View itemView) {
+        if (itemView.getId() != mId) {
+            return;
+        }
+        View hostView = getHostView();
+        if (hostView == null) {
+            mControllerManager.addView(mRootId, itemView);
+            setHostView(itemView);
+            setLazy(false);
+            prepareHostViewRecursive();
+            mountHostViewRecursive();
+        }
+    }
+
     public void onBindViewHolder(@NonNull RenderNode fromNode, @NonNull View itemView) {
         if (!TextUtils.equals(fromNode.getClassName(), mClassName)
                 || fromNode.getId() != itemView.getId()) {
@@ -105,6 +123,17 @@ public class ListItemRenderNode extends RenderNode {
                             + ", item view id " + itemView.getId());
             mControllerManager.getNativeRender().handleRenderException(exception);
             return;
+        }
+        if (getHostView() instanceof ViewGroup) {
+            // Due to the hippy recycler view default use stable ID, toNode do not have a host view
+            // under normal scrolling conditions. However, if there are list switching and move node
+            // scenarios, toNode may has a host view and the subview is not empty, so the subview
+            // must be cleared and recreated, otherwise it cannot be mounted to the new itemView,
+            // causing the item view to display blank.
+            int count = ((ViewGroup) getHostView()).getChildCount();
+            if (count > 0) {
+                removeChildrenView(this);
+            }
         }
         removeChildrenView(fromNode);
         fromNode.setLazy(true);
@@ -141,17 +170,18 @@ public class ListItemRenderNode extends RenderNode {
     }
 
     @Override
-    public void checkPropsDifference(@NonNull Map<String, Object> newProps) {
+    public void checkPropsToUpdate(@Nullable Map<String, Object> diffProps,
+            @Nullable List<Object> delProps) {
         int oldType = mProps != null ? getItemViewType(mProps) : 0;
-        int newType = getItemViewType(newProps);
+        super.checkPropsToUpdate(diffProps, delProps);
+        int newType = mProps != null ? getItemViewType(mProps) : 0;
         if (mRecycleItemTypeChangeListener != null && oldType != newType) {
             mRecycleItemTypeChangeListener.onRecycleItemTypeChanged(oldType, newType, this);
         }
-        Object stickyObj = newProps.get(ITEM_STICKY);
+        Object stickyObj = mProps.get(ITEM_STICKY);
         if (stickyObj instanceof Boolean) {
             mShouldSticky = (Boolean) stickyObj;
         }
-        super.checkPropsDifference(newProps);
     }
 
     public int getItemViewType() {
@@ -177,11 +207,6 @@ public class ListItemRenderNode extends RenderNode {
             }
         }
         return Math.max(viewType, 0);
-    }
-
-    @Override
-    public int indexFromParent() {
-        return super.indexFromParent();
     }
 
     public void setRecycleItemTypeChangeListener(

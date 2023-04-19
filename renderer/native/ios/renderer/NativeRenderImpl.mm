@@ -372,8 +372,13 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
                 };
                 auto value = std::make_shared<footstone::HippyValue>([params toHippyValue]);
                 auto event = std::make_shared<DomEvent>("onSizeChanged", rootNode, NO, NO, value);
-                std::function<void()> func = [rootNode, event](){
+                __weak NativeRenderImpl *weakSelf = self;
+                std::function<void()> func = [weakSelf, rootNode, event, rootTag](){
                     rootNode->HandleEvent(event);
+                    NativeRenderImpl *strongSelf = weakSelf;
+                    if (strongSelf) {
+                        [strongSelf domEventDidHandle:"onSizeChanged" forNode:[rootTag intValue] onRoot:[rootTag intValue]];
+                    }
                 };
                 domManager->PostTask(hippy::Scene({func}));
                 if (_rootViewSizeChangedCb) {
@@ -755,7 +760,6 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
         NSNumber *componentTag = @(node->GetId());
         NativeRenderObjectView *renderObject = [_renderObjectRegistry componentForTag:componentTag onRootTag:rootNodeTag];
         if (NativeRenderCreationTypeInstantly == [renderObject creationType] && !_uiCreationLazilyEnabled) {
-            NSString *viewName = [NSString stringWithUTF8String:node->GetViewName().c_str()];
             [self addUIBlock:^(NativeRenderImpl *renderContext, __unused NSDictionary<NSNumber *,UIView *> *viewRegistry) {
                 UIView *view = [renderContext createViewFromRenderObject:renderObject];
                 view.nativeRenderObjectView = renderObject;
@@ -774,6 +778,7 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
                     UIView *subview = viewRegistry[@(subViewTags_[index])];
                     [superView insertNativeRenderSubview:subview atIndex:subViewIndices_[index]];
                 }
+                [superView clearSortedSubviews];
                 [superView didUpdateNativeRenderSubviews];
             }];
         }
@@ -818,6 +823,7 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
 #endif
     std::lock_guard<std::mutex> lock([self renderQueueLock]);
     NSNumber *rootTag = @(strongRootNode->GetId());
+    
     for (auto dom_node : nodes) {
         int32_t tag = dom_node->GetRenderInfo().id;
         NativeRenderObjectView *renderObject = [_renderObjectRegistry componentForTag:@(tag) onRootTag:rootTag];
@@ -825,25 +831,119 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
             [renderObject removeFromNativeRenderSuperview];
             [self purgeChildren:@[renderObject] onRootTag:rootTag fromRegistry:_renderObjectRegistry];
         }
-        __weak auto weakSelf = self;
-        [self addUIBlock:^(NativeRenderImpl *renderContext, NSDictionary<NSNumber *,__kindof UIView *> *viewRegistry) {
-            UIView *view = viewRegistry[@(tag)];
-            if (view) {
-                [view removeFromNativeRenderSuperview];
-                if (weakSelf) {
-                    auto strongSelf = weakSelf;
-                    [strongSelf purgeChildren:@[view] onRootTag:rootTag fromRegistry:strongSelf->_viewRegistry];
-                }
-            }
-        }];
     }
+    __weak NativeRenderImpl *weakSelf = self;
+    auto strongNodes = std::move(nodes);
+    [self addUIBlock:^(NativeRenderImpl *renderContext, NSDictionary<NSNumber *,__kindof UIView *> *viewRegistry) {
+        NativeRenderImpl *strongSelf = weakSelf;
+        if (!strongSelf) {
+            return;
+        }
+        NSMutableArray<UIView *> *parentViews = [NSMutableArray arrayWithCapacity:8];
+        NSMutableArray<UIView *> *views = [NSMutableArray arrayWithCapacity:8];
+        for (auto domNode : strongNodes) {
+            UIView *view = [viewRegistry objectForKey:@(domNode->GetId())];
+            if (!view) {
+                continue;
+            }
+            UIView *parentView = [view parentComponent];
+            if (!parentView) {
+                continue;
+            }
+            [parentViews addObject:parentView];
+            [view removeFromNativeRenderSuperview];
+            [views addObject:view];
+        }
+        [strongSelf purgeChildren:views onRootTag:rootTag fromRegistry:strongSelf->_viewRegistry];
+        for (UIView *view in parentViews) {
+            [view clearSortedSubviews];
+            [view didUpdateNativeRenderSubviews];
+        }
+    }];
 }
 
 - (void)renderMoveViews:(const std::vector<int32_t> &&)ids
           fromContainer:(int32_t)fromContainer
             toContainer:(int32_t)toContainer
+                  index:(int32_t)index
              onRootNode:(std::weak_ptr<hippy::RootNode>)rootNode {
-    NSAssert(NO, @"no implementation for this method");
+    auto strongRootNode = rootNode.lock();
+    if (!strongRootNode) {
+        return;
+    }
+    int32_t rootTag = strongRootNode->GetId();
+    
+    NativeRenderObjectView *fromObjectView = [_renderObjectRegistry componentForTag:@(fromContainer)
+                                                                          onRootTag:@(rootTag)];
+    NativeRenderObjectView *toObjectView = [_renderObjectRegistry componentForTag:@(toContainer)
+                                                                        onRootTag:@(rootTag)];
+    for (int32_t componentTag : ids) {
+        NativeRenderObjectView *view = [_renderObjectRegistry componentForTag:@(componentTag) onRootTag:@(rootTag)];
+        HPAssert(fromObjectView == [view parentComponent], @"parent of object view with tag %d is not object view with tag %d", componentTag, fromContainer);
+        [view removeFromNativeRenderSuperview];
+        [toObjectView insertNativeRenderSubview:view atIndex:index];
+    }
+    [fromObjectView didUpdateNativeRenderSubviews];
+    [toObjectView didUpdateNativeRenderSubviews];
+    auto strongTags = std::move(ids);
+    [self addUIBlock:^(NativeRenderImpl *renderContext, NSDictionary<NSNumber *,__kindof UIView *> *viewRegistry) {
+        UIView *fromView = [viewRegistry objectForKey:@(fromContainer)];
+        UIView *toView = [viewRegistry objectForKey:@(toContainer)];
+        for (int32_t tag : strongTags) {
+            UIView *view = [viewRegistry objectForKey:@(tag)];
+            if (!view) {
+                continue;
+            }
+            HPAssert(fromView == [view parentComponent], @"parent of object view with tag %d is not object view with tag %d", tag, fromContainer);
+            [view removeFromNativeRenderSuperview];
+            [toView insertNativeRenderSubview:view atIndex:index];
+        }
+        [fromView clearSortedSubviews];
+        [fromView didUpdateNativeRenderSubviews];
+        [toView clearSortedSubviews];
+        [toView didUpdateNativeRenderSubviews];
+    }];
+}
+
+- (void)renderMoveNodes:(std::vector<std::shared_ptr<hippy::DomNode>> &&)nodes
+             onRootNode:(std::weak_ptr<hippy::RootNode>)rootNode {
+    auto strongRootNode = rootNode.lock();
+    if (!strongRootNode) {
+        return;
+    }
+    int32_t rootTag = strongRootNode->GetId();
+    std::lock_guard<std::mutex> lock([self renderQueueLock]);
+    NativeRenderObjectView *parentObjectView = nil;
+    for (auto &node : nodes) {
+        int32_t index = node->GetRenderInfo().index;
+        int32_t componentTag = node->GetId();
+        NativeRenderObjectView *objectView = [_renderObjectRegistry componentForTag:@(componentTag) onRootTag:@(rootTag)];
+        HPAssert(!parentObjectView || parentObjectView == [objectView parentComponent], @"try to move object view on different parent object view");
+        if (!parentObjectView) {
+            parentObjectView = [objectView parentComponent];
+        }
+        [parentObjectView moveNativeRenderSubview:objectView toIndex:index];
+    }
+    [parentObjectView didUpdateNativeRenderSubviews];
+    auto strongNodes = std::move(nodes);
+    [self addUIBlock:^(NativeRenderImpl *renderContext, NSDictionary<NSNumber *,__kindof UIView *> *viewRegistry) {
+        UIView *superView = nil;
+        for (auto node : strongNodes) {
+            int32_t index = node->GetIndex();
+            int32_t componentTag = node->GetId();
+            UIView *view = [viewRegistry objectForKey:@(componentTag)];
+            if (!view) {
+                continue;
+            }
+            HPAssert(!superView || superView == [view parentComponent], @"try to move views on different parent views");
+            if (!superView) {
+                superView = [view parentComponent];
+            }
+            [superView moveNativeRenderSubview:view toIndex:index];
+        }
+        [superView clearSortedSubviews];
+        [superView didUpdateNativeRenderSubviews];
+    }];
 }
 
 - (void)updateNodesLayout:(const std::vector<std::tuple<int32_t, hippy::LayoutResult>> &)layoutInfos
@@ -1004,13 +1104,18 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
         auto weakDomManager = self.domManager;
         [self domNodeForComponentTag:node_id onRootNode:rootNode resultNode:^(std::shared_ptr<DomNode> node) {
             if (node) {
-                NSString *vsyncKey = [NSString stringWithFormat:@"%p%d", self, node_id];
+                //for kVSyncKey event, node is rootnode
+                NSString *vsyncKey = [NSString stringWithFormat:@"%p-%d", self, node_id];
                 auto event = std::make_shared<hippy::DomEvent>(name_, node);
+                std::weak_ptr<DomNode> weakNode = node;
                 [[RenderVsyncManager sharedInstance] registerVsyncObserver:^{
                     auto domManager = weakDomManager.lock();
                     if (domManager) {
-                        std::function<void()> func = [node, event](){
-                            node->HandleEvent(event);
+                        std::function<void()> func = [weakNode, event](){
+                            auto strongNode = weakNode.lock();
+                            if (strongNode) {
+                                strongNode->HandleEvent(event);
+                            }
                         };
                         domManager->PostTask(hippy::Scene({func}));
                     }
@@ -1068,6 +1173,7 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
                                                                        canBePreventedInCapturing, canBePreventedInBubbling,
                                                                        static_cast<std::shared_ptr<HippyValue>>(nullptr));
                         node->HandleEvent(event);
+                        [strongSelf domEventDidHandle:hippy::kClickEvent forNode:componentTag onRoot:root_id];
                     }
                 }];
             }
@@ -1098,6 +1204,7 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
                                                                        canBePreventedInCapturing, canBePreventedInBubbling,
                                                                        static_cast<std::shared_ptr<HippyValue>>(nullptr));
                         node->HandleEvent(event);
+                        [strongSelf domEventDidHandle:hippy::kLongClickEvent forNode:componentTag onRoot:root_id];
                     }
                 }];
             }
@@ -1132,6 +1239,7 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
                                                                        canBePreventedInCapturing, canBePreventedInBubbling,
                                                                        static_cast<std::shared_ptr<HippyValue>>(nullptr));
                         node->HandleEvent(event);
+                        [strongSelf domEventDidHandle:block_type forNode:componentTag onRoot:root_id];
                     }
                 }];
             }
@@ -1176,11 +1284,10 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
                         domValue["page_x"] = footstone::value::HippyValue(point.x);
                         domValue["page_y"] = footstone::value::HippyValue(point.y);
                         std::shared_ptr<footstone::value::HippyValue> value = std::make_shared<footstone::value::HippyValue>(domValue);
-                        if (node) {
-                            auto event = std::make_shared<DomEvent>(type_, node, canBePreventedInCapturing,
-                                                                    canBePreventedInBubbling,value);
-                           node->HandleEvent(event);
-                        }
+                        auto event = std::make_shared<DomEvent>(type_, node, canBePreventedInCapturing,
+                                                                canBePreventedInBubbling,value);
+                        node->HandleEvent(event);
+                        [strongSelf domEventDidHandle:type_ forNode:componentTag onRoot:root_id];
                     }
                 }];
             }
@@ -1205,15 +1312,17 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
         BOOL canBePreventedInCapturing = [view canBePreventedByInCapturing:type.c_str()];
         BOOL canBePreventedInBubbling = [view canBePreventInBubbling:type.c_str()];
         __weak id weakSelf = self;
+        std::string type_ = type;
         [view addViewEvent:event_type eventListener:^(CGPoint point) {
             id strongSelf = weakSelf;
             if (strongSelf) {
                 [strongSelf domNodeForComponentTag:componentTag onRootNode:rootNode resultNode:^(std::shared_ptr<DomNode> node) {
                     if (node) {
                         std::shared_ptr<HippyValue> domValue = std::make_shared<HippyValue>(true);
-                        auto event = std::make_shared<DomEvent>(type, node, canBePreventedInCapturing,
+                        auto event = std::make_shared<DomEvent>(type_, node, canBePreventedInCapturing,
                                                                 canBePreventedInBubbling, domValue);
                         node->HandleEvent(event);
+                        [strongSelf domEventDidHandle:type_ forNode:componentTag onRoot:root_id];
                     }
                 }];
             }
@@ -1248,7 +1357,8 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
        std::string name_ = eventName;
        [self domNodeForComponentTag:node_id onRootNode:rootNode resultNode:^(std::shared_ptr<DomNode> node) {
            if (node) {
-               NSString *vsyncKey = [NSString stringWithFormat:@"%p%d", self, node_id];
+               //for kVSyncKey event, node is rootnode
+               NSString *vsyncKey = [NSString stringWithFormat:@"%p-%d", self, node_id];
                [[RenderVsyncManager sharedInstance] unregisterVsyncObserverForKey:vsyncKey];
            }
        }];
@@ -1291,6 +1401,7 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
                             auto event = std::make_shared<DomEvent>(name_, domNode, canBePreventedInCapturing,
                                                                     canBePreventedInBubbling, domValue);
                             domNode->HandleEvent(event);
+                            [strongSelf domEventDidHandle:name_ forNode:node_id onRoot:root_id];
                         }
                     }];
                 }
@@ -1380,6 +1491,11 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
     _rootViewSizeChangedCb = cb;
 }
 
+- (void)domEventDidHandle:(const std::string &)eventName forNode:(int32_t)tag onRoot:(int32_t)rootTag {
+    
+}
+
+#pragma mark Debug Methods
 #if HP_DEBUG
 - (std::shared_ptr<hippy::DomNode>)domNodeForTag:(int32_t)dom_tag onRootNode:(int32_t)root_tag {
     auto find = _domNodesMap.find(root_tag);
