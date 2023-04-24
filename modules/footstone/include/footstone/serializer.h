@@ -93,7 +93,7 @@ class Serializer {
 
   void WriteString(const std::string& value);
 
-  void WriteDenseJSArray(const HippyValue::DomValueArrayType& dom_value);
+  void WriteDenseJSArray(const HippyValue::HippyValueArrayType& dom_value);
 
   void WriteJSObject(const HippyValue::HippyValueObjectType& dom_value);
 

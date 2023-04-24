@@ -109,7 +109,7 @@ void Serializer::WriteString(const std::string& value) {
   }
 }
 
-void Serializer::WriteDenseJSArray(const HippyValue::DomValueArrayType& dom_value) {
+void Serializer::WriteDenseJSArray(const HippyValue::HippyValueArrayType& dom_value) {
   uint32_t length = footstone::check::checked_numeric_cast<size_t, uint32_t>(dom_value.size());
 
   WriteTag(SerializationTag::kBeginDenseJSArray);

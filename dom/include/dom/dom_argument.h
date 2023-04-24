@@ -55,9 +55,9 @@ class DomArgument {
   bool ToObject(footstone::value::HippyValue& dom_value) const;
 
  private:
-  static bool ConvertObjectToBson(const footstone::value::HippyValue& dom_value, std::vector<uint8_t>& bson) ;
+  static bool ConvertObjectToBson(const footstone::value::HippyValue& dom_value, std::vector<uint8_t>& bson);
 
-  static bool ConvertBsonToObject(const std::vector<const uint8_t>& bson, footstone::value::HippyValue& dom_value) ;
+  static bool ConvertBsonToObject(const std::vector<uint8_t>& bson, footstone::value::HippyValue& dom_value);
 
   std::any data_;
   ArgumentType argument_type_;

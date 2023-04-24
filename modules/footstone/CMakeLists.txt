@@ -68,6 +68,10 @@ elseif (IOS)
       src/platform/ios/looper_driver.cc
       src/platform/ios/logging.cc
       src/platform/ios/worker_impl.cc)
+elseif (WIN32)
+  list(APPEND SOURCE_SET
+      src/platform/windows/logging.cc
+      src/platform/windows/worker_impl.cc)
 else ()
   message(FATAL_ERROR “Unsupported platform ${CMAKE_SYSTEM_NAME}”)
 endif ()
@@ -109,6 +113,7 @@ if (ANDROID)
 elseif (IOS)
   list(APPEND PUBLIC_HEADER_SET
       include/footstone/platform/ios/looper_driver.h)
+elseif (WIN32)
 else ()
   message(FATAL_ERROR “Unsupported platform ${CMAKE_SYSTEM_NAME}”)
 endif ()

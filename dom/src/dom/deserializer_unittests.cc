@@ -103,7 +103,7 @@ void CheckMap(footstone::value::HippyValue::HippyValueObjectType value) {
   }
 }
 
-void CheckArray(footstone::value::HippyValue::DomValueArrayType value) {
+void CheckArray(footstone::value::HippyValue::HippyValueArrayType value) {
   footstone::value::Serializer serializer;
   serializer.WriteHeader();
   serializer.WriteDenseJSArray(value);
@@ -205,14 +205,14 @@ TEST(DeserializerTest, Object) {
   footstone::value::HippyValue u32(1);
   footstone::value::HippyValue d(1.0);
   footstone::value::HippyValue str("腾讯");
-  footstone::value::HippyValue::DomValueArrayType array1;
+  footstone::value::HippyValue::HippyValueArrayType array1;
   array1.push_back(i32);
   array1.push_back(u32);
   array1.push_back(d);
   array1.push_back(str);
   CheckArray(array1);
 
-  footstone::value::HippyValue::DomValueArrayType array2;
+  footstone::value::HippyValue::HippyValueArrayType array2;
   array2.push_back(i32);
   array2.push_back(u32);
   array2.push_back(d);

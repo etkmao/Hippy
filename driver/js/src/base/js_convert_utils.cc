@@ -64,7 +64,7 @@ std::shared_ptr<HippyValue> ToDomValue(const std::shared_ptr<Ctx>& ctx, const st
     return std::make_shared<HippyValue>(ret);
   } else if (ctx->IsArray(value)) {
     auto len = ctx->GetArrayLength(value);
-    HippyValue::DomValueArrayType ret;
+    HippyValue::HippyValueArrayType ret;
     for (uint32_t i = 0; i < len; ++i) {
       auto value_obj = ToDomValue(ctx, ctx->CopyArrayElement(value, i));
       if (value_obj) {
@@ -134,11 +134,12 @@ std::shared_ptr<CtxValue> CreateCtxValue(const std::shared_ptr<Ctx>& ctx,
   } else if (value->IsArray()) {
     auto array = value->ToArrayChecked();
     auto len = array.size();
-    std::shared_ptr<CtxValue> argv[len];
+    std::vector<std::shared_ptr<CtxValue>> argv;
+    argv.resize(len);
     for (size_t i = 0; i < len; ++i) {
       argv[i] = CreateCtxValue(ctx, std::make_shared<HippyValue>(array[i]));
     }
-    return ctx->CreateArray(array.size(), argv);
+    return ctx->CreateArray(array.size(), len <=0 ? nullptr : &argv[0]);
   } else if (value->IsObject()) {
     auto obj = ctx->CreateObject();
     auto object = value->ToObjectChecked();

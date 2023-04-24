@@ -31,7 +31,7 @@ inline namespace timer {
 
   RepeatingTimer() = default;
   explicit RepeatingTimer(const std::shared_ptr<TaskRunner>& task_runner);
-  virtual ~RepeatingTimer();
+  virtual ~RepeatingTimer() override;
 
   RepeatingTimer(RepeatingTimer&) = delete;
   RepeatingTimer& operator=(RepeatingTimer&) = delete;

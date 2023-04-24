@@ -19,6 +19,48 @@
 #
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang") # based on LLVM 12
+  if(WIN32)
+    add_definitions(-DNOMINMAX)
+    add_definitions(-D_USE_MATH_DEFINES)
+    add_definitions(-D_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
+    set(COMPILE_OPTIONS
+        -Wno-c++98-compat
+        -Wno-c++98-compat-pedantic
+        -Wno-documentation
+        -Wno-documentation-unknown-command
+        -Wno-invalid-constexpr
+        -Wno-switch-enum
+        -Wno-covered-switch-default
+        -Wno-shadow-field
+        -Wno-shadow-uncaptured-local
+        -Wno-shadow-field-in-constructor
+        -Wno-undef
+        -Wno-reserved-identifier
+        -Wno-global-constructors
+        -Wno-exit-time-destructors
+        -Wno-missing-variable-declarations
+
+        # tdf warning
+        # -Wno-newline-eof
+        # -Wno-unused-parameter
+        # -Wno-float-equal
+        # -Wno-old-style-cast
+        # -Wno-gnu-zero-variadic-macro-arguments
+        # -Wno-double-promotion
+        # -Wno-non-virtual-dtor
+        # -Wno-ctad-maybe-unsupported
+        # -Wno-suggest-destructor-override
+        # -Wno-inconsistent-missing-destructor-override
+        # -Wno-duplicate-enum
+        # -Wno-extra-semi-stmt
+        # -Wno-implicit-exception-spec-mismatch
+
+        # warning group flags
+        -Werror
+        -Wall
+        # warning flags
+        -Os)
+  else()
   set(COMPILE_OPTIONS
       -fomit-frame-pointer
       -fno-threadsafe-statics
@@ -45,6 +87,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang") # based on LLVM 12
       --param=ssp-buffer-size=4
       -pipe
       -Os)
+  endif()
 
   if (ANDROID_NDK)
     # Android NDK default to -fno-addrsig

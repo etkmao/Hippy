@@ -64,10 +64,9 @@ void IdleTimer::RunUserTask() {
   if (!idle_task_) {
     return;
   }
-  IdleCbParam param = {
-      .did_time_out = true,
-      .res_time = TimeDelta::Zero()
-  };
+  IdleCbParam param = {};
+  param.did_time_out = true;
+  param.res_time = TimeDelta::Zero();
   idle_task_->Run(param);
   Stop();
 }

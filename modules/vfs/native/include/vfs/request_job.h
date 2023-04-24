@@ -21,6 +21,7 @@
 #pragma once
 
 #include <unordered_map>
+#include <functional>
 
 #include "footstone/string_view.h"
 #include "footstone/worker_manager.h"

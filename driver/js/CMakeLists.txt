@@ -92,7 +92,7 @@ if ("${JS_ENGINE}" STREQUAL "V8")
     endif ()
 
     InfraPackage_Add(V8
-        REMOTE "global_packages/v8/${V8_COMPONENT}/${V8_REMOTE_FILENAME}"
+        REMOTE "global_packages/v8/${V8_COMPONENT}/debug/${V8_REMOTE_FILENAME}"
         LOCAL "${V8_COMPONENT}")
 
     get_target_property(V8_AUX_DEPS v8 INTERFACE_V8_AUX_DEPS)
@@ -161,9 +161,15 @@ if ("${JS_ENGINE}" STREQUAL "V8")
           src/napi/v8/v8_try_catch.cc
           src/vm/v8/interrupt_queue.cc
           src/vm/v8/memory_module.cc
-          src/vm/v8/native_source_code_android.cc
           src/vm/v8/serializer.cc
           src/vm/v8/v8_vm.cc)
+  if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+    list(APPEND SOURCE_SET src/vm/v8/native_source_code_windows.cc)
+  elseif ("${CMAKE_SYSTEM_NAME}" STREQUAL "Android")
+    list(APPEND SOURCE_SET src/vm/v8/native_source_code_android.cc)
+  else()
+    message(FATAL_ERROR "Unsupported system ${CMAKE_SYSTEM_NAME}")
+  endif()
   if (NOT V8_WITHOUT_INSPECTOR)
     list(APPEND SOURCE_SET
             src/vm/v8/inspector/v8_channel_impl.cc
