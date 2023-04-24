@@ -9,11 +9,14 @@
 #include "vfs/handler/http_handler.h"
 #include "vfs/vfs_manager.h"
 #ifdef ENABLE_INSPECTOR
-#include "devtools/vfs/devtools_handler.h"
+#  include "devtools/vfs/devtools_handler.h"
 #endif  // ENABLE_INSPECTOR
 
 constexpr uint8_t kDispatcherSlot = 3;
+
 namespace hippy {
+inline namespace framework {
+inline namespace windows {
 
 constexpr char kHippyCurrentDirectoryKey[] = "__HIPPYCURDIR__";
 constexpr char kAssetSchema[] = "asset";
@@ -26,10 +29,14 @@ bool Driver::Initialize(std::shared_ptr<Context> context, std::shared_ptr<DomMan
                         std::shared_ptr<RootNode> root_node, uint32_t devtools_id) {
   if (module_dispatcher_ == nullptr) return false;
   module_dispatcher_->Initial();
+
   std::shared_ptr<hippy::V8VMInitParam> param = std::make_shared<hippy::V8VMInitParam>();
   if (config_->GetInitalHeapSize() != kInvalidInitialHeapSize)
     param->initial_heap_size_in_bytes = config_->GetInitalHeapSize();
   if (config_->GetMaximumHeapSize() != kInvalidMaximumHeapSize)
+    param->maximum_heap_size_in_bytes = config_->GetMaximumHeapSize();
+  V8BridgeUtils::SetOnThrowExceptionToJS([WEAK_THIS](const std::shared_ptr<Runtime>& runtime,
+                                                     const hippy::driver::napi::Ctx::string_view& desc,
                                                      const hippy::driver::napi::Ctx::string_view& stack) {
     DEFINE_AND_CHECK_SELF(Driver)
     if (self->exception_handler_) self->exception_handler_(runtime, desc, stack);
@@ -56,7 +63,6 @@ bool Driver::Initialize(std::shared_ptr<Context> context, std::shared_ptr<DomMan
   scope->SetDomManager(dom_manager);
   runtime->GetScope()->SetRootNode(root_node);
   runtime->SetData(kDispatcherSlot, module_dispatcher_);
-
 
   return true;
 }
