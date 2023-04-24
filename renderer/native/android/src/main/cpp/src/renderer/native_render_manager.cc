@@ -186,7 +186,7 @@ void NativeRenderManager::UpdateRenderNode(std::weak_ptr<RootNode> root_node,
     dom_node[kName] = footstone::value::HippyValue(nodes[i]->GetViewName());
 
     footstone::value::HippyValue::HippyValueObjectType diff_props;
-    footstone::value::HippyValue::DomValueArrayType del_props;
+    footstone::value::HippyValue::HippyValueArrayType del_props;
     auto diff = nodes[i]->GetDiffStyle();
     if (diff) {
       auto iter = diff->begin();
@@ -227,7 +227,7 @@ void NativeRenderManager::MoveRenderNode(std::weak_ptr<RootNode> root_node,
   serializer_->WriteHeader();
 
   auto len = nodes.size();
-  footstone::value::HippyValue::DomValueArrayType dom_node_array;
+  footstone::value::HippyValue::HippyValueArrayType dom_node_array;
   dom_node_array.resize(len);
   uint32_t pid;
   for (uint32_t i = 0; i < len; i++) {

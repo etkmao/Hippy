@@ -76,7 +76,7 @@ void HippyScreenAdapter::RemovePostFrameCallback(uint64_t id) {
 hippy::dom::DomArgument HippyScreenAdapter::makeFrameCallbackArgument(uint64_t id) const {
   footstone::value::HippyValue::HippyValueObjectType dom_value_object;
   dom_value_object[kFrameCallbackId] = footstone::value::HippyValue(static_cast<int32_t>(id));
-  footstone::value::HippyValue::DomValueArrayType dom_value_array;
+  footstone::value::HippyValue::HippyValueArrayType dom_value_array;
   dom_value_array.push_back(footstone::value::HippyValue(dom_value_object));
   footstone::value::HippyValue argument_dom_value(dom_value_array);
   hippy::dom::DomArgument argument(argument_dom_value);
@@ -123,7 +123,7 @@ hippy::dom::DomArgument HippyScreenAdapter::makeScreenRequestArgument(const Scre
   dom_value_object[kRequestMaxWidth] = footstone::value::HippyValue(request.req_width);
   dom_value_object[kRequestMaxHeight] = footstone::value::HippyValue(request.req_height);
   dom_value_object[kQuality] = footstone::value::HippyValue(request.quality);
-  footstone::value::HippyValue::DomValueArrayType dom_value_array;
+  footstone::value::HippyValue::HippyValueArrayType dom_value_array;
   dom_value_array.push_back(footstone::value::HippyValue(dom_value_object));
   footstone::value::HippyValue argument_dom_value(dom_value_array);
   hippy::dom::DomArgument argument(argument_dom_value);
