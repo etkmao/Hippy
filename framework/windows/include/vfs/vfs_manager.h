@@ -22,19 +22,26 @@
 
 #pragma once
 
-#include <functional>
-#include <string>
+#include <memory>
+#include <unordered_map>
+
+#include "vfs/uri_loader.h"
 
 namespace hippy {
-inline namespace windows {
 inline namespace framework {
-  virtual ~NetInfo() = default;
-  virtual bool Initial() = 0;
-  virtual void GetCurrentConnectivity() = 0;
-  virtual void SetCurrentConnectivityCallback(std::function<void(std::string network_info)> callback) = 0;
+inline namespace windows {
+
+class VfsManager {
+ public:
+  VfsManager() = default;
+  ~VfsManager() = default;
+  uint32_t CreateUriLoader();
+  std::shared_ptr<hippy::vfs::UriLoader> GetUriLoader(uint32_t id);
+
+ private:
+  std::unordered_map<uint32_t, std::shared_ptr<hippy::vfs::UriLoader>> uri_loader_map_;
 };
 
-}  // namespace adaptor
-}  // namespace framework
 }  // namespace windows
+}  // namespace framework
 }  // namespace hippy
