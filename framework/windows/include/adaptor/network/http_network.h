@@ -43,11 +43,7 @@ class HttpNetwork : public Network {
   HttpNetwork& operator=(HttpNetwork&&) = delete;
 
   virtual bool Initial() override;
-<<<<<<< HEAD
   virtual void Fetch(const std::shared_ptr<UriLoader>& uri_loader, const std::string& uri,
-=======
-  virtual void Fetch(const std::shared_ptr<UriLoader>& uri_loader, const std::string& url,
->>>>>>> e7dd328ac (feat(windows): refactor windows framework)
                      const footstone::value::HippyValue& request, std::function<void(std::string)> callback) override;
   virtual void GetCookie(const std::string& url, std::function<void(footstone::value::HippyValue)> callback) override;
   virtual void SetCookie(const footstone::value::HippyValue& request) override;
