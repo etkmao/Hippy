@@ -20,6 +20,8 @@
  *
  */
 
+#pragma clang diagnostic ignored "-Wunused-parameter"
+
 #include "dom/layer_optimized_render_manager.h"
 
 #include <unordered_set>
@@ -191,57 +193,60 @@ bool LayerOptimizedRenderManager::CheckStyleJustLayout(const std::shared_ptr<Dom
       continue;
     }
 
+    auto equal_to = std::equal_to<double>();
+    auto not_equal_to = std::not_equal_to<double>();
+
     if (key == kOpacity) {
-      if (value->IsNull() || (value->IsNumber() && value->ToDoubleChecked() == 1)) {
+      if (value->IsNull() || (value->IsNumber() && equal_to(value->ToDoubleChecked(), 1))) {
         continue;
       }
     } else if (key == kBorderRadius) {
       const auto &background_color = style_map->find(kBackgroundColor);
       if (background_color != style_map->end() &&
           (*background_color).second->IsNumber() &&
-          (*background_color).second->ToDoubleChecked() != 0) {
+          not_equal_to((*background_color).second->ToDoubleChecked(), 0)) {
         return false;
       }
       const auto &border_width = style_map->find(kBorderWidth);
       if (border_width != style_map->end() &&
           (*border_width).second->IsNumber() &&
-          (*border_width).second->ToDoubleChecked() != 0) {
+          not_equal_to((*border_width).second->ToDoubleChecked(), 0)) {
         return false;
       }
     } else if (key == kBorderLeftColor) {
-      if (value->IsNumber() && value->ToDoubleChecked() == 0) {
+      if (value->IsNumber() && equal_to(value->ToDoubleChecked(), 0)) {
         continue;
       }
     } else if (key == kBorderRightColor) {
-      if (value->IsNumber() && value->ToDoubleChecked() == 0) {
+      if (value->IsNumber() && equal_to(value->ToDoubleChecked(), 0)) {
         continue;
       }
     } else if (key == kBorderTopColor) {
-      if (value->IsNumber() && value->ToDoubleChecked() == 0) {
+      if (value->IsNumber() && equal_to(value->ToDoubleChecked(), 0)) {
         continue;
       }
     } else if (key == kBorderBottomColor) {
-      if (value->IsNumber() && value->ToDoubleChecked() == 0) {
+      if (value->IsNumber() && equal_to(value->ToDoubleChecked(), 0)) {
         continue;
       }
     } else if (key == kBorderWidth) {
-      if (value->IsNull() || (value->IsNumber() && value->ToDoubleChecked() == 0)) {
+      if (value->IsNull() || (value->IsNumber() && equal_to(value->ToDoubleChecked(), 0))) {
         continue;
       }
     } else if (key == kBorderLeftWidth) {
-      if (value->IsNull() || (value->IsNumber() && value->ToDoubleChecked() == 0)) {
+      if (value->IsNull() || (value->IsNumber() && equal_to(value->ToDoubleChecked(), 0))) {
         continue;
       }
     } else if (key == kBorderTopWidth) {
-      if (value->IsNull() || (value->IsNumber() && value->ToDoubleChecked() == 0)) {
+      if (value->IsNull() || (value->IsNumber() && equal_to(value->ToDoubleChecked(), 0))) {
         continue;
       }
     } else if (key == kBorderRightWidth) {
-      if (value->IsNull() || (value->IsNumber() && value->ToDoubleChecked() == 0)) {
+      if (value->IsNull() || (value->IsNumber() && equal_to(value->ToDoubleChecked(), 0))) {
         continue;
       }
     } else if (key == kBorderBottomWidth) {
-      if (value->IsNull() || (value->IsNumber() && value->ToDoubleChecked() == 0)) {
+      if (value->IsNull() || (value->IsNumber() && equal_to(value->ToDoubleChecked(), 0))) {
         continue;
       }
     }

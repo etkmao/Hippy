@@ -30,8 +30,8 @@ inline namespace runtime {
 inline namespace inspector {
 
 void V8ChannelImpl::sendResponse(
-    int callId,
-    std::unique_ptr<v8_inspector::StringBuffer> message) {
+    [[maybe_unused]] int callId,
+    [[maybe_unused]] std::unique_ptr<v8_inspector::StringBuffer> message) {
 #ifdef ENABLE_INSPECTOR
   if (devtools_data_source_) {
     devtools_data_source_->SendVmResponse(std::move(message));
@@ -40,7 +40,7 @@ void V8ChannelImpl::sendResponse(
 }
 
 void V8ChannelImpl::sendNotification(
-    std::unique_ptr<v8_inspector::StringBuffer> message) {
+    [[maybe_unused]] std::unique_ptr<v8_inspector::StringBuffer> message) {
 #ifdef ENABLE_INSPECTOR
   if (devtools_data_source_) {
     devtools_data_source_->SendVmNotification(std::move(message));

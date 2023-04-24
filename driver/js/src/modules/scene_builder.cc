@@ -52,7 +52,6 @@ using RegisterFunction = hippy::base::RegisterFunction;
 using RegisterMap = hippy::base::RegisterMap;
 
 constexpr char kNodePropertyPid[] = "pId";
-constexpr char kNodePropertyIndex[] = "index";
 constexpr char kNodePropertyViewName[] = "name";
 constexpr char kNodePropertyTagName[] = "tagName";
 constexpr char kNodePropertyProps[] = "props";
@@ -69,8 +68,9 @@ namespace hippy {
 inline namespace driver {
 inline namespace module {
 
-std::tuple<bool, std::string, int32_t> GetNodeId(const std::shared_ptr<Ctx> &context,
-                                                 const std::shared_ptr<CtxValue> &node) {
+static std::tuple<bool, std::string, int32_t> GetNodeId(
+    const std::shared_ptr<Ctx> &context,
+    const std::shared_ptr<CtxValue> &node) {
   // parse id
   std::shared_ptr<CtxValue> id_value = context->GetProperty(node, hippy::kNodeId);
   if (!id_value) {
@@ -84,8 +84,9 @@ std::tuple<bool, std::string, int32_t> GetNodeId(const std::shared_ptr<Ctx> &con
   return std::make_tuple(true, "", id);
 }
 
-std::tuple<bool, std::string, int32_t> GetNodePid(const std::shared_ptr<Ctx> &context,
-                                                  const std::shared_ptr<CtxValue> &node) {
+static std::tuple<bool, std::string, int32_t> GetNodePid(
+    const std::shared_ptr<Ctx> &context,
+    const std::shared_ptr<CtxValue> &node) {
   // parse pid
   std::shared_ptr<CtxValue> pid_value = context->GetProperty(node, kNodePropertyPid);
   if (!pid_value) {
@@ -99,24 +100,9 @@ std::tuple<bool, std::string, int32_t> GetNodePid(const std::shared_ptr<Ctx> &co
   return std::make_tuple(true, "", pid);
 }
 
-std::tuple<bool, std::string, int32_t> GetNodeIndex(const std::shared_ptr<Ctx> &context,
-                                                    const std::shared_ptr<CtxValue> &node) {
-  // parse index
-  std::shared_ptr<CtxValue> index_value = context->GetProperty(node, kNodePropertyIndex);
-  if (!index_value) {
-    return std::make_tuple(false, "Get property index failed", kInvalidValue);
-  }
-  int32_t index;
-  bool flag = context->GetValueNumber(index_value, &index);
-  if (!flag) {
-    return std::make_tuple(false, "Get index value failed", kInvalidValue);
-  }
-  return std::make_tuple(true, "", index);
-}
-
-std::tuple<bool, std::string, string_view>
-GetNodeViewName(const std::shared_ptr<Ctx> &context,
-                const std::shared_ptr<CtxValue> &node) {
+static std::tuple<bool, std::string, string_view> GetNodeViewName(
+    const std::shared_ptr<Ctx> &context,
+    const std::shared_ptr<CtxValue> &node) {
   // parse view_name
   std::shared_ptr<CtxValue> view_name_value = context->GetProperty(node, kNodePropertyViewName);
   if (!view_name_value) {
@@ -130,9 +116,9 @@ GetNodeViewName(const std::shared_ptr<Ctx> &context,
   return std::make_tuple(true, "", std::move(view_name));
 }
 
-std::tuple<bool, std::string, string_view>
-GetNodeTagName(const std::shared_ptr<Ctx> &context,
-               const std::shared_ptr<CtxValue> &node) {
+static std::tuple<bool, std::string, string_view> GetNodeTagName(
+    const std::shared_ptr<Ctx> &context,
+    const std::shared_ptr<CtxValue> &node) {
   // parse tag_name
   std::shared_ptr<CtxValue> tag_name_value = context->GetProperty(node, kNodePropertyTagName);
   if (!tag_name_value) {
@@ -146,8 +132,10 @@ GetNodeTagName(const std::shared_ptr<Ctx> &context,
   return std::make_tuple(true, "", std::move(tag_name));
 }
 
-std::tuple<bool, std::string, std::unordered_map<std::string, std::shared_ptr<HippyValue>>>
-GetNodeStyle(const std::shared_ptr<Ctx> &context,
+static std::tuple<bool,
+                  std::string,
+                  std::unordered_map<std::string, std::shared_ptr<HippyValue>>>
+GetNodeStyle([[maybe_unused]] const std::shared_ptr<Ctx> &context,
              std::unordered_map<std::string, HippyValue> &props) {
   std::unordered_map<std::string, std::shared_ptr<HippyValue>> ret;
   // parse style
@@ -165,9 +153,10 @@ GetNodeStyle(const std::shared_ptr<Ctx> &context,
   return std::make_tuple(false, "props does not contain style", std::move(ret));
 }
 
-std::tuple<bool, std::string,
-           std::unordered_map<std::string, std::shared_ptr<HippyValue>>>
-GetNodeExtValue(const std::shared_ptr<Ctx> &context,
+static std::tuple<bool,
+                  std::string,
+                  std::unordered_map<std::string, std::shared_ptr<HippyValue>>>
+GetNodeExtValue([[maybe_unused]] const std::shared_ptr<Ctx> &context,
                 std::unordered_map<std::string, HippyValue> &props) {
   std::unordered_map<std::string, std::shared_ptr<HippyValue>> dom_ext_map;
   // parse ext value
@@ -177,9 +166,10 @@ GetNodeExtValue(const std::shared_ptr<Ctx> &context,
   return std::make_tuple(true, "", std::move(dom_ext_map));
 }
 
-std::tuple<bool, std::string,
-           std::unordered_map<std::string, std::shared_ptr<HippyValue>>,
-           std::unordered_map<std::string, std::shared_ptr<HippyValue>>>
+static std::tuple<bool,
+                  std::string,
+                  std::unordered_map<std::string, std::shared_ptr<HippyValue>>,
+                  std::unordered_map<std::string, std::shared_ptr<HippyValue>>>
 GetNodeProps(const std::shared_ptr<Ctx> &context, const std::shared_ptr<CtxValue> &node) {
   std::unordered_map<std::string, std::shared_ptr<HippyValue>> style_map;
   std::unordered_map<std::string, std::shared_ptr<HippyValue>> dom_ext_map;
@@ -216,7 +206,7 @@ GetNodeProps(const std::shared_ptr<Ctx> &context, const std::shared_ptr<CtxValue
   return std::make_tuple(true, "", std::move(style_map), std::move(dom_ext_map));
 }
 
-std::tuple<bool, std::string, int32_t> GetNodeRefId(
+static std::tuple<bool, std::string, int32_t> GetNodeRefId(
     const std::shared_ptr<Ctx> &context,
     const std::shared_ptr<CtxValue> &node) {
   std::shared_ptr<CtxValue> id_value =
@@ -232,7 +222,7 @@ std::tuple<bool, std::string, int32_t> GetNodeRefId(
   return std::make_tuple(true, "", id);
 }
 
-std::tuple<bool, std::string, int32_t> GetNodeRelativeToRef(
+static std::tuple<bool, std::string, int32_t> GetNodeRelativeToRef(
     const std::shared_ptr<Ctx> &context,
     const std::shared_ptr<CtxValue> &node) {
   std::shared_ptr<CtxValue> id_value =
@@ -248,10 +238,10 @@ std::tuple<bool, std::string, int32_t> GetNodeRelativeToRef(
   return std::make_tuple(true, "", id);
 }
 
-std::tuple<bool, std::string, std::shared_ptr<DomNode>>
-CreateNode(const std::shared_ptr<Ctx> &context,
-           const std::shared_ptr<CtxValue> &node,
-           const std::shared_ptr<Scope> &scope) {
+static std::tuple<bool, std::string, std::shared_ptr<DomNode>> CreateNode(
+    const std::shared_ptr<Ctx> &context,
+    const std::shared_ptr<CtxValue> &node,
+    const std::shared_ptr<Scope> &scope) {
   std::shared_ptr<DomNode> dom_node = nullptr;
   auto id_tuple = GetNodeId(context, node);
   if (!std::get<0>(id_tuple)) {
@@ -285,21 +275,16 @@ CreateNode(const std::shared_ptr<Ctx> &context,
   auto ext = std::make_shared<std::unordered_map<std::string, std::shared_ptr<HippyValue>>>(
       std::move(std::get<3>(props_tuple)));
   FOOTSTONE_CHECK(!scope->GetDomManager().expired());
-  dom_node = std::make_shared<DomNode>(std::get<2>(id_tuple),
-                                       std::get<2>(pid_tuple),
-                                       0,
-                                       std::move(u8_tag_name),
-                                       std::move(u8_view_name),
-                                       style,
-                                       ext,
-                                       scope->GetRootNode());
+  dom_node = std::make_shared<DomNode>(
+      std::get<2>(id_tuple), std::get<2>(pid_tuple), 0, std::move(u8_tag_name),
+      std::move(u8_view_name), style, ext, scope->GetRootNode());
   return std::make_tuple(true, "", dom_node);
 }
 
-std::tuple<bool, std::string, std::shared_ptr<RefInfo>> CreateRefInfo(
+static std::tuple<bool, std::string, std::shared_ptr<RefInfo>> CreateRefInfo(
     const std::shared_ptr<Ctx> &context,
     const std::shared_ptr<CtxValue> &node,
-    const std::shared_ptr<Scope> &scope) {
+    [[maybe_unused]] const std::shared_ptr<Scope> &scope) {
   std::shared_ptr<RefInfo> ref_info = nullptr;
   auto ref_id_tuple = GetNodeRefId(context, node);
   if (!std::get<0>(ref_id_tuple)) {
@@ -315,7 +300,7 @@ std::tuple<bool, std::string, std::shared_ptr<RefInfo>> CreateRefInfo(
   return std::make_tuple(true, "", ref_info);
 }
 
-std::tuple<bool, std::string, std::shared_ptr<DomInfo>> CreateDomInfo(
+static std::tuple<bool, std::string, std::shared_ptr<DomInfo>> CreateDomInfo(
     const std::shared_ptr<Ctx> &context,
     const std::shared_ptr<CtxValue> &node,
     const std::shared_ptr<Scope> &scope) {
@@ -344,10 +329,10 @@ std::tuple<bool, std::string, std::shared_ptr<DomInfo>> CreateDomInfo(
   return std::make_tuple(true, "", dom_info);
 }
 
-std::tuple<bool, std::string, std::vector<std::shared_ptr<DomInfo>>> HandleJsValue(
-    const std::shared_ptr<Ctx> &context,
-    const std::shared_ptr<CtxValue> &nodes,
-    const std::shared_ptr<Scope> &scope) {
+static std::tuple<bool, std::string, std::vector<std::shared_ptr<DomInfo>>>
+HandleJsValue(const std::shared_ptr<Ctx> &context,
+              const std::shared_ptr<CtxValue> &nodes,
+              const std::shared_ptr<Scope> &scope) {
   uint32_t len = context->GetArrayLength(nodes);
   std::vector<std::shared_ptr<DomInfo>> dom_nodes;
   for (uint32_t i = 0; i < len; ++i) {
@@ -361,12 +346,11 @@ std::tuple<bool, std::string, std::vector<std::shared_ptr<DomInfo>>> HandleJsVal
   return std::make_tuple(true, "", std::move(dom_nodes));
 }
 
-
-
-void HandleEventListenerInfo(const std::shared_ptr<hippy::napi::Ctx> &context,
-                             const size_t argument_count,
-                             const std::shared_ptr<CtxValue> arguments[],
-                             Scope::EventListenerInfo& listener_info) {
+static void HandleEventListenerInfo(
+    const std::shared_ptr<hippy::napi::Ctx> &context,
+    const size_t argument_count,
+    const std::shared_ptr<CtxValue> arguments[],
+    Scope::EventListenerInfo &listener_info) {
   FOOTSTONE_DCHECK(argument_count == 4 || argument_count == 3);
 
   int32_t dom_id;
@@ -375,8 +359,9 @@ void HandleEventListenerInfo(const std::shared_ptr<hippy::napi::Ctx> &context,
 
   footstone::stringview::string_view str_view;
   ret = context->GetValueString(arguments[1], &str_view);
-  std::string event_name = StringViewUtils::ToStdString(StringViewUtils::ConvertEncoding(
-      str_view, string_view::Encoding::Utf8).utf8_value());
+  std::string event_name = StringViewUtils::ToStdString(
+      StringViewUtils::ConvertEncoding(str_view, string_view::Encoding::Utf8)
+          .utf8_value());
   FOOTSTONE_DCHECK(ret) << "get event name failed";
 
   listener_info.dom_id = static_cast<uint32_t>(dom_id);
@@ -403,17 +388,18 @@ std::shared_ptr<ClassTemplate<SceneBuilder>> RegisterSceneBuilder(const std::wea
   using SceneBuilder = hippy::dom::SceneBuilder;
   ClassTemplate<SceneBuilder> class_template;
   class_template.name = "SceneBuilder";
-  class_template.constructor = [](size_t argument_count,
-                                  const std::shared_ptr<CtxValue> arguments[]) -> std::shared_ptr<SceneBuilder> {
+  class_template.constructor = []([[maybe_unused]] size_t argument_count,
+                                  [[maybe_unused]] const std::shared_ptr<CtxValue> arguments[])
+      -> std::shared_ptr<SceneBuilder> {                                    
     return std::make_shared<SceneBuilder>();
   };
 
   FunctionDefine<SceneBuilder> create_func_def;
   create_func_def.name = "create";
-  create_func_def.cb = [weak_scope](
-      SceneBuilder* builder,
-      size_t argument_count,
-      const std::shared_ptr<CtxValue> arguments[]) -> std::shared_ptr<CtxValue> {
+  create_func_def.cb = [weak_scope](SceneBuilder *builder,
+                                    [[maybe_unused]] size_t argument_count,
+                                    [[maybe_unused]] const std::shared_ptr<CtxValue> arguments[])
+      -> std::shared_ptr<CtxValue> {
     auto scope = weak_scope.lock();
     if (scope) {
       auto ret = HandleJsValue(scope->GetContext(), arguments[0], scope);
@@ -425,14 +411,15 @@ std::shared_ptr<ClassTemplate<SceneBuilder>> RegisterSceneBuilder(const std::wea
 
   FunctionDefine<SceneBuilder> update_func_def;
   update_func_def.name = "update";
-  update_func_def.cb = [weak_scope](
-      SceneBuilder* builder,
-      size_t argument_count,
-      const std::shared_ptr<CtxValue> arguments[]) -> std::shared_ptr<CtxValue> {
+  update_func_def.cb = [weak_scope](SceneBuilder *builder,
+                                    [[maybe_unused]] size_t argument_count,
+                                    const std::shared_ptr<CtxValue> arguments[])
+      -> std::shared_ptr<CtxValue> {
     auto scope = weak_scope.lock();
     if (scope) {
       auto ret = HandleJsValue(scope->GetContext(), arguments[0], scope);
-      builder->Update(scope->GetDomManager(), scope->GetRootNode(), std::move(std::get<2>(ret)));
+      builder->Update(scope->GetDomManager(), scope->GetRootNode(),
+                      std::move(std::get<2>(ret)));
     }
     return nullptr;
   };
@@ -440,7 +427,8 @@ std::shared_ptr<ClassTemplate<SceneBuilder>> RegisterSceneBuilder(const std::wea
 
   FunctionDefine<SceneBuilder> move_func_def;
   move_func_def.name = "move";
-  move_func_def.cb = [weak_scope](SceneBuilder *builder, size_t argument_count,
+  move_func_def.cb = [weak_scope](SceneBuilder *builder,
+                                  [[maybe_unused]] size_t argument_count,
                                   const std::shared_ptr<CtxValue> arguments[])
       -> std::shared_ptr<CtxValue> {
     auto scope = weak_scope.lock();
@@ -469,15 +457,15 @@ std::shared_ptr<ClassTemplate<SceneBuilder>> RegisterSceneBuilder(const std::wea
             auto ref_info_tuple = CreateRefInfo(
                 context, context->CopyArrayElement(info, 1), scope);
             dom_infos.push_back(std::make_shared<DomInfo>(
-                std::make_shared<DomNode>(
-                    std::get<2>(id_tuple),
-                    std::get<2>(pid_tuple),
-                    scope->GetRootNode()),
+                std::make_shared<DomNode>(std::get<2>(id_tuple),
+                                          std::get<2>(pid_tuple),
+                                          scope->GetRootNode()),
                 std::get<2>(ref_info_tuple)));
           }
         }
       }
-      builder->Move(weak_dom_manager, scope->GetRootNode(), std::move(dom_infos));
+      builder->Move(weak_dom_manager, scope->GetRootNode(),
+                    std::move(dom_infos));
     }
     return nullptr;
   };
@@ -485,10 +473,10 @@ std::shared_ptr<ClassTemplate<SceneBuilder>> RegisterSceneBuilder(const std::wea
 
   FunctionDefine<SceneBuilder> delete_func_def;
   delete_func_def.name = "delete";
-  delete_func_def.cb = [weak_scope](
-      SceneBuilder* builder,
-      size_t argument_count,
-      const std::shared_ptr<CtxValue> arguments[]) -> std::shared_ptr<CtxValue> {
+  delete_func_def.cb = [weak_scope](SceneBuilder *builder,
+                                    [[maybe_unused]] size_t argument_count,
+                                    const std::shared_ptr<CtxValue> arguments[])
+      -> std::shared_ptr<CtxValue> {
     auto scope = weak_scope.lock();
     if (scope) {
       std::shared_ptr<CtxValue> nodes = arguments[0];
@@ -511,10 +499,9 @@ std::shared_ptr<ClassTemplate<SceneBuilder>> RegisterSceneBuilder(const std::wea
             return nullptr;
           }
           dom_infos.push_back(std::make_shared<DomInfo>(
-              std::make_shared<DomNode>(
-                  std::get<2>(id_tuple),
-                  std::get<2>(pid_tuple),
-                  scope->GetRootNode()),
+              std::make_shared<DomNode>(std::get<2>(id_tuple),
+                                        std::get<2>(pid_tuple),
+                                        scope->GetRootNode()),
               nullptr));
         }
       }
@@ -527,9 +514,9 @@ std::shared_ptr<ClassTemplate<SceneBuilder>> RegisterSceneBuilder(const std::wea
   FunctionDefine<SceneBuilder> add_event_listener_def;
   add_event_listener_def.name = "addEventListener";
   add_event_listener_def.cb = [weak_scope](
-      SceneBuilder* builder,
-      size_t argument_count,
-      const std::shared_ptr<CtxValue> arguments[]) -> std::shared_ptr<CtxValue> {
+                                  SceneBuilder *builder, size_t argument_count,
+                                  const std::shared_ptr<CtxValue> arguments[])
+      -> std::shared_ptr<CtxValue> {
     auto scope = weak_scope.lock();
     if (scope) {
       Scope::EventListenerInfo listener_info;
@@ -543,10 +530,10 @@ std::shared_ptr<ClassTemplate<SceneBuilder>> RegisterSceneBuilder(const std::wea
 
   FunctionDefine<SceneBuilder> remove_event_listener_def;
   remove_event_listener_def.name = "removeEventListener";
-  remove_event_listener_def.cb = [weak_scope](
-      SceneBuilder* builder,
-      size_t argument_count,
-      const std::shared_ptr<CtxValue> arguments[]) -> std::shared_ptr<CtxValue> {
+  remove_event_listener_def.cb =
+      [weak_scope](SceneBuilder *builder, size_t argument_count,
+                   const std::shared_ptr<CtxValue> arguments[])
+      -> std::shared_ptr<CtxValue> {
     auto scope = weak_scope.lock();
     if (scope) {
       Scope::EventListenerInfo listener_info;
@@ -558,13 +545,12 @@ std::shared_ptr<ClassTemplate<SceneBuilder>> RegisterSceneBuilder(const std::wea
   };
   class_template.functions.emplace_back(std::move(remove_event_listener_def));
 
-
   FunctionDefine<SceneBuilder> build_func_def;
   build_func_def.name = "build";
-  build_func_def.cb = [weak_scope](
-      SceneBuilder* builder,
-      size_t argument_count,
-      const std::shared_ptr<CtxValue> arguments[]) -> std::shared_ptr<CtxValue> {
+  build_func_def.cb = [weak_scope](SceneBuilder *builder,
+                                   [[maybe_unused]] size_t argument_count,
+                                   [[maybe_unused]] const std::shared_ptr<CtxValue> arguments[])
+      -> std::shared_ptr<CtxValue> {
     auto scope = weak_scope.lock();
     if (scope) {
       builder->Build(scope->GetDomManager(), scope->GetRootNode());
@@ -576,6 +562,6 @@ std::shared_ptr<ClassTemplate<SceneBuilder>> RegisterSceneBuilder(const std::wea
   return std::make_shared<ClassTemplate<SceneBuilder>>(std::move(class_template));
 }
 
-}
-}
-}
+}  // namespace module
+}  // namespace driver
+}  // namespace hippy

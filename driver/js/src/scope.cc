@@ -103,11 +103,12 @@ static void InternalBindingCallback(hippy::napi::CallbackInfo& info, void* data)
   }
   auto len = info.Length();
   auto argc = len > 1 ? (len - 1) : 0;
-  std::shared_ptr<CtxValue> rest_args[argc];
+  std::vector<std::shared_ptr<CtxValue>> rest_args;
+  rest_args.resize(argc);
   for (size_t i = 0; i < argc; ++i) {
     rest_args[i] = info[i + 1];
   }
-  auto js_object = module_object->BindFunction(scope, rest_args);
+  auto js_object = module_object->BindFunction(scope, argc <= 0 ? nullptr : &rest_args[0]);
   info.GetReturnValue()->Set(js_object);
 }
 

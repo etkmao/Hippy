@@ -100,13 +100,13 @@ struct ParseAnimationResult {
   int32_t cnt;
 };
 
-double DegreesToRadians(double degrees) {
+static double DegreesToRadians(double degrees) {
   return degrees * M_PI / 180;
 }
 
-std::shared_ptr<AnimationSet> ParseAnimationSet(
+static std::shared_ptr<AnimationSet> ParseAnimationSet(
     const std::shared_ptr<Ctx>& context,
-    size_t argument_count,
+    [[maybe_unused]] size_t argument_count,
     const std::shared_ptr<CtxValue> arguments[]) {
   auto set_obj = arguments[0];
   if (context->IsNullOrUndefined(set_obj)) {
@@ -160,9 +160,8 @@ std::shared_ptr<AnimationSet> ParseAnimationSet(
   return std::make_shared<AnimationSet>(std::move(ret));
 }
 
-std::shared_ptr<ParseAnimationResult> ParseAnimation(const std::shared_ptr<Ctx>& context,
-                                                     size_t argument_count,
-                                                     const std::shared_ptr<CtxValue> arguments[]) {
+static std::shared_ptr<ParseAnimationResult> ParseAnimation(const std::shared_ptr<Ctx>& context, size_t argument_count,
+                                                            const std::shared_ptr<CtxValue> arguments[]) {
   if (argument_count != kAnimationUpdateArgc) {
     return nullptr;
   }
@@ -325,8 +324,8 @@ RegisterAnimation(const std::weak_ptr<Scope>& weak_scope) {
   id_func_def.name = "getId";
   id_func_def.cb = [weak_scope](
       CubicBezierAnimation* animation,
-      size_t argument_count,
-      const std::shared_ptr<CtxValue> arguments[]) -> std::shared_ptr<CtxValue> {
+      [[maybe_unused]] size_t argument_count,
+      [[maybe_unused]] const std::shared_ptr<CtxValue> arguments[]) -> std::shared_ptr<CtxValue> {
     if (!animation) {
       return nullptr;
     }
@@ -343,8 +342,8 @@ RegisterAnimation(const std::weak_ptr<Scope>& weak_scope) {
   start_func_def.name = "start";
   start_func_def.cb = [weak_scope](
       CubicBezierAnimation* animation,
-      size_t argument_count,
-      const std::shared_ptr<CtxValue> arguments[]) -> std::shared_ptr<CtxValue> {
+      [[maybe_unused]] size_t argument_count,
+      [[maybe_unused]] const std::shared_ptr<CtxValue> arguments[]) -> std::shared_ptr<CtxValue> {
     if (!animation) {
       return nullptr;
     }
@@ -371,8 +370,8 @@ RegisterAnimation(const std::weak_ptr<Scope>& weak_scope) {
   destroy_func_def.name = "destroy";
   destroy_func_def.cb = [weak_scope](
       CubicBezierAnimation* animation,
-      size_t argument_count,
-      const std::shared_ptr<CtxValue> arguments[]) -> std::shared_ptr<CtxValue> {
+      [[maybe_unused]] size_t argument_count,
+      [[maybe_unused]] const std::shared_ptr<CtxValue> arguments[]) -> std::shared_ptr<CtxValue> {
     if (!animation) {
       return nullptr;
     }
@@ -399,8 +398,8 @@ RegisterAnimation(const std::weak_ptr<Scope>& weak_scope) {
   pause_func_def.name = "pause";
   pause_func_def.cb = [weak_scope](
       CubicBezierAnimation* animation,
-      size_t argument_count,
-      const std::shared_ptr<CtxValue> arguments[]) -> std::shared_ptr<CtxValue> {
+      [[maybe_unused]] size_t argument_count,
+      [[maybe_unused]] const std::shared_ptr<CtxValue> arguments[]) -> std::shared_ptr<CtxValue> {
     if (!animation) {
       return nullptr;
     }
@@ -427,8 +426,8 @@ RegisterAnimation(const std::weak_ptr<Scope>& weak_scope) {
   resume_func_def.name = "resume";
   resume_func_def.cb = [weak_scope](
       CubicBezierAnimation* animation,
-      size_t argument_count,
-      const std::shared_ptr<CtxValue> arguments[]) -> std::shared_ptr<CtxValue> {
+      [[maybe_unused]] size_t argument_count,
+      [[maybe_unused]] const std::shared_ptr<CtxValue> arguments[]) -> std::shared_ptr<CtxValue> {
     if (!animation) {
       return nullptr;
     }
@@ -621,8 +620,8 @@ RegisterAnimationSet(const std::weak_ptr<Scope>& weak_scope) {
   id_func_def.name = "getId";
   id_func_def.cb = [weak_scope](
       AnimationSet* animation_set,
-      size_t argument_count,
-      const std::shared_ptr<CtxValue> arguments[]) -> std::shared_ptr<CtxValue> {
+      [[maybe_unused]] size_t argument_count,
+      [[maybe_unused]] const std::shared_ptr<CtxValue> arguments[]) -> std::shared_ptr<CtxValue> {
     if (!animation_set) {
       return nullptr;
     }
@@ -639,8 +638,8 @@ RegisterAnimationSet(const std::weak_ptr<Scope>& weak_scope) {
   start_func_def.name = "start";
   start_func_def.cb = [weak_scope](
       AnimationSet* animation_set,
-      size_t argument_count,
-      const std::shared_ptr<CtxValue> arguments[]) -> std::shared_ptr<CtxValue> {
+      [[maybe_unused]] size_t argument_count,
+      [[maybe_unused]] const std::shared_ptr<CtxValue> arguments[]) -> std::shared_ptr<CtxValue> {
     if (!animation_set) {
       return nullptr;
     }
@@ -667,8 +666,8 @@ RegisterAnimationSet(const std::weak_ptr<Scope>& weak_scope) {
   destroy_func_def.name = "destroy";
   destroy_func_def.cb = [weak_scope](
       AnimationSet* animation_set,
-      size_t argument_count,
-      const std::shared_ptr<CtxValue> arguments[]) -> std::shared_ptr<CtxValue> {
+      [[maybe_unused]] size_t argument_count,
+      [[maybe_unused]] const std::shared_ptr<CtxValue> arguments[]) -> std::shared_ptr<CtxValue> {
     if (!animation_set) {
       return nullptr;
     }
@@ -695,8 +694,8 @@ RegisterAnimationSet(const std::weak_ptr<Scope>& weak_scope) {
   pause_func_def.name = "pause";
   pause_func_def.cb = [weak_scope](
       AnimationSet* animation_set,
-      size_t argument_count,
-      const std::shared_ptr<CtxValue> arguments[]) -> std::shared_ptr<CtxValue> {
+      [[maybe_unused]] size_t argument_count,
+      [[maybe_unused]] const std::shared_ptr<CtxValue> arguments[]) -> std::shared_ptr<CtxValue> {
     if (!animation_set) {
       return nullptr;
     }
@@ -723,8 +722,8 @@ RegisterAnimationSet(const std::weak_ptr<Scope>& weak_scope) {
   resume_func_def.name = "resume";
   resume_func_def.cb = [weak_scope](
       AnimationSet* animation_set,
-      size_t argument_count,
-      const std::shared_ptr<CtxValue> arguments[]) -> std::shared_ptr<CtxValue> {
+      [[maybe_unused]] size_t argument_count,
+      [[maybe_unused]] const std::shared_ptr<CtxValue> arguments[]) -> std::shared_ptr<CtxValue> {
     if (!animation_set) {
       return nullptr;
     }

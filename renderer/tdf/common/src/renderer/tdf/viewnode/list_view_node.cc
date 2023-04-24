@@ -129,7 +129,7 @@ void ListViewNode::CallFunction(const std::string &function_name,
   auto list_view = GetView<tdfcore::CustomLayoutView>();
   footstone::HippyValue value;
   param.ToObject(value);
-  footstone::value::HippyValue::DomValueArrayType dom_value_array;
+  footstone::value::HippyValue::HippyValueArrayType dom_value_array;
   auto result = value.ToArray(dom_value_array);
   FOOTSTONE_CHECK(result);
   if (!result) {

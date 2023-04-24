@@ -52,7 +52,8 @@ std::shared_ptr<ClassTemplate<DomEvent>> MakeEventClassTemplate(
   using DomEvent = hippy::dom::DomEvent;
   ClassTemplate<DomEvent> class_template;
   class_template.name = "Event";
-  class_template.constructor = [](size_t argument_count, const std::shared_ptr<CtxValue> arguments[]) -> std::shared_ptr<DomEvent> {
+  class_template.constructor = []([[maybe_unused]] size_t argument_count, 
+                                  [[maybe_unused]] const std::shared_ptr<CtxValue> arguments[]) -> std::shared_ptr<DomEvent> {
     auto event = DomEventWrapper::Get();
     DomEventWrapper::Release();
     return event;
@@ -61,10 +62,9 @@ std::shared_ptr<ClassTemplate<DomEvent>> MakeEventClassTemplate(
   // function
   FunctionDefine<DomEvent> stop_propagation;
   stop_propagation.name = "stopPropagation";
-  stop_propagation.cb = [weak_scope](
-      DomEvent* event, size_t argument_count,
-      const std::shared_ptr<CtxValue> arguments[])
-      -> std::shared_ptr<CtxValue> {
+  stop_propagation.cb = [weak_scope](DomEvent* event,
+                                     [[maybe_unused]] size_t argument_count,
+                                     [[maybe_unused]] const std::shared_ptr<CtxValue> arguments[]) -> std::shared_ptr<CtxValue> {
     event->StopPropagation();
     FOOTSTONE_LOG(INFO) << "stop propagation" << std::endl;
     return nullptr;
@@ -88,7 +88,7 @@ std::shared_ptr<ClassTemplate<DomEvent>> MakeEventClassTemplate(
     }
     return nullptr;
   };
-  type.setter = [](DomEvent* event, const std::shared_ptr<CtxValue>& value) {};
+  type.setter = []([[maybe_unused]] DomEvent* event, [[maybe_unused]] const std::shared_ptr<CtxValue>& value) {};
   class_template.properties.emplace_back(std::move(type));
 
   PropertyDefine<DomEvent> id;
@@ -113,7 +113,7 @@ std::shared_ptr<ClassTemplate<DomEvent>> MakeEventClassTemplate(
     std::shared_ptr<CtxValue> ctx_value = scope->GetContext()->CreateNumber(id);
     return ctx_value;
   };
-  id.setter = [](DomEvent* event, const std::shared_ptr<CtxValue>& value) {};
+  id.setter = []([[maybe_unused]] DomEvent* event, [[maybe_unused]] const std::shared_ptr<CtxValue>& value) {};
   class_template.properties.emplace_back(std::move(id));
 
   PropertyDefine<DomEvent> current_id;
@@ -138,7 +138,7 @@ std::shared_ptr<ClassTemplate<DomEvent>> MakeEventClassTemplate(
     std::shared_ptr<CtxValue> ctx_value = scope->GetContext()->CreateNumber(current_id);
     return ctx_value;
   };
-  current_id.setter = [](DomEvent* event, const std::shared_ptr<CtxValue>& value) {};
+  current_id.setter = []([[maybe_unused]] DomEvent* event, [[maybe_unused]] const std::shared_ptr<CtxValue>& value) {};
   class_template.properties.emplace_back(std::move(current_id));
 
   PropertyDefine<DomEvent> target;
@@ -163,7 +163,7 @@ std::shared_ptr<ClassTemplate<DomEvent>> MakeEventClassTemplate(
     std::shared_ptr<CtxValue> ctx_value = scope->GetContext()->CreateNumber(target_id);
     return ctx_value;
   };
-  target.setter = [](DomEvent* event, const std::shared_ptr<CtxValue>& value) {};
+  target.setter = []([[maybe_unused]] DomEvent* event, [[maybe_unused]] const std::shared_ptr<CtxValue>& value) {};
   class_template.properties.emplace_back(std::move(target));
 
   PropertyDefine<DomEvent> current_target;
@@ -188,7 +188,7 @@ std::shared_ptr<ClassTemplate<DomEvent>> MakeEventClassTemplate(
     std::shared_ptr<CtxValue> ctx_value = scope->GetContext()->CreateNumber(current_target_id);
     return ctx_value;
   };
-  current_target.setter = [](DomEvent* event, const std::shared_ptr<CtxValue>& value) {};
+  current_target.setter = []([[maybe_unused]] DomEvent* event, [[maybe_unused]] const std::shared_ptr<CtxValue>& value) {};
   class_template.properties.emplace_back(std::move(current_target));
 
   PropertyDefine<DomEvent> event_phase;
@@ -207,14 +207,14 @@ std::shared_ptr<ClassTemplate<DomEvent>> MakeEventClassTemplate(
     std::shared_ptr<CtxValue> ctx_value = scope->GetContext()->CreateNumber(event_phase_number);
     return ctx_value;
   };
-  event_phase.setter = [](DomEvent* event, const std::shared_ptr<CtxValue>& value) {};
+  event_phase.setter = []([[maybe_unused]] DomEvent* event, [[maybe_unused]] const std::shared_ptr<CtxValue>& value) {};
   class_template.properties.emplace_back(std::move(event_phase));
 
   PropertyDefine<DomEvent> params;
   params.name = "params";
   params.getter = [weak_scope](DomEvent* event) -> std::shared_ptr<CtxValue> {
     auto scope = weak_scope.lock();
-    if (!scope)  {
+    if (!scope) {
       return nullptr;
     }
     if (!event) {
@@ -228,12 +228,12 @@ std::shared_ptr<ClassTemplate<DomEvent>> MakeEventClassTemplate(
     }
     return ctx_value;
   };
-  params.setter = [](DomEvent* event, const std::shared_ptr<CtxValue>& value) {};
+  params.setter = []([[maybe_unused]] DomEvent* event, [[maybe_unused]] const std::shared_ptr<CtxValue>& value) {};
   class_template.properties.emplace_back(std::move(params));
 
   return std::make_shared<ClassTemplate<DomEvent>>(std::move(class_template));
 }
 
-} // namespace module
-} // namespace driver
-} // namespace hippy
+}  // namespace module
+}  // namespace driver
+}  // namespace hippy

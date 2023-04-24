@@ -42,7 +42,7 @@ class V8InspectorClientImpl : public v8_inspector::V8InspectorClient,
   using TaskRunner = footstone::TaskRunner;
 
   explicit V8InspectorClientImpl(std::weak_ptr<TaskRunner> runner): js_runner_(std::move(runner)) {}
-  ~V8InspectorClientImpl();
+  ~V8InspectorClientImpl() override;
 
   void CreateInspector(const std::shared_ptr<Scope>& scope);
 #if defined(ENABLE_INSPECTOR) && !defined(V8_WITHOUT_INSPECTOR)

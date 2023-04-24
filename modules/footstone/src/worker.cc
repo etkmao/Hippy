@@ -122,7 +122,7 @@ void Worker::Start(bool in_new_thread) {
   driver_->SetUnit([weak_self = GetSelf()]() {
     auto self = weak_self.lock();
     if (self) {
-      while(self->RunTask()){};
+      while(self->RunTask()){}
     }
   });
   if (in_new_thread) {
@@ -216,7 +216,7 @@ void Worker::Bind(std::list<std::vector<std::shared_ptr<TaskRunner>>> list) {
   driver_->Notify();
 }
 
-bool EraseRunnerNoLock(std::list<std::vector<std::shared_ptr<TaskRunner>>>& list,
+static bool EraseRunnerNoLock(std::list<std::vector<std::shared_ptr<TaskRunner>>>& list,
                        const std::shared_ptr<TaskRunner> &runner) {
   for (auto group_it = list.begin(); group_it != list.end(); ++group_it) {
     for (auto runner_it = group_it->begin(); runner_it != group_it->end(); ++runner_it) {
@@ -356,7 +356,7 @@ std::unique_ptr<Task> Worker::GetNextTask() {
 
   if (need_balance_) {
     {
-      std::scoped_lock lock(running_mutex_, pending_mutex_);
+      std::scoped_lock<std::mutex, std::mutex> lock(running_mutex_, pending_mutex_);
       BalanceNoLock();
     }
     need_balance_ = false;
@@ -392,10 +392,9 @@ std::unique_ptr<Task> Worker::GetNextTask() {
                       time = min_wait_time_]() {
           auto now = TimePoint::Now();
           bool did_time_out = now - begin_time > timeout;
-          IdleTask::IdleCbParam param = {
-              .did_time_out = did_time_out,
-              .res_time = time
-          };
+          IdleTask::IdleCbParam param = {};
+          param.did_time_out = did_time_out;
+          param.res_time = time;
           task->Run(param);
         }));
     return wrapper_idle_task;
