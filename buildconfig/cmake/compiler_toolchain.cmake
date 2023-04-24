@@ -41,19 +41,19 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang") # based on LLVM 12
         -Wno-missing-variable-declarations
 
         # tdf warning
-        # -Wno-newline-eof
-        # -Wno-unused-parameter
-        # -Wno-float-equal
-        # -Wno-old-style-cast
-        # -Wno-gnu-zero-variadic-macro-arguments
-        # -Wno-double-promotion
-        # -Wno-non-virtual-dtor
-        # -Wno-ctad-maybe-unsupported
-        # -Wno-suggest-destructor-override
-        # -Wno-inconsistent-missing-destructor-override
-        # -Wno-duplicate-enum
-        # -Wno-extra-semi-stmt
-        # -Wno-implicit-exception-spec-mismatch
+        -Wno-newline-eof
+        -Wno-unused-parameter
+        -Wno-float-equal
+        -Wno-old-style-cast
+        -Wno-gnu-zero-variadic-macro-arguments
+        -Wno-double-promotion
+        -Wno-non-virtual-dtor
+        -Wno-ctad-maybe-unsupported
+        -Wno-suggest-destructor-override
+        -Wno-inconsistent-missing-destructor-override
+        -Wno-duplicate-enum
+        -Wno-extra-semi-stmt
+        -Wno-implicit-exception-spec-mismatch
 
         # warning group flags
         -Werror
