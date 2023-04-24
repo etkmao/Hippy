@@ -32,6 +32,13 @@ std::size_t std::hash<string_view::u8string>::operator()(
 }
 #endif
 
+#if defined(_MSC_VER) && !defined(__cpp_char8_t)
+std::size_t std::hash<string_view::u8string>::operator()(
+  const footstone::stringview::string_view::u8string& value) const noexcept {
+  return std::hash<std::string>()(std::string(value.begin(), value.end()));
+}
+#endif
+
 std::size_t std::hash<string_view>::operator()(
   const footstone::string_view& value) const noexcept {
   switch (value.encoding_) {

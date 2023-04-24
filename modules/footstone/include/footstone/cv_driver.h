@@ -32,7 +32,7 @@ inline namespace runner {
 class CVDriver: public Driver {
  public:
   CVDriver() = default;
-  virtual ~CVDriver() = default;
+  virtual ~CVDriver() override = default;
 
   virtual void Notify() override;
   virtual void WaitFor(const TimeDelta& delta) override;

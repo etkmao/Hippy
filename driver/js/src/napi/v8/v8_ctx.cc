@@ -46,8 +46,9 @@ constexpr static int kExternalIndex = 0;
 constexpr static int kScopeWrapperIndex = 5;
 constexpr static int kExternalDataMapIndex = 6;
 
-void InvokePropertyCallback(v8::Local<v8::Name> property,
-                            const v8::PropertyCallbackInfo<v8::Value>& info) {
+static void InvokePropertyCallback(
+    v8::Local<v8::Name> property,
+    const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto isolate = info.GetIsolate();
   v8::HandleScope handle_scope(isolate);
   auto context = isolate->GetCurrentContext();
@@ -480,7 +481,8 @@ std::shared_ptr<CtxValue> V8Ctx::CallFunction(
   }
 
   v8::Function* v8_fn = v8::Function::Cast(*handle_value);
-  v8::Local<v8::Value> args[argument_count];
+  std::vector<v8::Local<v8::Value>> args;
+  args.resize(argument_count);
   for (size_t i = 0; i < argument_count; i++) {
     std::shared_ptr<V8CtxValue> argument =
         std::static_pointer_cast<V8CtxValue>(arguments[i]);
@@ -493,7 +495,7 @@ std::shared_ptr<CtxValue> V8Ctx::CallFunction(
   }
 
   v8::MaybeLocal<v8::Value> maybe_result = v8_fn->Call(
-      context, context->Global(), static_cast<int>(argument_count), args);
+      context, context->Global(), static_cast<int>(argument_count), argument_count <=0 ? nullptr : &args[0]);
 
   if (maybe_result.IsEmpty()) {
     FOOTSTONE_DLOG(INFO) << "maybe_result is empty";
@@ -1293,12 +1295,13 @@ std::shared_ptr<CtxValue> V8Ctx::NewInstance(const std::shared_ptr<CtxValue>& cl
   auto func = v8::Local<v8::Function>::Cast(cls_handle_value);
   v8::Local<v8::Object> instance;
   if (argc > 0 && argv) {
-    v8::Local<v8::Value> v8_argv[argc];
-    for (auto i = 0; i < argc; ++i) {
+    std::vector<v8::Local<v8::Value>> v8_argv;
+    v8_argv.resize(static_cast<size_t>(argc));
+    for (size_t i = 0; i < static_cast<size_t>(argc); ++i) {
       auto v8_value = std::static_pointer_cast<V8CtxValue>(argv[i]);
       v8_argv[i] = v8::Local<v8::Value>::New(isolate_, v8_value->global_value_);
     }
-    instance = func->NewInstance(context, argc, v8_argv).ToLocalChecked();
+    instance = func->NewInstance(context, argc, argc <= 0 ? nullptr : &v8_argv[0]).ToLocalChecked();
   } else {
     instance = func->NewInstance(context).ToLocalChecked();
   }

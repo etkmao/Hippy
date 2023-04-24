@@ -172,7 +172,7 @@ std::unique_ptr<Task> TaskRunner::GetNext() {
   TimePoint now = TimePoint::Now();
   std::unique_ptr<Task> task = popTaskFromDelayedQueueNoLock(now);
   {
-    std::scoped_lock lock(queue_mutex_, delay_mutex_);
+    std::scoped_lock<std::mutex, std::mutex> lock(queue_mutex_, delay_mutex_);
     while (task) {
       task_queue_.push(std::move(task));
       task = popTaskFromDelayedQueueNoLock(now);

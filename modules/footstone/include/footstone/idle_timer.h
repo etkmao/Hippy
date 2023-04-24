@@ -33,7 +33,7 @@ class IdleTimer : public BaseTimer {
 
   IdleTimer() = default;
   explicit IdleTimer(std::shared_ptr<TaskRunner> task_runner);
-  virtual ~IdleTimer();
+  virtual ~IdleTimer() override;
 
   IdleTimer(IdleTimer&) = delete;
   IdleTimer& operator=(IdleTimer&) = delete;

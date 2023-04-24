@@ -282,12 +282,13 @@ class Scope : public std::enable_shared_from_this<Scope> {
     class_template->constructor_wrapper = std::make_unique<FunctionWrapper>([](CallbackInfo& info, void* data) {
       auto class_template = reinterpret_cast<ClassTemplate<T>*>(data);
       auto len = info.Length();
-      std::shared_ptr<CtxValue> argv[len];
+      std::vector<std::shared_ptr<CtxValue>> argv;
+      argv.resize(len);
       for (size_t i = 0; i < len; i++) {
         argv[i] = info[i];
       }
       auto receiver = info.GetReceiver();
-      auto ret = class_template->constructor(static_cast<size_t>(len), argv);
+      auto ret = class_template->constructor(static_cast<size_t>(len), len <= 0 ? nullptr : &argv[0]);
       info.SetData(ret.get());
       class_template->holder_map.insert({ret.get(), ret});
 
@@ -341,12 +342,13 @@ class Scope : public std::enable_shared_from_this<Scope> {
       auto function = std::make_unique<FunctionWrapper>([](CallbackInfo& info, void* data) {
         auto function_define = reinterpret_cast<FunctionDefine<T>*>(data);
         auto len = info.Length();
-        std::shared_ptr<CtxValue> param[len];
+        std::vector<std::shared_ptr<CtxValue>> param;
+        param.resize(len);
         for (size_t i = 0; i < len; i++) {
           param[i] = info[i];
         }
         auto t = reinterpret_cast<T*>(info.GetData());
-        auto ret = (function_define->cb)(t, static_cast<size_t>(len), param);
+        auto ret = (function_define->cb)(t, static_cast<size_t>(len), len <= 0 ? nullptr : &param[0]);
         info.GetReturnValue()->Set(ret);
       }, function_define_pointer);
       properties.push_back(std::make_shared<PropertyDescriptor>(context_->CreateString(function_define_pointer->name),

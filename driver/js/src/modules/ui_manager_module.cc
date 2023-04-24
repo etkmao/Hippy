@@ -98,8 +98,7 @@ void UIManagerModule::CallUIFunction(CallbackInfo& info, void* data) {
               const std::shared_ptr<CtxValue> argus[] = {param};
               context->CallFunction(func, 1, argus);
             } else {
-              const std::shared_ptr<CtxValue> argus[] = {};
-              context->CallFunction(func, 0, argus);
+              context->CallFunction(func, 0, nullptr);
             }
             return;
           } else {

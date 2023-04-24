@@ -50,7 +50,7 @@ void AnimationManager::OnDomNodeUpdate(const std::vector<std::shared_ptr<DomInfo
   }
 }
 
-void AnimationManager::OnDomNodeMove(const std::vector<std::shared_ptr<DomInfo>>& nodes) {}
+void AnimationManager::OnDomNodeMove([[maybe_unused]] const std::vector<std::shared_ptr<DomInfo>>& nodes) {}
 
 void AnimationManager::OnDomNodeDelete(const std::vector<std::shared_ptr<DomInfo>>& nodes) {
   for (const std::shared_ptr<DomInfo>& node: nodes) {
@@ -153,7 +153,7 @@ void AnimationManager::FetchAnimationsFromObject(
 void AnimationManager::FetchAnimationsFromArray(HippyValue& value,
                                                 std::unordered_map<uint32_t, std::string>& result) {
   if (value.IsArray()) {
-    footstone::value::HippyValue::DomValueArrayType array;
+    footstone::value::HippyValue::HippyValueArrayType array;
     if (value.ToArray(array)) {
       for (auto& val: array) {
         if (val.IsObject()) {

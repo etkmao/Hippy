@@ -12,7 +12,7 @@ namespace testing {
 
 using HippyValue = footstone::value::HippyValue;
 using HippyValueObjectType = typename std::unordered_map<std::string, HippyValue>;
-using DomValueArrayType = typename std::vector<HippyValue>;
+using HippyValueArrayType = typename std::vector<HippyValue>;
 
 TEST(DomValueTest, Undefined) {
   HippyValue undefined = HippyValue::Undefined();
@@ -209,7 +209,7 @@ TEST(DomValueTest, kObject) {
   object_type["double"] = HippyValue(0.);
   object_type["string"] = HippyValue("string");
   object_type["object"] = HippyValueObjectType();
-  object_type["array"] = DomValueArrayType();
+  object_type["array"] = HippyValueArrayType();
 
   HippyValue dom_value(object_type);
   EXPECT_EQ(dom_value.GetType() == HippyValue::Type::kObject, true)
@@ -219,7 +219,7 @@ TEST(DomValueTest, kObject) {
 }
 
 TEST(DomValueTest, kArray) {
-  DomValueArrayType array_type;
+  HippyValueArrayType array_type;
   array_type.push_back(HippyValue::Undefined());
   array_type.push_back(HippyValue::Null());
   array_type.push_back(HippyValue(static_cast<int32_t>(0)));
@@ -227,7 +227,7 @@ TEST(DomValueTest, kArray) {
   array_type.push_back(HippyValue(0.));
   array_type.push_back(HippyValue("string"));
   array_type.push_back(HippyValue(HippyValueObjectType()));
-  array_type.push_back(HippyValue(DomValueArrayType()));
+  array_type.push_back(HippyValue(HippyValueArrayType()));
 
   HippyValue dom_value(array_type);
   EXPECT_EQ(dom_value.GetType() == HippyValue::Type::kArray, true)

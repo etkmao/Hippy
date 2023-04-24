@@ -57,7 +57,7 @@ void Serializer::ThrowDataCloneError(v8::Local<v8::String> message) {
   isolate_->ThrowException(v8::Exception::Error(message));
 }
 
-void* Serializer::ReallocateBufferMemory(void* old_buffer,
+void* Serializer::ReallocateBufferMemory([[maybe_unused]] void* old_buffer,
                                          size_t size,
                                          size_t* actual_size) {
   if (reused_buffer_.length() < size) {
@@ -67,7 +67,7 @@ void* Serializer::ReallocateBufferMemory(void* old_buffer,
   return static_cast<void*>(&reused_buffer_[0]);
 }
 
-void Serializer::FreeBufferMemory(void* buffer) {
+void Serializer::FreeBufferMemory([[maybe_unused]] void* buffer) {
   if (reused_buffer_.length() > kMaxReusedBuffersSize) {
     reused_buffer_.resize(0);
     reused_buffer_.shrink_to_fit();

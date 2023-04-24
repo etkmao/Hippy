@@ -24,6 +24,7 @@
 
 #ifdef _MSC_VER
 #pragma warning(disable : 26495)
+#pragma clang diagnostic ignored "-Winvalid-constexpr"
 #endif  // _MSC_VER
 
 #ifdef __cpp_char8_t
@@ -162,11 +163,27 @@ struct std::hash<footstone::stringview::string_view> {
   std::size_t operator()(const footstone::stringview::string_view& value) const noexcept;
 };
 
+#if defined(__GLIBC__) && !defined(__cpp_char8_t)
+template <>
+struct std::hash<footstone::stringview::string_view::u8string>
+    : public std::__hash_base<size_t, footstone::stringview::string_view::u8string> {
+  std::size_t operator()(
+      const footstone::stringview::string_view::u8string& value) const noexcept;
+};
+#endif
+
+#if defined(_MSC_VER) && !defined(__cpp_char8_t)
+template <>
+struct std::hash<footstone::stringview::string_view::u8string> {
+  std::size_t operator()(const footstone::stringview::string_view::u8string& value) const noexcept;
+};
+#endif
+
 inline namespace literals {
 inline namespace string_literals {
 [[nodiscard]] inline constexpr const footstone::stringview::string_view::char8_t_* operator "" _u8_ptr(
     const u8_type* u8, size_t) {
-  return (footstone::stringview::string_view::char8_t_*) u8;
+  return reinterpret_cast<const footstone::stringview::string_view::char8_t_*>(u8);
 }
 
 [[nodiscard]] inline const footstone::stringview::string_view operator "" _u8s(const u8_type* u8,

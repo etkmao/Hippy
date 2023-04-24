@@ -22,6 +22,7 @@
 
 #include <sys/stat.h>
 
+#include <algorithm>
 #include <any>
 #include <functional>
 #include <future>
@@ -109,7 +110,7 @@ int32_t V8BridgeUtils::InitInstance(bool enable_v8_serialization,
                                     const std::any& bridge,
                                     const RegisterFunction& scope_cb,
                                     const JsCallback& call_native_cb,
-                                    uint32_t devtools_id) {
+                                    [[maybe_unused]] uint32_t devtools_id) {
   auto runtime = std::make_shared<Runtime>(enable_v8_serialization, is_dev_module);
   runtime->SetData(kBridgeSlot, bridge);
   int32_t runtime_id = runtime->GetId();
@@ -343,18 +344,18 @@ bool V8BridgeUtils::RunScriptWithoutLoader(const std::shared_ptr<Runtime>& runti
   if (is_use_code_cache) {
     if (!StringViewUtils::IsEmpty(code_cache_content)) {
       auto func = [code_cache_path, code_cache_dir, code_cache_content] {
-        int check_dir_ret = HippyFile::CheckDir(code_cache_dir, F_OK);
+        int check_dir_ret = HippyFile::CheckDir(code_cache_dir);
         FOOTSTONE_DLOG(INFO) << "check_parent_dir_ret = " << check_dir_ret;
         if (check_dir_ret) {
-          HippyFile::CreateDir(code_cache_dir, S_IRWXU);
+          HippyFile::CreateDir(code_cache_dir);
         }
 
         size_t pos = StringViewUtils::FindLastOf(code_cache_path, EXTEND_LITERAL('/'));
         string_view code_cache_parent_dir = StringViewUtils::SubStr(code_cache_path, 0, pos);
-        int check_parent_dir_ret = HippyFile::CheckDir(code_cache_parent_dir, F_OK);
+        int check_parent_dir_ret = HippyFile::CheckDir(code_cache_parent_dir);
         FOOTSTONE_DLOG(INFO) << "check_parent_dir_ret = " << check_parent_dir_ret;
         if (check_parent_dir_ret) {
-          HippyFile::CreateDir(code_cache_parent_dir, S_IRWXU);
+          HippyFile::CreateDir(code_cache_parent_dir);
         }
 
         auto u8_code_cache_content = StringViewUtils::ToStdString(StringViewUtils::ConvertEncoding(

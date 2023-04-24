@@ -54,7 +54,7 @@ inline namespace render {
 inline namespace tdf {
 
 using footstone::check::checked_numeric_cast;
-using DomValueArrayType = footstone::value::HippyValue::DomValueArrayType;
+using HippyValueArrayType = footstone::value::HippyValue::HippyValueArrayType;
 using HippyValueObjectType = footstone::value::HippyValue::HippyValueObjectType;
 
 ViewNode::ViewNode(const std::shared_ptr<hippy::dom::DomNode> &dom_node, const RenderInfo info,
@@ -166,7 +166,7 @@ tdfcore::TM44 ViewNode::GenerateAnimationTransform(const DomStyleMap& dom_style,
   }
 
   HippyValueObjectType transform_style;
-  DomValueArrayType parsed_array;
+  HippyValueArrayType parsed_array;
   if (!transform_it->second->ToArray(parsed_array)) {
     return transform;
   }
@@ -176,7 +176,7 @@ tdfcore::TM44 ViewNode::GenerateAnimationTransform(const DomStyleMap& dom_style,
 
   if (auto it = transform_style.find(kMatrix); it != transform_style.end()) {
     FOOTSTONE_CHECK(it->second.IsArray());
-    DomValueArrayType matrix_array;
+    HippyValueArrayType matrix_array;
     auto result = it->second.ToArray(matrix_array);
     if (!result) {
       return transform;
@@ -245,7 +245,7 @@ tdfcore::TM44 ViewNode::GenerateAnimationTransform(const DomStyleMap& dom_style,
 
   if (auto it = transform_style.find(kTranslate); it != transform_style.end()) {
     FOOTSTONE_DCHECK(it->second.IsDouble());
-    DomValueArrayType translation_array;
+    HippyValueArrayType translation_array;
     auto result = it->second.ToArray(translation_array);
     if (!result) {
       return transform;
@@ -283,7 +283,7 @@ tdfcore::TM44 ViewNode::GenerateAnimationTransform(const DomStyleMap& dom_style,
 
 void ViewNode::OnDelete() {
   // recursively delete children at first(unmount the sub tree)
-  for (auto it = children_.rbegin(); it != children_.rend(); it++) {
+  for (auto it = children_.rbegin(); it > children_.rend(); it++) {
     (*it)->OnDelete();
   }
   if (!isRoot()) {

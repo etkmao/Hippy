@@ -20,6 +20,8 @@
 
 #include "include/footstone/hippy_value.h"
 
+#include <algorithm>
+
 #include "include/footstone/logging.h"
 #include "include/footstone/hash.h"
 
@@ -51,7 +53,7 @@ std::size_t std::hash<HippyValue>::operator()(const HippyValue& value) const noe
     case HippyValue::Type::kString:
       return std::hash<std::string>{}(value.str_);
     case HippyValue::Type::kArray:
-      return std::hash<HippyValue::DomValueArrayType>{}(value.arr_);
+      return std::hash<HippyValue::HippyValueArrayType>{}(value.arr_);
     case HippyValue::Type::kObject:
       return std::hash<HippyValue::HippyValueObjectType>{}(value.obj_);
     default:
@@ -104,7 +106,7 @@ HippyValue::HippyValue(const HippyValue& source) : type_(source.type_), number_t
       new (&obj_) HippyValueObjectType(source.obj_);
       break;
     case HippyValue::Type::kArray:
-      new (&arr_) DomValueArrayType(source.arr_);
+      new (&arr_) HippyValueArrayType(source.arr_);
       break;
     default:
       break;
@@ -164,7 +166,7 @@ HippyValue& HippyValue::operator=(const HippyValue& rhs) noexcept {
     case HippyValue::Type::kArray:
       if (type_ != HippyValue::Type::kArray) {
         Deallocate();
-        new (&arr_) DomValueArrayType(rhs.arr_);
+        new (&arr_) HippyValueArrayType(rhs.arr_);
       } else {
         arr_ = rhs.arr_;
       }
@@ -248,10 +250,10 @@ HippyValue& HippyValue::operator=(const HippyValueObjectType& rhs) noexcept {
   return *this;
 }
 
-HippyValue& HippyValue::operator=(const DomValueArrayType& rhs) noexcept {
+HippyValue& HippyValue::operator=(const HippyValueArrayType& rhs) noexcept {
   if (type_ != HippyValue::Type::kArray) {
     Deallocate();
-    new (&arr_) DomValueArrayType(rhs);
+    new (&arr_) HippyValueArrayType(rhs);
   } else {
     arr_ = rhs;
   }
@@ -279,7 +281,7 @@ bool HippyValue::operator==(const HippyValue& rhs) const noexcept {
         case HippyValue::NumberType::kUInt32:
           return num_.u32_ == rhs.num_.u32_;
         case HippyValue::NumberType::kDouble:
-          return num_.d_ == rhs.num_.d_;
+          return std::equal_to<double>()(num_.d_, rhs.num_.d_);
         default:
           break;
       }
@@ -456,18 +458,18 @@ HippyValue::HippyValueObjectType& HippyValue::ToObjectChecked() {
   return obj_;
 }
 
-bool HippyValue::ToArray(HippyValue::DomValueArrayType& arr) const {
+bool HippyValue::ToArray(HippyValue::HippyValueArrayType& arr) const {
   bool is_array = IsArray();
   arr = arr_;
   return is_array;
 }
 
-const HippyValue::DomValueArrayType& HippyValue::ToArrayChecked() const {
+const HippyValue::HippyValueArrayType& HippyValue::ToArrayChecked() const {
   FOOTSTONE_CHECK(IsArray());
   return arr_;
 }
 
-HippyValue::DomValueArrayType& HippyValue::ToArrayChecked() {
+HippyValue::HippyValueArrayType& HippyValue::ToArrayChecked() {
   FOOTSTONE_CHECK(IsArray());
   return arr_;
 }

@@ -29,7 +29,17 @@
 #include "driver/vm/v8/v8_vm.h"
 #include "footstone/string_view.h"
 #include "runtime.h"
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wconversion"
+#pragma clang diagnostic ignored "-Wnon-virtual-dtor"
+#pragma clang diagnostic ignored "-Winconsistent-missing-override"
+#pragma clang diagnostic ignored "-Wsuggest-destructor-override"
+#pragma clang diagnostic ignored "-Wvla-extension"
+#pragma clang diagnostic ignored "-Wundefined-reinterpret-cast"
+#pragma clang diagnostic ignored "-Wcast-function-type"
+#pragma clang diagnostic ignored "-Wunused-parameter"
 #include "v8/v8.h"
+#pragma clang diagnostic pop
 
 namespace hippy {
 inline namespace driver {

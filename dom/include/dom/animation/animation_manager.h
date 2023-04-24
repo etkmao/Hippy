@@ -47,7 +47,7 @@ class AnimationManager
 
  public:
   AnimationManager();
-  ~AnimationManager() = default;
+  ~AnimationManager() override = default;
 
   AnimationManager(AnimationManager&) = delete;
   AnimationManager& operator=(AnimationManager&) = delete;

@@ -21,6 +21,7 @@
 #pragma once
 
 #include <unordered_map>
+#include <functional>
 #include "footstone/hippy_value.h"
 
 namespace hippy {
