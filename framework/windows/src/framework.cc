@@ -97,14 +97,6 @@ uint32_t FrameWork::CreateDevtools() {
   return id;
 }
 
-uint32_t FrameWork::CreateDevtools() {
-    std::string ws_url = "ws://127.0.0.1:38989/debugger-proxy?role=android_client&clientId=%s&hash=%s&contextName=%s";
-    auto worker_manager = std::make_shared<footstone::WorkerManager>(kPoolSize);
-    auto devtools_data_source = std::make_shared<hippy::devtools::DevtoolsDataSource>(ws_url, worker_manager);
-    uint32_t id = devtools::DevtoolsDataSource::Insert(devtools_data_source);
-    return id;
-}
-
 void FrameWork::CreateRenderManager() { render_manager_ = std::make_shared<hippy::render::tdf::TDFRenderManager>(); }
 
 void FrameWork::CreateDriver() { driver_ = std::make_shared<hippy::Driver>(); }
