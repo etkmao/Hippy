@@ -52,14 +52,13 @@ target_link_libraries(${PROJECT_NAME} PUBLIC vfs)
 
 # region tdfcore
 # Consider iOS intergration in the future
-if (ANDROID)
-  set (TDFCORE_LIB_NAME "android-${ANDROID_ARCH_NAME}.zip")
-elseif (IOS)
-  message(FATAL_ERROR "unsupport platform")
-endif()
+# if (ANDROID)
+#   set (TDFCORE_LIB_NAME "android-${ANDROID_ARCH_NAME}.zip")
+# elseif (IOS)
+#   message(FATAL_ERROR "unsupport platform")
+# endif()
 InfraPackage_Add(TDF
-  REMOTE "renderer/tdf/third_party/tdfcore/${TDF_CORE_VERSION}/${TDFCORE_LIB_NAME}"
-  LOCAL "${PROJECT_ROOT_DIR}/third_party/tdfcore")
+  LOCAL "${PROJECT_ROOT_DIR}/tdf")
 target_link_libraries(${PROJECT_NAME} PUBLIC tdf)
 # endregion
 

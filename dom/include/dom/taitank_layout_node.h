@@ -35,7 +35,7 @@ class TaitankLayoutNode : public LayoutNode, public std::enable_shared_from_this
 
   TaitankLayoutNode(TaitankNodeRef engine_node_);
 
-  virtual ~TaitankLayoutNode();
+  virtual ~TaitankLayoutNode() override;
 
   /**
    * @brief 执行排版

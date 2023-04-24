@@ -246,7 +246,7 @@ void TextInputNode::InitCallBackMap() {
     auto fn = [param] (std::shared_ptr<View> view) {
       footstone::HippyValue value;
       param.ToObject(value);
-      footstone::value::HippyValue::DomValueArrayType dom_value_array;
+      footstone::value::HippyValue::HippyValueArrayType dom_value_array;
       auto result = value.ToArray(dom_value_array);
       FOOTSTONE_CHECK(result);
       if (!result) {

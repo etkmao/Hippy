@@ -115,7 +115,7 @@ id DomValueToOCType(const HippyValue *const pDomValue) {
         }
             break;
         case DomValueType::kArray: {
-            HippyValue::DomValueArrayType domValueArray = pDomValue->ToArrayChecked();
+            HippyValue::HippyValueArrayType domValueArray = pDomValue->ToArrayChecked();
             NSMutableArray *array = [NSMutableArray arrayWithCapacity:domValueArray.size()];
             for (auto it = domValueArray.begin(); it != domValueArray.end(); it++) {
                 const HippyValue &v = *it;

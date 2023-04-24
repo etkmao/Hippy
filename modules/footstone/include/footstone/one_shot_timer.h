@@ -33,7 +33,7 @@ inline namespace timer {
 
   OneShotTimer() = default;
   explicit OneShotTimer(const std::shared_ptr<TaskRunner>& task_runner);
-  virtual ~OneShotTimer();
+  virtual ~OneShotTimer() override;
 
   OneShotTimer(OneShotTimer&) = delete;
   OneShotTimer& operator=(OneShotTimer&) = delete;

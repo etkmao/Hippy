@@ -109,7 +109,7 @@ Animation::Animation(int32_t cnt) : Animation(cnt,
 
 Animation::Animation() : Animation(0, 0, 0, 0) {}
 
-double Animation::Calculate(uint64_t time) {
+double Animation::Calculate([[maybe_unused]] uint64_t time) {
   return current_value_;
 }
 

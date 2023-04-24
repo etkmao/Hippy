@@ -59,7 +59,7 @@ class CubicBezierAnimation : public Animation {
                        int32_t cnt,
                        uint32_t related_id = kInvalidAnimationId);
   CubicBezierAnimation();
-  ~CubicBezierAnimation() = default;
+  ~CubicBezierAnimation() override = default;
 
   inline uint32_t GetRelatedId() {
     return related_id_;

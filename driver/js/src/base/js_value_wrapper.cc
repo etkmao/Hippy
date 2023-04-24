@@ -22,6 +22,8 @@
 
 #include "driver/base/js_value_wrapper.h"
 
+#include <algorithm>
+
 #include "footstone/hash.h"
 
 using JSValueWrapper = hippy::base::JSValueWrapper;
@@ -208,7 +210,7 @@ bool JSValueWrapper::operator==(const JSValueWrapper& rhs) const noexcept {
     case JSValueWrapper::Type::UInt32:
       return uint32_value_ == rhs.uint32_value_;
     case JSValueWrapper::Type::Double:
-      return double_value_ == rhs.double_value_;
+      return std::equal_to<double>()(double_value_, rhs.double_value_);
     case JSValueWrapper::Type::String:
       return string_value_ == rhs.string_value_;
     case JSValueWrapper::Type::Object:

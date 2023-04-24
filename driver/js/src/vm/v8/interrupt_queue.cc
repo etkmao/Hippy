@@ -49,7 +49,7 @@ void InterruptQueue::PostTask(std::unique_ptr<Task> task) {
       }
     });
   }
-  isolate_->RequestInterrupt([](v8::Isolate* isolate, void* data) {
+  isolate_->RequestInterrupt([]([[maybe_unused]] v8::Isolate* isolate, void* data) {
     auto& map = InterruptQueue::GetPersistentMap();
     auto index = static_cast<uint32_t>(reinterpret_cast<size_t>(data));
     std::shared_ptr<InterruptQueue> queue;

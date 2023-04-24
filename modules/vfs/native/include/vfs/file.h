@@ -22,8 +22,7 @@
 
 #pragma once
 
-#include <sys/types.h>
-#include <unistd.h>
+#include <cstdint>
 
 #include <fstream>
 #include <memory>
@@ -47,8 +46,8 @@ class HippyFile {
                                                  std::ios::binary |
                                                  std::ios::trunc);
   static int RmFullPath(const string_view& dir_full_path);
-  static int CreateDir(const string_view& dir_path, mode_t mode);
-  static int CheckDir(const string_view& dir_path, int mode);
+  static int CreateDir(const string_view& dir_path);
+  static int CheckDir(const string_view& dir_path);
   static uint64_t GetFileModifyTime(const string_view& file_path);
 
   template <typename CharType>

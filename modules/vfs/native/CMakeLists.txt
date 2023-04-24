@@ -42,9 +42,16 @@ target_link_libraries(${PROJECT_NAME} PRIVATE footstone)
 
 # region source set
 set(SOURCE_SET
-  src/file.cc
   src/request_job.cc
-        src/job_response.cc
+  src/job_response.cc
   src/uri_loader.cc)
+if (WIN32)
+  list(APPEND SOURCE_SET src/platform/windows/file.cc)
+elseif (VOLTRON OR ANDROID OR IOS)
+  list(APPEND SOURCE_SET src/platform/posix/file.cc)
+else ()
+  message(FATAL_ERROR “Unsupported platform ${CMAKE_SYSTEM_NAME}”)
+endif ()
+
 target_sources(${PROJECT_NAME} PRIVATE ${SOURCE_SET})
 # endregion

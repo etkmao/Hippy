@@ -102,7 +102,7 @@ void NativeRenderManager::CreateRenderNode(std::weak_ptr<RootNode> root_node,
   serializer_->WriteHeader();
 
   auto len = nodes.size();
-  footstone::value::HippyValue::DomValueArrayType dom_node_array;
+  footstone::value::HippyValue::HippyValueArrayType dom_node_array;
   dom_node_array.resize(len);
   for (uint32_t i = 0; i < len; i++) {
     const auto& render_info = nodes[i]->GetRenderInfo();
@@ -175,7 +175,7 @@ void NativeRenderManager::UpdateRenderNode(std::weak_ptr<RootNode> root_node,
   serializer_->WriteHeader();
 
   auto len = nodes.size();
-  footstone::value::HippyValue::DomValueArrayType dom_node_array;
+  footstone::value::HippyValue::HippyValueArrayType dom_node_array;
   dom_node_array.resize(len);
   for (uint32_t i = 0; i < len; i++) {
     const auto& render_info = nodes[i]->GetRenderInfo();
@@ -317,7 +317,7 @@ void NativeRenderManager::UpdateLayout(std::weak_ptr<RootNode> root_node,
   serializer_->WriteHeader();
 
   auto len = nodes.size();
-  footstone::value::HippyValue::DomValueArrayType dom_node_array;
+  footstone::value::HippyValue::HippyValueArrayType dom_node_array;
   dom_node_array.resize(len);
   for (uint32_t i = 0; i < len; i++) {
     footstone::value::HippyValue::HippyValueObjectType dom_node;
@@ -573,7 +573,7 @@ void NativeRenderManager::HandleListenerOps(std::weak_ptr<RootNode> root_node,
     return;
   }
 
-  footstone::value::HippyValue::DomValueArrayType event_listener_ops;
+  footstone::value::HippyValue::HippyValueArrayType event_listener_ops;
   for (auto iter = ops.begin(); iter != ops.end(); ++iter) {
     footstone::value::HippyValue::HippyValueObjectType op;
     footstone::value::HippyValue::HippyValueObjectType events;

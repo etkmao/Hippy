@@ -122,7 +122,7 @@ void WorkerManager::Balance(int32_t increase_worker_count) {
         index = i % size;
       }
       auto worker = workers_[static_cast<size_t>(index)];
-      auto cnt = resize_group_size - cur_worker_group[static_cast<size_t>(index)]; // 该worker还能增加的groups数量
+      int32_t cnt = static_cast<int32_t>(resize_group_size - cur_worker_group[static_cast<size_t>(index)]); // 该worker还能增加的groups数量
       std::list<std::vector<std::shared_ptr<TaskRunner>>> list;
       if (cnt >= 0 && static_cast<size_t>(cnt) < groups.size()) {
         auto end_it = groups.begin();

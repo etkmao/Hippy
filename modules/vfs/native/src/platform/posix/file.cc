@@ -96,18 +96,18 @@ int HippyFile::RmFullPath(const string_view& dir_full_path) {
   return 0;
 }
 
-int HippyFile::CreateDir(const string_view& dir_path, mode_t mode) {
+int HippyFile::CreateDir(const string_view& dir_path) {
   FOOTSTONE_DLOG(INFO) << "CreateDir path = " << dir_path;
   auto path_str = StringViewUtils::ConvertEncoding(dir_path,
                                                    string_view::Encoding::Utf8).utf8_value();
-  return mkdir(reinterpret_cast<const char*>(path_str.c_str()), mode);
+  return mkdir(reinterpret_cast<const char*>(path_str.c_str()), S_IRWXU);
 }
 
-int HippyFile::CheckDir(const string_view& dir_path, int mode) {
+int HippyFile::CheckDir(const string_view& dir_path) {
   FOOTSTONE_DLOG(INFO) << "CheckDir path = " << dir_path;
   auto path_str = StringViewUtils::ConvertEncoding(dir_path,
                                                    string_view::Encoding::Utf8).utf8_value();
-  return access(reinterpret_cast<const char*>(path_str.c_str()), mode);
+  return access(reinterpret_cast<const char*>(path_str.c_str()), F_OK);
 }
 
 uint64_t HippyFile::GetFileModifyTime(const string_view& file_path) {

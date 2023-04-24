@@ -42,7 +42,7 @@ void CallbackInfo::AddValue(const std::shared_ptr<CtxValue>& value) {
 }
 
 std::shared_ptr<CtxValue> CallbackInfo::operator[](size_t index) const {
-  if (index < 0 || static_cast<size_t>(index) >= Length()) {
+  if (index >= Length()) {
     return nullptr;
   }
   return values_[index];
