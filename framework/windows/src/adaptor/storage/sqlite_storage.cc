@@ -29,8 +29,8 @@
 #include "footstone/logging.h"
 
 namespace hippy {
-inline namespace framework {
 inline namespace windows {
+inline namespace framework {
 inline namespace adaptor {
 
 Sqlite::~Sqlite() {
@@ -274,6 +274,6 @@ void SqliteStorage::GetAllItemsKey(std::function<void(StorageResponse, std::vect
 };
 
 }  // namespace adaptor
-}  // namespace windows
 }  // namespace framework
+}  // namespace windows
 }  // namespace hippy

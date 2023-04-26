@@ -32,11 +32,11 @@
 #include "sqlite/sqlite3.h"
 
 namespace hippy {
-inline namespace framework {
 inline namespace windows {
+inline namespace framework {
 inline namespace adaptor {
 
-using StorageResponse = hippy::framework::windows::module::StorageResponse;
+using StorageResponse = hippy::windows::framework::module::StorageResponse;
 
 class Sqlite {
  public:
@@ -92,6 +92,6 @@ class SqliteStorage : public Storage {
 };
 
 }  // namespace adaptor
-}  // namespace windows
 }  // namespace framework
+}  // namespace windows
 }  // namespace hippy

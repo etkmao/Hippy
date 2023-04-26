@@ -26,8 +26,8 @@
 #include <string>
 
 namespace hippy {
-inline namespace framework {
 inline namespace windows {
+inline namespace framework {
 inline namespace adaptor {
 
 class NetInfo {
@@ -39,6 +39,6 @@ class NetInfo {
 };
 
 }  // namespace adaptor
-}  // namespace windows
 }  // namespace framework
+}  // namespace windows
 }  // namespace hippy

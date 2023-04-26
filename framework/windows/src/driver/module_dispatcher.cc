@@ -10,10 +10,11 @@
 #include "footstone/string_utils.h"
 #include "footstone/string_view.h"
 #include "footstone/string_view_utils.h"
+#include "vfs/uri_loader.h"
 
 namespace hippy {
-inline namespace framework {
 inline namespace windows {
+inline namespace framework {
 
 constexpr char kStorageModule[] = "StorageModule";
 constexpr char kStroageFunctionGetItemsValue[] = "multiGet";
@@ -38,11 +39,11 @@ constexpr uint32_t kSuccess = 0;
 constexpr uint32_t kError = 2;
 
 ModuleDispatcher::ModuleDispatcher()
-    : storage_module_(std::make_shared<hippy::framework::windows::module::Storage>()),
-      websocket_module_(std::make_shared<hippy::framework::windows::module::Websocket>()),
-      net_info_module_(std::make_shared<hippy::framework::windows::module::NetInfo>()),
-      network_module_(std::make_shared<hippy::framework::windows::module::Network>()),
-      clipboard_module_(std::make_shared<hippy::framework::windows::module::Clipboard>()){};
+    : storage_module_(std::make_shared<hippy::windows::framework::module::Storage>()),
+      websocket_module_(std::make_shared<hippy::windows::framework::module::Websocket>()),
+      net_info_module_(std::make_shared<hippy::windows::framework::module::NetInfo>()),
+      network_module_(std::make_shared<hippy::windows::framework::module::Network>()),
+      clipboard_module_(std::make_shared<hippy::windows::framework::module::Clipboard>()){};
 
 void ModuleDispatcher::Initial() {
   storage_module_->Initial();
@@ -126,7 +127,8 @@ void ModuleDispatcher::Dispatcher(const CallbackInfo& info, const std::shared_pt
   } else if (module_name == kNetInfoModule) {
     NetInfoModuleHandle(fn_name, runtime->GetId(), cb_id_str, value);
   } else if (module_name == kNetworkModule) {
-    // NetworkModuleHandle(context, fn_name, runtime->GetId(), cb_id_str, value);
+    auto loader = runtime->GetScope()->GetUriLoader().lock();
+    if (loader != nullptr) NetworkModuleHandle(loader, fn_name, runtime->GetId(), cb_id_str, value);
   } else if (module_name == kClipboardModule) {
     ClipboardModuleHandle(fn_name, runtime->GetId(), cb_id_str, value);
   } else {
@@ -338,7 +340,7 @@ void ModuleDispatcher::NetInfoModuleHandle(const string_view& func, int32_t runt
   }
 }
 
-void ModuleDispatcher::NetworkModuleHandle(const std::shared_ptr<Context>& context, const string_view& func,
+void ModuleDispatcher::NetworkModuleHandle(const std::shared_ptr<UriLoader>& uri_loader, const string_view& func,
                                            int32_t runtime_id, const string_view& cb_id,
                                            const footstone::value::HippyValue& buffer) {
   if (network_module_ == nullptr) return;
@@ -359,7 +361,7 @@ void ModuleDispatcher::NetworkModuleHandle(const std::shared_ptr<Context>& conte
       auto on_js_runner = []() {};
       V8BridgeUtils::CallJs(u"callBack", runtime_id, call_js_callback, buffer_data, on_js_runner);
     };
-    network_module_->Fetch(context, buffer, runtime_id, callback);
+    network_module_->Fetch(uri_loader, buffer, runtime_id, callback);
   } else if (func == kNetworkFunctionGetCookie) {
     auto callback = [runtime_id, cb_id](footstone::value::HippyValue params) {
       footstone::Serializer serializer;
@@ -456,6 +458,6 @@ bool ModuleDispatcher::ParserParameters(const footstone::value::HippyValue& valu
 
   return true;
 }
-}  // namespace windows
 }  // namespace framework
+}  // namespace windows
 }  // namespace hippy

@@ -30,8 +30,8 @@
 #include <netioapi.h>
 
 namespace hippy {
-inline namespace framework {
 inline namespace windows {
+inline namespace framework {
 inline namespace adaptor {
 
 constexpr char kConnectionTypeNone[] = "NONE";
@@ -122,6 +122,6 @@ void AdapterAddressesNetInfo::SetCurrentConnectivityCallback(std::function<void(
 }
 
 }  // namespace adaptor
-}  // namespace windows
 }  // namespace framework
+}  // namespace windows
 }  // namespace hippy

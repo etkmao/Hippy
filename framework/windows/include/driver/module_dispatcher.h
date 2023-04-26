@@ -22,7 +22,6 @@
 
 #pragma once
 
-
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -34,11 +33,10 @@
 #include "modules/network/network.h"
 #include "modules/network/websocket.h"
 #include "modules/storage/storage.h"
-#include "vfs/vfs_manager.h"
 
 namespace hippy {
-inline namespace framework {
 inline namespace windows {
+inline namespace framework {
 
 using string_view = footstone::stringview::string_view;
 using byte_string = std::string;
@@ -60,19 +58,19 @@ class ModuleDispatcher : public std::enable_shared_from_this<ModuleDispatcher> {
                              const footstone::value::HippyValue& buffer);
   void NetInfoModuleHandle(const string_view& func, int32_t runtime_id, const string_view& cb_id,
                            const footstone::value::HippyValue& buffer);
-  void NetworkModuleHandle(const std::shared_ptr<Context>& context, const string_view& func, int32_t runtime_id,
+  void NetworkModuleHandle(const std::shared_ptr<UriLoader>& uri_loader, const string_view& func, int32_t runtime_id,
                            const string_view& cb_id, const footstone::value::HippyValue& buffer);
   void ClipboardModuleHandle(const string_view& func, int32_t runtime_id, const string_view& cb_id,
                              const footstone::value::HippyValue& buffer);
 
  private:
-  std::shared_ptr<hippy::framework::windows::module::Storage> storage_module_;      // storage module
-  std::shared_ptr<hippy::framework::windows::module::Websocket> websocket_module_;  // websocket module
-  std::shared_ptr<hippy::framework::windows::module::NetInfo> net_info_module_;     // net info module
-  std::shared_ptr<hippy::framework::windows::module::Network> network_module_;      // network module
-  std::shared_ptr<hippy::framework::windows::module::Clipboard> clipboard_module_;  // clipboard module
+  std::shared_ptr<hippy::windows::framework::module::Storage> storage_module_;      // storage module
+  std::shared_ptr<hippy::windows::framework::module::Websocket> websocket_module_;    // websocket module
+  std::shared_ptr<hippy::windows::framework::module::NetInfo> net_info_module_;     // net info module
+  std::shared_ptr<hippy::windows::framework::module::Network> network_module_;        // network module
+  std::shared_ptr<hippy::windows::framework::module::Clipboard> clipboard_module_;  // clipboard module
 };
 
-}  // namespace windows
 }  // namespace framework
+}  // namespace windows
 }  // namespace hippy

@@ -41,8 +41,8 @@ constexpr char kReason[] = "reason";
 // constexpr char kCallbackWebsocketId[] = "id";
 
 namespace hippy {
-inline namespace framework {
 inline namespace windows {
+inline namespace framework {
 inline namespace module {
 
 Websocket::~Websocket() { worker_->Terminate(); }
@@ -222,6 +222,6 @@ void Websocket::Send(const footstone::value::HippyValue& request, uint32_t runti
 }
 
 }  // namespace module
-}  // namespace windows
 }  // namespace framework
+}  // namespace windows
 }  // namespace hippy

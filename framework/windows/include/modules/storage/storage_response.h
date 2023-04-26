@@ -25,8 +25,8 @@
 #include <string>
 
 namespace hippy {
-inline namespace framework {
 inline namespace windows {
+inline namespace framework {
 inline namespace module {
 
 enum class RetCode { Success, Failed };
@@ -48,6 +48,6 @@ class StorageResponse {
 };
 
 }  // namespace module
-}  // namespace windows
 }  // namespace framework
+}  // namespace windows
 }  // namespace hippy

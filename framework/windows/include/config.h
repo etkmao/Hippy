@@ -22,81 +22,110 @@
 
 #pragma once
 
+#include <memory>
 #include <string>
 
+#include "core/platform/common/tdf_engine.h"
 #include "footstone/string_view.h"
 
 namespace hippy {
-inline namespace framework {
 inline namespace windows {
-inline namespace config {
+inline namespace framework {
 
 constexpr uint32_t kInvalidInitialHeapSize = -1;
 constexpr uint32_t kInvalidMaximumHeapSize = -1;
 constexpr char kDefaultCodeCacheDirectory[] = "./";
-
-// TODO 需要修改
-constexpr char kDefaultGlobalConfig[] =
-    "{\"Platform\":{\"OS\":\"android\",\"PackageName\":\"com.tencent.mtt.hippy.example\",\"APILevel\":28,"
-    "\"VersionName\":\"2.3.4\",\"Localization\":{\"country\":\"CN\",\"language\":\"zh\",\"direction\":0},"
-    "\"NightMode\":false},\"Dimensions\":{\"screenPhysicalPixels\":{\"densityDpi\":560.0,\"width\":411,\"scale\":3.5,"
-    "\"statusBarHeight\":24.0,\"navigationBarHeight\":48.0,\"fontScale\":3.5,\"height\":846},"
-    "\"windowPhysicalPixels\":{\"densityDpi\":560.0,\"width\":411,\"scale\":3.5,\"statusBarHeight\":24.0,"
-    "\"navigationBarHeight\":48.0,\"fontScale\":3.8500001430511475,\"height\":798}},\"tkd\":{\"appVersion\":\"2.3."
-    "4\",\"appName\":\"com.tencent.mtt.hippy.example\",\"extra\":{},\"url\":\"\"}}";
 
 using string_view = footstone::stringview::string_view;
 
 class Config {
  public:
   Config();
-  Config(bool enabel_v8_serialization, bool dev_module, bool use_code_cache, int64_t group_id, uint32_t devtools_id,
-         string_view code_cache_directory = kDefaultCodeCacheDirectory,
-         string_view global_config = kDefaultGlobalConfig);
   ~Config() = default;
 
-  void SetEnabelV8Serialization(bool enabel_v8_serialization) { enabel_v8_serialization_ = enabel_v8_serialization; }
-  bool GetEnabelV8Serialization() { return enabel_v8_serialization_; }
+ public:
+  // 资源加载路径
+  class JsAssetsPath {
+   public:
+    void SetCorePath(const std::string& core_path) { core_path_ = core_path; }
+    std::string GetCorePath() { return core_path_; }
+    void SetPreloadPath(const std::string& preload_path) { preload_path_ = preload_path; }
+    std::string GetPreloadPath() { return preload_path_; }
 
-  void SetDevModule(bool dev_module) { dev_module_ = dev_module; }
-  bool GetDevModule() { return dev_module_; }
+   private:
+    std::string core_path_;
+    std::string preload_path_;
+  };
 
-  void SetUseCodeCache(bool use_code_cache) { use_code_cache_ = use_code_cache; }
-  bool GetUseCodeCache() { return use_code_cache_; }
+  // 调试相关参数
+  class Debug {
+   public:
+    void SetBundleName(const std::string& bundle_name) { bundle_name_ = bundle_name; }
+    std::string GetBundleName() { return bundle_name_; }
+    void SetHost(const std::string& host) { host_ = host; }
+    std::string GetHost() { return host_; }
+    void SetUrl(const std::string& url) { url_ = url; }
+    std::string GetUrl() { return url_; }
+    void SetDevelopmentModule(const bool is_development_module) { is_development_module_ = is_development_module; }
+    bool GetDevelopmentModule() { return is_development_module_; }
 
-  void SetGroupId(int64_t group_id) { group_id_ = group_id; }
-  int64_t GetGroupId() { return group_id_; }
+   private:
+    std::string bundle_name_;
+    std::string host_;
+    std::string url_;
+    bool is_development_module_;
+  };
 
-  void SetDevtoolsId(uint32_t devtools_id) { devtools_id_ = devtools_id; }
-  uint32_t GetDevtoolsId() { return devtools_id_; }
+  // 引擎相关参数
+  class JsEngine {
+   public:
+    void SetEnableV8Serialization(bool enable_v8_serialization) { enable_v8_serialization_ = enable_v8_serialization; }
+    bool GetEnableV8Serialization() { return enable_v8_serialization_; }
+    void SetUseCodeCache(bool use_code_cache) { use_code_cache_ = use_code_cache; }
+    bool GetUseCodeCache() { return use_code_cache_; }
+    void SetGroupId(int64_t group_id) { group_id_ = group_id; }
+    int64_t GetGroupId() { return group_id_; }
+    void SetInitalHeapSize(uint32_t byte_size) { initial_heap_size_ = byte_size; }
+    uint32_t GetInitalHeapSize() { return initial_heap_size_; }
+    void SetMaximumHeapSize(uint32_t byte_size) { maximum_heap_size_ = byte_size; }
+    uint32_t GetMaximumHeapSize() { return maximum_heap_size_; }
+    void SetCodeCacheDirectory(string_view code_cache_directory) { code_cache_directory_ = code_cache_directory; }
+    string_view GetCodeCacheDirectory() { return code_cache_directory_; }
 
-  void SetGlobalConfig(string_view global_config) { global_config_ = global_config; }
-  string_view GetGlobalConfig() { return global_config_; }
+   private:
+    bool enable_v8_serialization_{true};
+    bool use_code_cache_{true};
+    int64_t group_id_{-1};
+    uint32_t initial_heap_size_{kInvalidInitialHeapSize};
+    uint32_t maximum_heap_size_{kInvalidMaximumHeapSize};
+    string_view code_cache_directory_{kDefaultCodeCacheDirectory};
+  };
 
-  void SetInitalHeapSize(uint32_t byte_size) { initial_heap_size_in_bytes_ = byte_size; }
-  uint32_t GetInitalHeapSize() { return initial_heap_size_in_bytes_; }
+  // TODO(charleeshen): 增加 Adaptor
+  // class Adaptor {};
 
-  void SetMaximumHeapSize(uint32_t byte_size) { maximum_heap_size_in_bytes_ = byte_size; }
-  uint32_t GetMaximumHeapSize() { return maximum_heap_size_in_bytes_; }
+  void SetDensity(float density) { density_ = density; }
+  float GetDensity() { return density_; }
+  void SetRootId(uint32_t root_id) { root_id_ = root_id; }
+  uint32_t GetRootId() { return root_id_; }
 
-  void SetCodeCacheDirectory(string_view code_cache_directory) { code_cache_directory_ = code_cache_directory; }
-  string_view GetCodeCacheDirectory() { return code_cache_directory_; }
+  // tdf shell
+  void SetShell(std::shared_ptr<tdfcore::Shell> shell) { shell_ = shell; }
+  std::shared_ptr<tdfcore::Shell> GetShell() { return shell_; }
 
-  std::string LoadInstanceString(uint32_t root_id);
+  std::shared_ptr<JsAssetsPath> GetJsAssetsPath() const { return js_assets_path_; }
+  std::shared_ptr<Debug> GetDebug() const { return debug_; }
+  std::shared_ptr<JsEngine> GetJsEngine() const { return js_engine_; }
 
  private:
-  bool enabel_v8_serialization_;
-  bool dev_module_;
-  bool use_code_cache_;
-  int64_t group_id_{10};
-  uint32_t devtools_id_{10};
-  string_view code_cache_directory_;
-  string_view global_config_;
-  uint32_t initial_heap_size_in_bytes_{kInvalidInitialHeapSize};
-  uint32_t maximum_heap_size_in_bytes_{kInvalidMaximumHeapSize};
+  float density_{1.0f};
+  uint32_t root_id_{0};
+  std::shared_ptr<JsAssetsPath> js_assets_path_{nullptr};
+  std::shared_ptr<JsEngine> js_engine_{nullptr};
+  std::shared_ptr<Debug> debug_{nullptr};
+  std::shared_ptr<tdfcore::Shell> shell_{nullptr};
 };
 
-}  // namespace config
-}  // namespace windows
 }  // namespace framework
+}  // namespace windows
 }  // namespace hippy

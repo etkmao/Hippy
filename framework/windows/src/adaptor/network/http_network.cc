@@ -31,8 +31,8 @@
 #include "vfs/handler/uri_handler.h"
 
 namespace hippy {
-inline namespace framework {
 inline namespace windows {
+inline namespace framework {
 inline namespace adaptor {
 
 using string_view = footstone::stringview::string_view;
@@ -41,7 +41,7 @@ HttpNetwork::HttpNetwork() : http_cookie_(std::make_shared<HttpCookie>()) {}
 
 bool HttpNetwork::Initial() { return http_cookie_->Initial(); }
 
-void HttpNetwork::Fetch(const std::shared_ptr<Context>& context, const std::string& url,
+void HttpNetwork::Fetch(const std::shared_ptr<UriLoader>& uri_loader, const std::string& url,
                         const footstone::value::HippyValue& request, std::function<void(std::string)> callback) {
   footstone::Serializer serializer;
   serializer.WriteHeader();
@@ -62,7 +62,6 @@ void HttpNetwork::Fetch(const std::shared_ptr<Context>& context, const std::stri
     meta.insert({"COOKIE", cookie_string});
   }
 
-  auto uri_loader = context->GetUriLoader();
   auto request_job = std::make_shared<RequestJob>(string_view(url.c_str()), meta, uri_loader->GetWorkerManager(),
                                                   nullptr, std::move(content_string));
   std::function<void(std::shared_ptr<JobResponse>)> response_cb = [callback](const std::shared_ptr<JobResponse>& rsp) {
@@ -99,6 +98,6 @@ bool HttpNetwork::PrasedRequest(const footstone::value::HippyValue& request, std
 }
 
 }  // namespace adaptor
-}  // namespace windows
 }  // namespace framework
+}  // namespace windows
 }  // namespace hippy
