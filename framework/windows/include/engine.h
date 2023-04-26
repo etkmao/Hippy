@@ -58,6 +58,7 @@ class Engine : public std::enable_shared_from_this<Engine> {
   void SetScopeCallback(ScopeCallBack scope_callback) { scope_callback_ = scope_callback; }
   ScopeCallBack GetScopeCallBack() { return scope_callback_; }
   void LoadInstance(std::string& load_instance_message);
+  std::shared_ptr<hippy::Config> GetConfig() { return config_; }
 
  private:
   void CreateDriver();
