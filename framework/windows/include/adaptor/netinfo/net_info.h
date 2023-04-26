@@ -28,6 +28,10 @@
 namespace hippy {
 inline namespace windows {
 inline namespace framework {
+inline namespace adaptor {
+
+class NetInfo {
+ public:
   virtual ~NetInfo() = default;
   virtual bool Initial() = 0;
   virtual void GetCurrentConnectivity() = 0;

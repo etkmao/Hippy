@@ -25,14 +25,14 @@
 #include "modules/storage/storage_response.h"
 
 namespace hippy {
-inline namespace framework {
 inline namespace windows {
+inline namespace framework {
 inline namespace module {
 
 StorageResponse::StorageResponse(RetCode code) : code_(code){};
 StorageResponse::StorageResponse(RetCode code, std::string msg) : code_(code), msg_(msg){};
 
 }  // namespace module
-}  // namespace windows
 }  // namespace framework
+}  // namespace windows
 }  // namespace hippy
