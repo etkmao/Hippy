@@ -30,8 +30,8 @@
 #include "modules/network/websocket_client.h"
 
 namespace hippy {
-inline namespace framework {
 inline namespace windows {
+inline namespace framework {
 inline namespace module {
 
 class Websocket : public std::enable_shared_from_this<Websocket> {
@@ -65,6 +65,6 @@ class Websocket : public std::enable_shared_from_this<Websocket> {
 };
 
 }  // namespace module
-}  // namespace windows
 }  // namespace framework
+}  // namespace windows
 }  // namespace hippy

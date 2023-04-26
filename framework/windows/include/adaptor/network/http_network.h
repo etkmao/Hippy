@@ -29,8 +29,8 @@
 #include "adaptor/network/http_cookie.h"
 
 namespace hippy {
-inline namespace framework {
 inline namespace windows {
+inline namespace framework {
 inline namespace adaptor {
 
 class HttpNetwork : public Network {
@@ -43,7 +43,7 @@ class HttpNetwork : public Network {
   HttpNetwork& operator=(HttpNetwork&&) = delete;
 
   virtual bool Initial() override;
-  virtual void Fetch(const std::shared_ptr<Context>& context, const std::string& url,
+  virtual void Fetch(const std::shared_ptr<UriLoader>& uri_loader, const std::string& url,
                      const footstone::value::HippyValue& request, std::function<void(std::string)> callback) override;
   virtual void GetCookie(const std::string& url, std::function<void(footstone::value::HippyValue)> callback) override;
   virtual void SetCookie(const footstone::value::HippyValue& request) override;
@@ -57,6 +57,6 @@ class HttpNetwork : public Network {
 };
 
 }  // namespace adaptor
-}  // namespace windows
 }  // namespace framework
+}  // namespace windows
 }  // namespace hippy

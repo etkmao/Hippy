@@ -27,8 +27,8 @@
 #include "footstone/logging.h"
 
 namespace hippy {
-inline namespace framework {
 inline namespace windows {
+inline namespace framework {
 inline namespace module {
 
 bool Clipboard::Initial() { return true; }
@@ -96,6 +96,6 @@ bool Clipboard::ParserRequest(const footstone::value::HippyValue& value, std::st
 }
 
 }  // namespace module
-}  // namespace windows
 }  // namespace framework
+}  // namespace windows
 }  // namespace hippy

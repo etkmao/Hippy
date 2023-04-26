@@ -31,8 +31,8 @@
 #include "sqlite/sqlite3.h"
 
 namespace hippy {
-inline namespace framework {
 inline namespace windows {
+inline namespace framework {
 inline namespace adaptor {
 
 enum class CookieUpdateType {
@@ -40,7 +40,6 @@ enum class CookieUpdateType {
   kInsert,
   kUpdate,
 };
-
 
 // TODO(charleeshen): COOKIE 估计需要重构
 class HttpCookie {
@@ -73,6 +72,6 @@ class HttpCookie {
 };
 
 }  // namespace adaptor
-}  // namespace windows
 }  // namespace framework
+}  // namespace windows
 }  // namespace hippy

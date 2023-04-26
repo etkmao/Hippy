@@ -27,8 +27,8 @@
 #include <functional>
 
 namespace hippy {
-inline namespace framework {
 inline namespace windows {
+inline namespace framework {
 inline namespace module {
 
 class Clipboard {
@@ -45,6 +45,6 @@ class Clipboard {
 };
 
 }  // namespace module
-}  // namespace windows
 }  // namespace framework
+}  // namespace windows
 }  // namespace hippy

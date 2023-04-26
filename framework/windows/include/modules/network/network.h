@@ -25,13 +25,12 @@
 #include <memory>
 
 #include "adaptor/network/http_network.h"
-#include "context.h"
 #include "footstone/hippy_value.h"
-#include "vfs/vfs_manager.h"
+#include "vfs/uri_loader.h"
 
 namespace hippy {
-inline namespace framework {
 inline namespace windows {
+inline namespace framework {
 inline namespace module {
 
 class Network {
@@ -41,7 +40,7 @@ class Network {
   ~Network() = default;
 
   bool Initial();
-  void Fetch(const std::shared_ptr<Context>& context, const footstone::value::HippyValue& request, uint32_t runtime_id,
+  void Fetch(const std::shared_ptr<UriLoader>& uri_loader, const footstone::value::HippyValue& request, uint32_t runtime_id,
              std::function<void(footstone::value::HippyValue)> callback);
   void GetCookie(const footstone::value::HippyValue& request, uint32_t runtime_id,
                  std::function<void(footstone::value::HippyValue)> callback);
@@ -55,6 +54,6 @@ class Network {
 };
 
 }  // namespace module
-}  // namespace windows
 }  // namespace framework
+}  // namespace windows
 }  // namespace hippy

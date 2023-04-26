@@ -28,8 +28,8 @@
 #include "footstone/logging.h"
 
 namespace hippy {
-inline namespace framework {
 inline namespace windows {
+inline namespace framework {
 inline namespace module {
 
 constexpr char kHttpUrl[] = "url";
@@ -67,7 +67,7 @@ bool Network::ParserRequestUrl(const footstone::value::HippyValue& value, std::s
   return false;
 }
 
-void Network::Fetch(const std::shared_ptr<Context>& context, const footstone::value::HippyValue& request,
+void Network::Fetch(const std::shared_ptr<UriLoader>& uri_loader, const footstone::value::HippyValue& request,
                     uint32_t runtime_id, std::function<void(footstone::value::HippyValue)> callback) {
   std::string url;
   auto ret = ParserRequestUrl(request, url);
@@ -81,7 +81,7 @@ void Network::Fetch(const std::shared_ptr<Context>& context, const footstone::va
       deserializer.ReadValue(params);
       callback(params);
     };
-    network_adaptor_->Fetch(context, url, request, new_callback);
+    network_adaptor_->Fetch(uri_loader, url, request, new_callback);
   }
 }
 
@@ -102,6 +102,6 @@ void Network::SetCookie(const footstone::value::HippyValue& request) {
 }
 
 }  // namespace module
-}  // namespace windows
 }  // namespace framework
+}  // namespace windows
 }  // namespace hippy
