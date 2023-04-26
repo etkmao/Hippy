@@ -26,8 +26,8 @@
 #include "adaptor/storage/sqlite_storage.h"
 
 namespace hippy {
-inline namespace framework {
 inline namespace windows {
+inline namespace framework {
 inline namespace module {
 
 Storage::Storage() : storage_adaptor_(std::make_shared<adaptor::SqliteStorage>()){};
@@ -65,6 +65,6 @@ void Storage::RemoveItems(std::vector<std::string> keys, std::function<void(Stor
 }
 
 }  // namespace module
-}  // namespace windows
 }  // namespace framework
+}  // namespace windows
 }  // namespace hippy

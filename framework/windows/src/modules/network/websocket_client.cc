@@ -35,14 +35,13 @@
 #include "footstone/worker_impl.h"
 
 namespace hippy {
-inline namespace framework {
 inline namespace windows {
+inline namespace framework {
 inline namespace module {
 
 WebsocketClient::WebsocketClient(uint32_t id, std::string url,
                                  std::unordered_map<std::string, std::string> extra_headers)
-    : id_(id), url_(url), extra_headers_(extra_headers), curl_wrapper_(std::make_unique<CurlWrapper>()) {
-}
+    : id_(id), url_(url), extra_headers_(extra_headers), curl_wrapper_(std::make_unique<CurlWrapper>()) {}
 
 WebsocketClient::~WebsocketClient() { curl_slist_free_all(headers_); }
 
@@ -179,10 +178,9 @@ void WebsocketClient::Disconnect(const int32_t code, const std::string& reason) 
     if (self->websocket_event_listener_) self->websocket_event_listener_->Close(0, "closed");
   };
   task_runner_->PostTask(disconnect);
-
 }
 
 }  // namespace module
-}  // namespace windows
 }  // namespace framework
+}  // namespace windows
 }  // namespace hippy

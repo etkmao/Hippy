@@ -83,8 +83,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC $<TARGET_PROPERTY:curl_wrapper
 # region source set
 set(SOURCE_SET
     src/framework.cc
-    src/context.cc
     src/config.cc
+    src/engine.cc
     src/driver/driver.cc
     src/driver/module_dispatcher.cc
     src/adaptor/console/console.cc
@@ -99,7 +99,6 @@ set(SOURCE_SET
     src/modules/network/websocket.cc
     src/modules/network/websocket_client.cc
     src/modules/network/websocket_listener.cc
-    src/modules/netinfo/net_info.cc
-    src/vfs/vfs_manager.cc)
+    src/modules/netinfo/net_info.cc)
 target_sources(${PROJECT_NAME} PRIVATE ${SOURCE_SET})
 # endregion

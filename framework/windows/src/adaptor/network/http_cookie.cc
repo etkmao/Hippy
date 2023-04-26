@@ -28,8 +28,8 @@
 #include "footstone/logging.h"
 
 namespace hippy {
-inline namespace framework {
 inline namespace windows {
+inline namespace framework {
 inline namespace adaptor {
 
 HttpCookie::~HttpCookie() {
@@ -395,6 +395,6 @@ std::vector<std::string> HttpCookie::QueryCookiesSql(const std::string& domain, 
 // }
 
 }  // namespace adaptor
-}  // namespace windows
 }  // namespace framework
+}  // namespace windows
 }  // namespace hippy
