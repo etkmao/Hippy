@@ -26,6 +26,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "config.h"
 #include "driver/runtime/v8/runtime.h"
 #include "driver/runtime/v8/v8_bridge_utils.h"
 #include "modules/clipboard/clipboard.h"
@@ -44,7 +45,7 @@ using byte_string = std::string;
 class ModuleDispatcher : public std::enable_shared_from_this<ModuleDispatcher> {
  public:
   ModuleDispatcher();
-  void Initial();
+  void Initial(const std::shared_ptr<hippy::Config>& config);
   void ModuleDispatcher::Dispatcher(const CallbackInfo& info, const std::shared_ptr<Runtime>& runtime);
 
  private:
@@ -65,9 +66,9 @@ class ModuleDispatcher : public std::enable_shared_from_this<ModuleDispatcher> {
 
  private:
   std::shared_ptr<hippy::windows::framework::module::Storage> storage_module_;      // storage module
-  std::shared_ptr<hippy::windows::framework::module::Websocket> websocket_module_;    // websocket module
+  std::shared_ptr<hippy::windows::framework::module::Websocket> websocket_module_;  // websocket module
   std::shared_ptr<hippy::windows::framework::module::NetInfo> net_info_module_;     // net info module
-  std::shared_ptr<hippy::windows::framework::module::Network> network_module_;        // network module
+  std::shared_ptr<hippy::windows::framework::module::Network> network_module_;      // network module
   std::shared_ptr<hippy::windows::framework::module::Clipboard> clipboard_module_;  // clipboard module
 };
 

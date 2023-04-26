@@ -25,6 +25,7 @@
 #include <memory>
 #include <string>
 
+#include "adaptor/console/console.h"
 #include "core/platform/common/tdf_engine.h"
 #include "footstone/string_view.h"
 
@@ -37,6 +38,7 @@ constexpr uint32_t kInvalidMaximumHeapSize = -1;
 constexpr char kDefaultCodeCacheDirectory[] = "./";
 
 using string_view = footstone::stringview::string_view;
+using Console = hippy::windows::framework::Console;
 
 class Config {
  public:
@@ -101,8 +103,14 @@ class Config {
     string_view code_cache_directory_{kDefaultCodeCacheDirectory};
   };
 
-  // TODO(charleeshen): 增加 Adaptor
-  // class Adaptor {};
+  class Adaptor {
+   public:
+    std::shared_ptr<Console> GetConsoleAdaptor() { return console_adaptor_; }
+    void SetConsoleAdaptor(std::shared_ptr<Console> console_adaptor) { console_adaptor_ = console_adaptor; }
+
+   private:
+    std::shared_ptr<Console> console_adaptor_;
+  };
 
   void SetDensity(float density) { density_ = density; }
   float GetDensity() { return density_; }
@@ -116,14 +124,17 @@ class Config {
   std::shared_ptr<JsAssetsPath> GetJsAssetsPath() const { return js_assets_path_; }
   std::shared_ptr<Debug> GetDebug() const { return debug_; }
   std::shared_ptr<JsEngine> GetJsEngine() const { return js_engine_; }
+  std::shared_ptr<Adaptor> GetAdaptor() const { return adaptor_; }
 
  private:
   float density_{1.0f};
   uint32_t root_id_{0};
+  std::shared_ptr<tdfcore::Shell> shell_{nullptr};
+
   std::shared_ptr<JsAssetsPath> js_assets_path_{nullptr};
   std::shared_ptr<JsEngine> js_engine_{nullptr};
   std::shared_ptr<Debug> debug_{nullptr};
-  std::shared_ptr<tdfcore::Shell> shell_{nullptr};
+  std::shared_ptr<Adaptor> adaptor_{nullptr};
 };
 
 }  // namespace framework

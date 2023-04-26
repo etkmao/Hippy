@@ -87,7 +87,7 @@ set(SOURCE_SET
     src/engine.cc
     src/driver/driver.cc
     src/driver/module_dispatcher.cc
-    src/adaptor/console/console.cc
+    src/adaptor/console/event_viewer_console.cc
     src/adaptor/storage/sqlite_storage.cc
     src/adaptor/netinfo/adapter_addresses_net_info.cc
     src/adaptor/network/http_cookie.cc
