@@ -7,7 +7,8 @@ inline namespace framework {
 Config::Config()
     : js_assets_path_(std::make_shared<Config::JsAssetsPath>()),
       js_engine_(std::make_shared<Config::JsEngine>()),
-      debug_(std::make_shared<Config::Debug>()) {}
+      debug_(std::make_shared<Config::Debug>()),
+      adaptor_(std::make_shared<Config::Adaptor>()) {}
 
 }  // namespace framework
 }  // namespace windows

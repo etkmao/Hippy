@@ -2,6 +2,7 @@
 
 #include <utility>
 
+#include "config.h"
 #include "driver/napi/v8/v8_ctx.h"
 #include "driver/runtime/v8/v8_bridge_utils.h"
 #include "driver/scope.h"
@@ -45,12 +46,15 @@ ModuleDispatcher::ModuleDispatcher()
       network_module_(std::make_shared<hippy::windows::framework::module::Network>()),
       clipboard_module_(std::make_shared<hippy::windows::framework::module::Clipboard>()){};
 
-void ModuleDispatcher::Initial() {
+void ModuleDispatcher::Initial(const std::shared_ptr<hippy::Config>& config) {
   storage_module_->Initial();
   websocket_module_->Initial();
   net_info_module_->Initial();
   network_module_->Initial();
   clipboard_module_->Initial();
+
+  auto console_adaptor = config->GetAdaptor()->GetConsoleAdaptor();
+  if(console_adaptor) console_adaptor->Initial();
 };
 
 void ModuleDispatcher::Dispatcher(const CallbackInfo& info, const std::shared_ptr<Runtime>& runtime) {

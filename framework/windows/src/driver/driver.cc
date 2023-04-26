@@ -57,7 +57,7 @@ bool Driver::Initialize(const std::shared_ptr<Config>& config, const std::shared
                         const std::shared_ptr<RootNode>& root_node, const std::shared_ptr<UriLoader>& uri_loader,
                         const uint32_t devtools_id) {
   if (module_dispatcher_ == nullptr) return false;
-  module_dispatcher_->Initial();
+  module_dispatcher_->Initial(config);
 
   RegisterExceptionHandler();
 

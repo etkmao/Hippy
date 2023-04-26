@@ -23,7 +23,9 @@
 #pragma once
 
 #include <Windows.h>
+#include <memory>
 
+#include "adaptor/console/console.h"
 #include "footstone/hippy_value.h"
 
 namespace hippy {
@@ -31,14 +33,23 @@ inline namespace windows {
 inline namespace framework {
 inline namespace adaptor {
 
-class Console {
+class EventViewerConsole : public Console, std::enable_shared_from_this<EventViewerConsole> {
  public:
-  virtual ~Console() = default;
-  virtual bool Initial() = 0;
-  virtual void Info(const std::string& message) = 0;
-  virtual void Warn(const std::string& message) = 0;
-  virtual void Error(const std::string& message) = 0;
-  virtual void Fatal(const std::string& message) = 0;
+  EventViewerConsole(std::string app_name, bool debug);
+  virtual ~EventViewerConsole() override = default;
+
+  virtual bool Initial() override;
+  virtual void Info(const std::string& message) override;
+  virtual void Warn(const std::string& message) override;
+  virtual void Error(const std::string& message) override;
+  virtual void Fatal(const std::string& message) override;
+
+ private:
+  void WriteLog(const std::string message, WORD event_type);
+
+ private:
+  std::string app_name_;
+  bool debug_;
 };
 
 }  // namespace adaptor

@@ -2,6 +2,7 @@
 
 #include <atomic>
 
+#include "adaptor/console/event_viewer_console.h"
 #include "footstone/deserializer.h"
 #include "footstone/macros.h"
 
@@ -28,13 +29,22 @@ static std::string CreateLoadInstanceMessage(uint32_t root_id) {
 }
 
 void Framework::Initialize(std::shared_ptr<Config>& config) {
-  auto root_id = config->GetRootId();
-  auto scope_callback = [WEAK_THIS, root_id](void*) {
+  auto scope_callback = [WEAK_THIS](void*) {
     DEFINE_AND_CHECK_SELF(Framework)
-    std::string load_instance_message = CreateLoadInstanceMessage(root_id);
-    if (self->engine_) {
-      self->engine_->RunScriptFromUri("asset:/index.bundle");
-      self->engine_->LoadInstance(load_instance_message);
+    auto config = self->engine_->GetConfig();
+    if (config) {
+      std::string load_instance_message = CreateLoadInstanceMessage(config->GetRootId());
+      if (self->engine_) {
+        if (config->GetDebug()->GetDevelopmentModule()) {
+          auto core_js = config->GetJsAssetsPath()->GetCorePath();
+          self->engine_->RunScriptFromUri(string_view(core_js));
+          self->engine_->RunScriptFromUri("asset:/index.android.js");
+          self->engine_->LoadInstance(load_instance_message);
+        } else {
+          self->engine_->RunScriptFromUri("asset:/index.bundle");
+          self->engine_->LoadInstance(load_instance_message);
+        }
+      }
     }
   };
 
@@ -50,9 +60,14 @@ std::shared_ptr<hippy::Config> Framework::CreateDefaultConfig() {
   config->GetJsEngine()->SetEnableV8Serialization(true);
   config->GetJsEngine()->SetUseCodeCache(true);
   config->GetJsEngine()->SetGroupId(-1);
+
   config->GetDebug()->SetDevelopmentModule(false);
   config->GetDebug()->SetHost("localhost:38989");
   config->GetJsAssetsPath()->SetCorePath("vendor.android.js");
+
+  auto console_adaptor = std::make_shared<hippy::EventViewerConsole>("demo", true);
+  config->GetAdaptor()->SetConsoleAdaptor(console_adaptor);
+
   config->SetDensity(1.0f);
   config->SetRootId(root_id);
   return config;
