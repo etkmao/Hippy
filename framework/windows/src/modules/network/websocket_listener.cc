@@ -27,10 +27,10 @@
 #include "footstone/string_view.h"
 
 namespace hippy {
-inline namespace framework {
 inline namespace windows {
+inline namespace framework {
 inline namespace module {
-  
+
 constexpr char kEventModuleName[] = "EventDispatcher";
 constexpr char kEventMethodName[] = "receiveNativeEvent";
 constexpr char kWebsocketEventName[] = "hippyWebsocketEvents";
@@ -94,6 +94,6 @@ void WebsocketEventListener::SendWebsocketEvent(std::string event_type, footston
 }
 
 }  // namespace module
-}  // namespace windows
 }  // namespace framework
+}  // namespace windows
 }  // namespace hippy

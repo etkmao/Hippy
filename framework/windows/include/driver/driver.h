@@ -22,27 +22,14 @@
 
 #pragma once
 
-#include <any>
-#include <functional>
-#include <memory>
-#include <string>
-
 #include "config.h"
-#include "context.h"
-#include "dom/root_node.h"
-#include "driver/base/common.h"
+#include "dom/dom_manager.h"
 #include "driver/module_dispatcher.h"
-#include "driver/napi/v8/v8_ctx.h"
-#include "driver/runtime/v8/runtime.h"
-#include "driver/vm/v8/v8_vm.h"
-#include "footstone/string_view_utils.h"
 
 namespace hippy {
-inline namespace framework {
 inline namespace windows {
 
-using string_view = footstone::stringview::StringViewUtils::string_view;
-using ScopeCallBack = hippy::base::RegisterFunction;
+using ScopeCallBack = hippy::driver::runtime::V8BridgeUtils::RegisterFunction;
 using ExceptionHandler = std::function<void(const std::shared_ptr<hippy::Runtime>& runtime,
                                             const hippy::driver::napi::Ctx::string_view& desc,
                                             const hippy::driver::napi::Ctx::string_view& stack)>;
@@ -52,24 +39,24 @@ class Driver : public std::enable_shared_from_this<Driver> {
   Driver();
   ~Driver() = default;
 
-  void SetConfig(std::shared_ptr<Config> config) { config_ = config; }
-  void SetScopeCallBack(ScopeCallBack scope_callback) { scope_callback_ = scope_callback; };
-  void SetExceptionHandler(ExceptionHandler exception_handler) { exception_handler_ = exception_handler; }
+  bool Initialize(const std::shared_ptr<Config>& config, const std::shared_ptr<DomManager>& dom_manager,
+                  const std::shared_ptr<RootNode>& root_node, const std::shared_ptr<UriLoader>& uri_loader,
+                  const uint32_t devtools_id);
 
-  bool Initialize(std::shared_ptr<Context> context, std::shared_ptr<DomManager> dom_manager,
-                  std::shared_ptr<RootNode> root_node, uint32_t devtools_id);
-  bool RunScriptFromUri(string_view uri, std::shared_ptr<hippy::vfs::UriLoader> uri_loader);
-  void LoadInstance(uint32_t root_id);
+  void RegisterExceptionHandler();
+  void SetExceptionHandler(ExceptionHandler exception_handler) { exception_handler_ = exception_handler; }
+  void SetScopeCallBack(ScopeCallBack scope_callback) { scope_callback_ = scope_callback; }
+  ScopeCallBack GetScopeCallBack() { return scope_callback_; }
+  void LoadInstance(std::string& load_instance_message);
+  bool RunScriptFromUri(string_view uri, const std::shared_ptr<UriLoader>& uri_loader,
+                        const std::shared_ptr<Config>& config);
 
  private:
   int32_t runtime_id_;
-  std::shared_ptr<Config> config_;
-  std::shared_ptr<hippy::V8VMInitParam> v8_init_param_;
-  ScopeCallBack scope_callback_;
-  ExceptionHandler exception_handler_;
   std::shared_ptr<hippy::ModuleDispatcher> module_dispatcher_;
+  ExceptionHandler exception_handler_;
+  ScopeCallBack scope_callback_;
 };
 
 }  // namespace windows
-}  // namespace framework
 }  // namespace hippy

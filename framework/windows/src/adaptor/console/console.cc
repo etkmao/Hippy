@@ -26,8 +26,8 @@
 #include <iostream>
 
 namespace hippy {
-inline namespace framework {
 inline namespace windows {
+inline namespace framework {
 inline namespace module {
 
 Console::Console(std::string app_name, bool debug) : app_name_(std::move(app_name)), debug_(debug) {}
@@ -56,6 +56,6 @@ void Console::WriteLog(const std::string message, WORD event_type) {
 }
 
 }  // namespace module
-}  // namespace windows
 }  // namespace framework
+}  // namespace windows
 }  // namespace hippy

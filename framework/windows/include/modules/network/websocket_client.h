@@ -34,8 +34,8 @@
 #include "modules/network/websocket_listener.h"
 
 namespace hippy {
-inline namespace framework {
 inline namespace windows {
+inline namespace framework {
 inline namespace module {
 
 struct WebsocketResponseHeader {
@@ -81,6 +81,6 @@ class WebsocketClient : public std::enable_shared_from_this<WebsocketClient> {
 };
 
 }  // namespace module
-}  // namespace windows
 }  // namespace framework
+}  // namespace windows
 }  // namespace hippy

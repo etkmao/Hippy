@@ -27,8 +27,8 @@
 #include "footstone/hippy_value.h"
 
 namespace hippy {
-inline namespace framework {
 inline namespace windows {
+inline namespace framework {
 inline namespace module {
 
 class Console {
@@ -51,6 +51,6 @@ class Console {
 };
 
 }  // namespace module
-}  // namespace windows
 }  // namespace framework
+}  // namespace windows
 }  // namespace hippy

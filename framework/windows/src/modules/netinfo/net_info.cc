@@ -27,8 +27,8 @@
 #include "adaptor/netinfo/adapter_addresses_net_info.h"
 
 namespace hippy {
-inline namespace framework {
 inline namespace windows {
+inline namespace framework {
 inline namespace module {
 
 NetInfo::NetInfo() : net_info_adaptor_(std::make_shared<adaptor::AdapterAddressesNetInfo>()){};
@@ -52,6 +52,6 @@ void NetInfo::GetCurrentConnectivity(std::function<void(footstone::value::HippyV
 }
 
 }  // namespace module
-}  // namespace windows
 }  // namespace framework
+}  // namespace windows
 }  // namespace hippy

@@ -28,11 +28,11 @@
 #include "adaptor/storage/storage.h"
 
 namespace hippy {
-inline namespace framework {
 inline namespace windows {
+inline namespace framework {
 inline namespace module {
 
-using StorageResponse = hippy::framework::windows::module::StorageResponse;
+using StorageResponse = hippy::windows::framework::module::StorageResponse;
 
 class Storage {
  public:
@@ -53,6 +53,6 @@ class Storage {
 };
 
 }  // namespace module
-}  // namespace windows
 }  // namespace framework
+}  // namespace windows
 }  // namespace hippy

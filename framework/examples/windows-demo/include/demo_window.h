@@ -8,6 +8,7 @@
 #include "core/platform/windows/view/tdf_window.h"
 #include "renderer/tdf/tdf_render_manager.h"
 #include "tdfui/view/view_context.h"
+#include "framework.h"
 
 class DemoWindow : public tdfcore::TDFWindow, public std::enable_shared_from_this<DemoWindow> {
  public:
@@ -16,10 +17,9 @@ class DemoWindow : public tdfcore::TDFWindow, public std::enable_shared_from_thi
 
   void Initialize(const std::string_view& title, const tdfcore::TRect& frame,
                   DWORD style = WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_VISIBLE) override;
+  void SetFramework(std::shared_ptr<hippy::windows::Framework>& framework) { framework_ = framework; }
+  void SetDismissHandler(const std::function<void()>& handler) { dismiss_handler_ = handler; }
 
-  void SetDismissHandler(const std::function<void()>& handler);
-  void SetTDFRenderManager(std::shared_ptr<hippy::render::tdf::TDFRenderManager> tdf_render_manager);
-  void SetRootId(uint32_t root_id) { root_id_ = root_id; }
 
  protected:
   LRESULT MessageHandle(UINT const message, WPARAM const wparam, LPARAM const lparam) override;
@@ -27,7 +27,6 @@ class DemoWindow : public tdfcore::TDFWindow, public std::enable_shared_from_thi
 
  public:
   std::shared_ptr<tdfcore::TDFEngineWindows> tdf_engine_;
-  std::shared_ptr<hippy::render::tdf::TDFRenderManager> tdf_render_manager_;
+  std::shared_ptr<hippy::windows::Framework> framework_;
   std::function<void()> dismiss_handler_;
-  uint32_t root_id_;
 };
