@@ -57,6 +57,7 @@ class HttpHandler : public UriHandler {
   void LoadByCurl(const string_view& url, const std::unordered_map<std::string, std::string>& parameters,
                   const std::unordered_map<std::string, std::string>& headers,
                   std::function<void(std::shared_ptr<JobResponse>)> cb);
+  void LoadByCurl(const string_view& url, const std::shared_ptr<JobResponse>& response);
 
  private:
   std::weak_ptr<TaskRunner> runner_;

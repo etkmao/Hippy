@@ -28,7 +28,7 @@
 
 #include "footstone/logging.h"
 #include "footstone/task_runner.h"
-#include "footstone/worker_impl.h"
+#include "footstone/worker_manager.h"
 
 std::atomic<uint32_t> global_websocket_id{0};
 
@@ -38,23 +38,13 @@ constexpr char kWebsocketId[] = "id";
 constexpr char kSendData[] = "data";
 constexpr char kCode[] = "code";
 constexpr char kReason[] = "reason";
-// constexpr char kCallbackWebsocketId[] = "id";
 
 namespace hippy {
 inline namespace windows {
 inline namespace framework {
 inline namespace module {
 
-Websocket::~Websocket() { worker_->Terminate(); }
-
-void Websocket::Initial() {
-  auto driver = std::make_unique<footstone::CVDriver>();
-  worker_ = std::make_shared<footstone::WorkerImpl>("websocket thread runner", false, std::move(driver));
-  worker_->Start();
-  task_runner_ = std::make_shared<footstone::TaskRunner>();
-  worker_->Bind({task_runner_});
-  task_runner_->SetWorker(worker_);
-}
+void Websocket::Initial() {}
 
 Websocket::RetCode Websocket::ParseRequest(const footstone::value::HippyValue& request, std::string& url,
                                            std::unordered_map<std::string, std::string>& headers) {
@@ -170,7 +160,6 @@ void Websocket::Connect(const footstone::value::HippyValue& request, uint32_t ru
 
   uint32_t id = global_websocket_id.fetch_add(1);
   auto client = std::make_shared<WebsocketClient>(id, url, headers);
-  client->Initial(task_runner_);
   auto listener = std::make_shared<WebsocketEventListener>(runtime_id, id);
   client->SetEventListener(listener);
   websocket_client_map_.insert({id, client});
@@ -193,14 +182,13 @@ void Websocket::Disconnect(const footstone::value::HippyValue& request, uint32_t
     FOOTSTONE_DLOG(INFO) << "websocket client not found !!! websocket id = " << websocket_id;
     return;
   }
-  auto client = iter->second;
-  client->Disconnect(code, reason);
 
-  auto remove_websocket_client = [WEAK_THIS, websocket_id]() {
-    DEFINE_AND_CHECK_SELF(Websocket)
-    self->EraseWebsocketClient(websocket_id);
-  };
-  task_runner_->PostTask(remove_websocket_client);
+  auto client = iter->second;
+  std::future<bool> future = iter->second->GetFuture();
+  client->Disconnect(code, reason);
+  future.get();
+  websocket_client_map_.erase(websocket_id);
+  return;
 }
 
 void Websocket::Send(const footstone::value::HippyValue& request, uint32_t runtime_id) {

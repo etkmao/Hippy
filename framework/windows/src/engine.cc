@@ -1,6 +1,7 @@
 #include "engine.h"
 
 #include "footstone/macros.h"
+#include "footstone/serializer.h"
 #include "footstone/worker_impl.h"
 
 namespace hippy {
@@ -11,7 +12,29 @@ constexpr uint32_t kPoolSize = 2;
 constexpr char kDomWorkerName[] = "dom_worker";
 constexpr char kDomRunnerName[] = "dom_task_runner";
 
-Engine::Engine(std::shared_ptr<hippy::Config>& config) : config_(std::move(config)) {}
+Engine::Engine(std::shared_ptr<hippy::Config>& config) : config_(config) {}
+
+std::string Engine::CreateLoadInstanceMessage(uint32_t root_id) {
+  footstone::value::Serializer serializer;
+  serializer.WriteHeader();
+  footstone::value::HippyValue::HippyValueObjectType obj;
+  obj.insert({"name", footstone::value::HippyValue("Demo")});
+  obj.insert({"id", footstone::value::HippyValue(root_id)});
+  footstone::value::HippyValue::HippyValueObjectType params;
+  params.insert({"msgFromNative", footstone::value::HippyValue("Hi js developer,I come from native code !")});
+  params.insert({"sourcePath", footstone::value::HippyValue("index.android.js")});
+  obj.insert({"params", footstone::value::HippyValue(params)});
+  serializer.WriteValue(footstone::value::HippyValue(obj));
+  std::pair<uint8_t*, size_t> buffer = serializer.Release();
+  std::string byte_string(reinterpret_cast<char*>(buffer.first), buffer.second);
+  return byte_string;
+}
+
+std::string Engine::CreateRemoteUri(const std::shared_ptr<Config>& config) {
+  std::string host = config->GetDebug()->GetHost();
+  std::string bundle_name = config->GetDebug()->GetBundleName();
+  return "http://" + host + "/" + bundle_name;
+}
 
 void Engine::Initialize() {
   CreateDriver();
@@ -96,6 +119,48 @@ bool Engine::RunScriptFromUri(const string_view& uri) {
 }
 
 void Engine::LoadInstance(std::string& load_instance_message) { driver_->LoadInstance(load_instance_message); }
+
+void Engine::ReloadInstance(uint32_t new_root_id) {
+  if (driver_) {
+    auto callback = [WEAK_THIS, new_root_id]() {
+      FOOTSTONE_DLOG(INFO) << "reload instance call begin";
+      DEFINE_AND_CHECK_SELF(Engine)
+      auto config = self->config_;
+      config->SetRootId(new_root_id);
+      self->CreateDriver();
+      self->CreateTdfRenderManager(config->GetDensity());
+      self->CreateRootNode(config->GetRootId(), config->GetDensity());
+      // self->CreateUriLoader();
+
+      self->tdf_render_manager_->SetDomManager(self->dom_manager_);
+      self->dom_manager_->SetRenderManager(self->tdf_render_manager_);
+      self->root_node_->SetDomManager(self->dom_manager_);
+      self->tdf_render_manager_->SetUriLoader(self->uri_loader_);
+      self->tdf_render_manager_->RegisterShell(config->GetRootId(), config->GetShell());
+
+      self->driver_->Initialize(config, self->dom_manager_, self->root_node_, self->uri_loader_, self->devtools_id_, true);
+      auto scope_callback = [weak_this = self->weak_from_this()](void* data) {
+        DEFINE_AND_CHECK_SELF(Engine)
+        auto scope_callback = self->GetScopeCallBack();
+        if (scope_callback) scope_callback(data);
+      };
+      self->driver_->SetScopeCallBack(scope_callback);
+
+      std::string load_instance_message = Engine::CreateLoadInstanceMessage(config->GetRootId());
+      if (config->GetDebug()->GetDevelopmentModule()) {
+        std::string remote_uri = Engine::CreateRemoteUri(config);
+        self->RunScriptFromUri(string_view(remote_uri));
+        self->LoadInstance(load_instance_message);
+      } else {
+        auto core_js = config->GetJsAssetsPath()->GetCorePath();
+        self->RunScriptFromUri(string_view(core_js));
+        self->RunScriptFromUri("asset:/index.android.js");
+        self->LoadInstance(load_instance_message);
+      }
+    };
+    driver_->ReloadInstance(root_node_->GetId(), callback);
+  }
+}
 
 }  // namespace framework
 }  // namespace windows

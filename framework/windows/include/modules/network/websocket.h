@@ -37,15 +37,13 @@ inline namespace module {
 class Websocket : public std::enable_shared_from_this<Websocket> {
  public:
   Websocket() = default;
-  ~Websocket();
+  ~Websocket() = default;
 
   void Initial();
   void Connect(const footstone::value::HippyValue& request, uint32_t runtime_id,
                std::function<void(footstone::value::HippyValue)> callback);
   void Disconnect(const footstone::value::HippyValue& request, uint32_t runtime_id);
   void Send(const footstone::value::HippyValue& request, uint32_t runtime_id);
-
-  void EraseWebsocketClient(uint32_t websocket_id) { websocket_client_map_.erase(websocket_id); }
 
  private:
   enum class RetCode { Success, Failed, UrlError, HeaderError };
@@ -60,8 +58,6 @@ class Websocket : public std::enable_shared_from_this<Websocket> {
 
  private:
   std::unordered_map<std::uint32_t, std::shared_ptr<WebsocketClient>> websocket_client_map_;
-  std::shared_ptr<footstone::Worker> worker_;
-  std::shared_ptr<footstone::TaskRunner> task_runner_;
 };
 
 }  // namespace module

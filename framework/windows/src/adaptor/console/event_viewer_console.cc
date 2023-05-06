@@ -37,20 +37,20 @@ EventViewerConsole::EventViewerConsole(std::string app_name, bool debug)
     : app_name_(std::move(app_name)), debug_(debug) {}
 
 bool EventViewerConsole::Initial() {
-  footstone::log::LogMessage::InitializeDelegate(
-      [WEAK_THIS](const std::ostringstream& stream, footstone::log::LogSeverity severity) {
-        DEFINE_AND_CHECK_SELF(EventViewerConsole)
-        std::string str = stream.str();
-        if (severity == footstone::log::LogSeverity::TDF_LOG_INFO) {
-          self->Info(str);
-        } else if (severity == footstone::log::LogSeverity::TDF_LOG_WARNING) {
-          self->Warn(str);
-        } else if (severity == footstone::log::LogSeverity::TDF_LOG_ERROR) {
-          self->Error(str);
-        } else if (severity == footstone::log::LogSeverity::TDF_LOG_FATAL) {
-          self->Fatal(str);
-        }
-      });
+  auto delegate = [WEAK_THIS](const std::ostringstream& stream, footstone::log::LogSeverity severity) {
+    DEFINE_AND_CHECK_SELF(EventViewerConsole)
+    std::string str = stream.str();
+    if (severity == footstone::log::LogSeverity::TDF_LOG_INFO) {
+      self->Info(str);
+    } else if (severity == footstone::log::LogSeverity::TDF_LOG_WARNING) {
+      self->Warn(str);
+    } else if (severity == footstone::log::LogSeverity::TDF_LOG_ERROR) {
+      self->Error(str);
+    } else if (severity == footstone::log::LogSeverity::TDF_LOG_FATAL) {
+      self->Fatal(str);
+    }
+  };
+  footstone::log::LogMessage::InitializeDelegate(delegate);
   return true;
 }
 
@@ -65,6 +65,7 @@ void EventViewerConsole::Fatal(const std::string& message) { WriteLog(message, E
 void EventViewerConsole::WriteLog(const std::string message, WORD event_type) {
   if (debug_) {
     std::cout << message;
+    std::cout.flush();
   } else {
     HANDLE handle = RegisterEventSource(NULL, message.c_str());
     if (handle != NULL) {

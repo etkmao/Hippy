@@ -52,9 +52,6 @@ void ModuleDispatcher::Initial(const std::shared_ptr<hippy::Config>& config) {
   net_info_module_->Initial();
   network_module_->Initial();
   clipboard_module_->Initial();
-
-  auto console_adaptor = config->GetAdaptor()->GetConsoleAdaptor();
-  if(console_adaptor) console_adaptor->Initial();
 };
 
 void ModuleDispatcher::Dispatcher(const CallbackInfo& info, const std::shared_ptr<Runtime>& runtime) {

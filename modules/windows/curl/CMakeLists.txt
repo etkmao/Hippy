@@ -40,7 +40,7 @@ set(ENABLE_DEBUG ON)
 set(BUILD_SHARED_LIBS OFF)
 set(CURL_USE_SCHANNEL ON)
 set(CMAKE_DEBUG_POSTFIX "")
-set(ENABLE_WEBSOCKETS ON)
+set(ENABLE_WEBSOCKETS OFF)
 FetchContent_Declare(curl
         GIT_REPOSITORY https://github.com/curl/curl.git
         GIT_TAG curl-7_88_1)

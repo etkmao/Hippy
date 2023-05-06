@@ -28,6 +28,7 @@
 #include <string>
 
 #include <WinSock2.h>
+#include <winternl.h>
 #include <netioapi.h>
 
 namespace hippy {

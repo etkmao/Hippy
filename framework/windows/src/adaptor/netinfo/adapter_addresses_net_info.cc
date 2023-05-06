@@ -27,7 +27,6 @@
 #include <WinSock2.h>
 #include <Wininet.h>
 #include <iphlpapi.h>
-#include <netioapi.h>
 
 namespace hippy {
 inline namespace windows {

@@ -33,7 +33,7 @@ inline namespace windows {
 inline namespace framework {
 inline namespace adaptor {
 
-class EventViewerConsole : public Console, std::enable_shared_from_this<EventViewerConsole> {
+class EventViewerConsole : public Console, public std::enable_shared_from_this<EventViewerConsole> {
  public:
   EventViewerConsole(std::string app_name, bool debug);
   virtual ~EventViewerConsole() override = default;

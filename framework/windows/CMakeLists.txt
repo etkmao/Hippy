@@ -80,6 +80,29 @@ target_link_libraries(${PROJECT_NAME} PRIVATE curl_wrapper)
 target_include_directories(${PROJECT_NAME} PUBLIC $<TARGET_PROPERTY:curl_wrapper,INTERFACE_INCLUDE_DIRECTORIES>)
 # endregion
 
+# region asio
+InfraPackage_Add(asio
+    REMOTE "devtools/backend/third_party/asio/1.22.1/asio.tar.gz"
+    LOCAL "third_party/asio")
+target_compile_definitions(${PROJECT_NAME}
+    # no rtti
+    PRIVATE "ASIO_NO_TYPEID"
+    # no exception
+    PRIVATE "ASIO_NO_EXCEPTIONS"
+    PRIVATE "ASIO_DISABLE_ALIGNOF")
+target_include_directories(${PROJECT_NAME} PUBLIC ${asio_SOURCE_DIR}/asio/include)
+# endregion
+
+# region websocketpp
+InfraPackage_Add(websocketpp
+    REMOTE "devtools/backend/third_party/websocketpp/develop/git-repo.tgz"
+    LOCAL "third_party/websocketpp")
+add_compile_definitions(
+    # no exception
+    "_WEBSOCKETPP_NO_EXCEPTIONS_")
+target_include_directories(${PROJECT_NAME} PUBLIC ${websocketpp_SOURCE_DIR})
+# endregion
+
 # region source set
 set(SOURCE_SET
     src/framework.cc
