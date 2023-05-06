@@ -86,7 +86,8 @@ bool HttpHandler::ParserParameters(const footstone::value::HippyValue& value,
 
 void HttpHandler::RequestUntrustedContent(std::shared_ptr<RequestJob> request, std::shared_ptr<JobResponse> response,
                                           std::function<std::shared_ptr<UriHandler>()> next) {
-  response->SetRetCode(UriHandler::RetCode::Failed);
+  string_view url = request->GetUri();
+  LoadByCurl(url, response);
   auto next_handler = next();
   if (next_handler) {
     next_handler->RequestUntrustedContent(request, response, next);
@@ -252,6 +253,33 @@ void HttpHandler::LoadByCurl(const string_view& url, const std::unordered_map<st
                                        std::unordered_map<std::string, std::string>{}, ""));
     }
   });
+}
+
+void HttpHandler::LoadByCurl(const string_view& url, const std::shared_ptr<JobResponse>& response) {
+  std::vector<uint8_t> read_buffer;
+  CurlWrapper curl_wrapper;
+  auto ret = curl_wrapper.Initialize();
+  if (!ret) {
+    response->SetRetCode(hippy::JobResponse::RetCode::Failed);
+    return;
+  }
+
+  auto curl_ptr = curl_wrapper.GetCurlRawPointer();
+  curl_easy_setopt(curl_ptr, CURLOPT_URL, url.latin1_value().c_str());
+  curl_easy_setopt(curl_ptr, CURLOPT_CUSTOMREQUEST, "GET");
+  curl_easy_setopt(curl_ptr, CURLOPT_HEADER, 0);
+  curl_easy_setopt(curl_ptr, CURLOPT_NOBODY, 0);
+  curl_easy_setopt(curl_ptr, CURLOPT_WRITEFUNCTION, WriteBodyCallback);
+  curl_easy_setopt(curl_ptr, CURLOPT_WRITEDATA, &read_buffer);
+  auto res = curl_easy_perform(curl_ptr);
+
+  if (res == 0) {
+    UriHandler::bytes content{read_buffer.begin(), read_buffer.end()};
+    response->SetRetCode(hippy::JobResponse::RetCode::Success);
+    response->SetContent(std::move(content));
+  } else {
+    response->SetRetCode(hippy::JobResponse::RetCode::Failed);
+  }
 }
 
 }  // namespace vfs

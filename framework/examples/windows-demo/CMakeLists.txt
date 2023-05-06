@@ -42,6 +42,7 @@ set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MTd")
 
 add_definitions(-DNOMINMAX)
 add_definitions(-D_USE_MATH_DEFINES)
+add_definitions(-DWIN32_LEAN_AND_MEAN)
 # add_definitions(-DNDEBUG)
 # add_definitions(-D_ITERATOR_DEBUG_LEVEL=0)
 set(JS_ENGINE "V8")
