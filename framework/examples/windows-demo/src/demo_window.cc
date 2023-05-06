@@ -4,10 +4,15 @@
 
 #include "demo_window.h"
 
+#include <Windows.h>
 #include <filesystem>
 #include <optional>
 
 #include "core/platform/common/tdf_engine.h"
+
+#define ID_MENU_OPERATOR 9001
+#define ID_MENU_REFRESH 9002
+#define ID_MENU_ABOUT 9003
 
 using namespace tdfcore;
 
@@ -23,6 +28,13 @@ void DemoWindow::Initialize(const std::string_view& title, const TRect& frame, D
   tdf_engine_->Start();
   AddView(tdf_engine_->GetOutputView().get());
   ShowWindow(tdf_engine_->GetOutputView()->GetWindowHandle(), SW_SHOW);
+
+  HMENU menu = CreateMenu();
+  HMENU sub_menu = CreatePopupMenu();
+  AppendMenu(sub_menu, MF_STRING, ID_MENU_ABOUT, "About");
+  AppendMenu(sub_menu, MF_STRING, ID_MENU_REFRESH, "Refresh");
+  AppendMenu(menu, MF_STRING | MF_POPUP, (UINT_PTR)sub_menu, "Operator");
+  SetMenu(GetWindowHandle(), menu);
 }
 
 LRESULT DemoWindow::MessageHandle(UINT const message, WPARAM const wparam, LPARAM const lparam) noexcept {
@@ -32,6 +44,17 @@ LRESULT DemoWindow::MessageHandle(UINT const message, WPARAM const wparam, LPARA
       auto config = framework_->CreateDefaultConfig();
       config->SetShell(shell);
       framework_->Initialize(config);
+      return 0;
+    }
+    case WM_COMMAND: {
+      switch (LOWORD(wparam)) {
+        case ID_MENU_REFRESH:
+          framework_->Reload();
+          break;
+        case ID_MENU_ABOUT:
+          MessageBox(GetWindowHandle(), "This is a sample example for hippy windows.", "About", MB_OK);
+          break;
+      }
       return 0;
     }
     case WM_SIZE: {

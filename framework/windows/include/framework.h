@@ -37,6 +37,7 @@ class Framework : public std::enable_shared_from_this<Framework> {
   ~Framework() = default;
 
   void Initialize(std::shared_ptr<Config>& config);
+  void Reload();
   std::shared_ptr<hippy::Config> CreateDefaultConfig();
 
  private:

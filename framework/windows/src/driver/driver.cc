@@ -5,6 +5,7 @@
 
 #include "driver/runtime/v8/v8_bridge_utils.h"
 #include "driver/scope.h"
+#include "footstone/macros.h"
 #include "footstone/string_view_utils.h"
 #include "vfs/handler/asset_handler.h"
 #include "vfs/handler/http_handler.h"
@@ -55,7 +56,8 @@ static string_view CreateGlobalConfig(const std::shared_ptr<Config>& config) {
 
 bool Driver::Initialize(const std::shared_ptr<Config>& config, const std::shared_ptr<DomManager>& dom_manager,
                         const std::shared_ptr<RootNode>& root_node, const std::shared_ptr<UriLoader>& uri_loader,
-                        const uint32_t devtools_id) {
+                        const uint32_t devtools_id, const bool reload) {
+  FOOTSTONE_DCHECK(module_dispatcher_);
   if (module_dispatcher_ == nullptr) return false;
   module_dispatcher_->Initial(config);
 
@@ -94,6 +96,17 @@ bool Driver::Initialize(const std::shared_ptr<Config>& config, const std::shared
   runtime->GetScope()->SetRootNode(root_node);
   runtime->SetData(kDispatcherSlot, module_dispatcher_);
 
+  runtime->GetScope()->SetUriLoader(uri_loader);
+  if (!reload) {
+    auto http_handler = std::make_shared<hippy::vfs::HttpHandler>();
+    http_handler->SetWorkerTaskRunner(runtime->GetEngine()->GetWorkerTaskRunner());
+    uri_loader->RegisterUriHandler(kHttpSchema, http_handler);
+    uri_loader->RegisterUriHandler(kHttpsSchema, http_handler);
+    auto asset_handler = std::make_shared<hippy::vfs::AssetHandler>();
+    asset_handler->SetWorkerTaskRunner(runtime->GetEngine()->GetWorkerTaskRunner());
+    uri_loader->RegisterUriHandler(kAssetSchema, asset_handler);
+  }
+
   return true;
 }
 
@@ -104,10 +117,6 @@ void Driver::RegisterExceptionHandler() {
     DEFINE_AND_CHECK_SELF(Driver)
     if (self->exception_handler_) self->exception_handler_(runtime, desc, stack);
   });
-}
-
-void Driver::LoadInstance(std::string& load_instance_message) {
-  hippy::V8BridgeUtils::LoadInstance(runtime_id_, std::move(load_instance_message));
 }
 
 bool Driver::RunScriptFromUri(string_view uri, const std::shared_ptr<UriLoader>& uri_loader,
@@ -139,15 +148,6 @@ bool Driver::RunScriptFromUri(string_view uri, const std::shared_ptr<UriLoader>&
     }
   });
 
-  runtime->GetScope()->SetUriLoader(uri_loader);
-  auto http_handler = std::make_shared<hippy::vfs::HttpHandler>();
-  http_handler->SetWorkerTaskRunner(runtime->GetEngine()->GetWorkerTaskRunner());
-  uri_loader->RegisterUriHandler(kHttpSchema, http_handler);
-  uri_loader->RegisterUriHandler(kHttpsSchema, http_handler);
-  auto asset_handler = std::make_shared<hippy::vfs::AssetHandler>();
-  asset_handler->SetWorkerTaskRunner(runtime->GetEngine()->GetWorkerTaskRunner());
-  uri_loader->RegisterUriHandler(kAssetSchema, asset_handler);
-
 #ifdef ENABLE_INSPECTOR
   auto devtools_data_source = runtime->GetDevtoolsDataSource();
   if (devtools_data_source) {
@@ -164,6 +164,30 @@ bool Driver::RunScriptFromUri(string_view uri, const std::shared_ptr<UriLoader>&
   runner->PostTask(std::move(func));
 
   return true;
+}
+
+void Driver::LoadInstance(std::string& load_instance_message) {
+  hippy::V8BridgeUtils::LoadInstance(runtime_id_, std::move(load_instance_message));
+}
+
+void Driver::ReloadInstance(const uint32_t root_id, std::function<void()> reload_callback) {
+  serializer_.Release();
+  serializer_.WriteHeader();
+  footstone::value::HippyValue::HippyValueObjectType object;
+  object.insert({"id", footstone::value::HippyValue(root_id)});
+  serializer_.WriteValue(footstone::value::HippyValue(object));
+  std::pair<uint8_t*, size_t> buffer = serializer_.Release();
+  std::string byte_string(reinterpret_cast<char*>(buffer.first), buffer.second);
+  V8BridgeUtils::UnloadInstance(runtime_id_, std::move(byte_string));
+
+  auto callback = [reload_callback](bool ret) {
+    if (ret) {
+      if (reload_callback) reload_callback();
+    } else {
+      FOOTSTONE_DLOG(INFO) << "reload engine failed !!!";
+    }
+  };
+  V8BridgeUtils::DestroyInstance(runtime_id_, callback, true);
 }
 
 }  // namespace windows

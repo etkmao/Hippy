@@ -39,145 +39,133 @@ inline namespace windows {
 inline namespace framework {
 inline namespace module {
 
-WebsocketClient::WebsocketClient(uint32_t id, std::string url,
+WebsocketClient::WebsocketClient(uint32_t id, std::string ws_url,
                                  std::unordered_map<std::string, std::string> extra_headers)
-    : id_(id), url_(url), extra_headers_(extra_headers), curl_wrapper_(std::make_unique<CurlWrapper>()) {}
-
-WebsocketClient::~WebsocketClient() { curl_slist_free_all(headers_); }
-
-void WebsocketClient::Initial(std::shared_ptr<footstone::TaskRunner> task_runner) { task_runner_ = task_runner; }
-
-// TODO(charleeshen): 是否需要检查 secrect key 正确
-static size_t WebsocketCurlWriteHeader(char* buffer, size_t size, size_t nitems, void* userdata) {
-  struct WebsocketResponseHeader* resp_headers = (struct WebsocketResponseHeader*)userdata;
-  char* field = "Sec-WebSocket-Accept: ";
-  if (strncmp(buffer, field, strlen(field)) == 0) {
-    resp_headers->ws_accept = std::string(buffer + strlen(field), nitems - strlen(field) - 2);
-  }
-  return nitems;
+    : id_(id), ws_url_(ws_url), extra_headers_(extra_headers) {
+  ws_client_.clear_access_channels(websocketpp::log::alevel::all);
+  ws_client_.set_access_channels(websocketpp::log::alevel::fail);
+  ws_client_.set_error_channels(websocketpp::log::elevel::all);
+  // Initialize ASIO
+  // for (const auto& [key, value] : extra_headers_) {
+  //  ws_client_.set_message_header(key, value);
+  // }
+  websocketpp::lib::error_code error_code;
+  ws_client_.init_asio(error_code);
+  ws_client_.start_perpetual();
 }
 
-bool WebsocketClient::CreateSecretKey() {
-  char key[16];
-  srand(time(NULL));
-  for (int i = 0; i < 16; i++) {
-    key[i] = rand() % 256;
-  }
-  DWORD size = 0;
-  if (!CryptBinaryToStringA(reinterpret_cast<BYTE*>(key), (DWORD)16, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, nullptr,
-                            &size)) {
-    return false;
-  }
-  secret_key_.resize(size);
-  if (!CryptBinaryToStringA(reinterpret_cast<BYTE*>(key), (DWORD)16, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF,
-                            &secret_key_[0], &size)) {
-    return false;
-  }
-  return true;
+WebsocketClient::~WebsocketClient() {
+  if (ws_thread_->joinable()) ws_thread_->join();
 }
 
 void WebsocketClient::Connect() {
-  {
-    std::lock_guard<std::mutex> lock_gurad(mutex_);
-    if (is_connected_) return;
-  }
-
-  auto handshake = [WEAK_THIS]() {
-    DEFINE_AND_CHECK_SELF(WebsocketClient)
-
-    self->curl_wrapper_->Initialize();
-    auto curl = self->curl_wrapper_->GetCurlRawPointer();
-    auto url = self->url_;
-    struct curl_slist* headers = self->headers_;
-    for (const auto& kv : self->extra_headers_) {
-      std::string h = kv.first + ": " + kv.second;
-      headers = curl_slist_append(headers, h.c_str());
-    }
-    struct WebsocketResponseHeader resp_headers;
-
-    curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-    curl_easy_setopt(curl, CURLOPT_CONNECT_ONLY, 2L);
-    curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
-    if (headers != nullptr) {
-      curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-    }
-    curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, WebsocketCurlWriteHeader);
-    curl_easy_setopt(curl, CURLOPT_HEADERDATA, &resp_headers);
-
-    auto res = curl_easy_perform(curl);
-    if (res != CURLE_OK) {
-      FOOTSTONE_DLOG(INFO) << "curl_easy_perform() failed: " << curl_easy_strerror(res);
-      return;
-    }
-    self->is_connected_ = true;
-    self->Receive();
-    if (self->websocket_event_listener_) self->websocket_event_listener_->Open();
-  };
-
-  task_runner_->PostTask(handshake);
-  return;
-}
-
-// TODO(charleeshen): 数据量大的时候可能需要分片
-void WebsocketClient::Send(const std::string& send_message) {
-  auto send_frame = [WEAK_THIS, send_message]() {
-    DEFINE_AND_CHECK_SELF(WebsocketClient)
-
-    size_t send;
-    auto curl = self->curl_wrapper_->GetCurlRawPointer();
-    auto url = self->url_;
-    auto res = curl_ws_send(curl, send_message.c_str(), send_message.length(), &send, 0, CURLWS_BINARY);
-    if (res != CURLE_OK) {
-      FOOTSTONE_DLOG(INFO) << "curl_ws_send() failed: " << curl_easy_strerror(res);
-      if (self->websocket_event_listener_) self->websocket_event_listener_->Error(curl_easy_strerror(res));
-      return;
-    }
-    self->Receive();
-
+  if (ws_url_.empty()) {
+    FOOTSTONE_DLOG(INFO) << "websocket uri is empty, connect error";
     return;
-  };
-  task_runner_->PostTask(send_frame);
-}
-
-void WebsocketClient::Receive() {
-  auto recv_frame = [WEAK_THIS]() {
+  }
+  ws_client_.set_socket_init_handler(
+      [WEAK_THIS](const websocketpp::connection_hdl& handle, websocketpp::lib::asio::ip::tcp::socket& socket) {
+        DEFINE_AND_CHECK_SELF(WebsocketClient)
+        self->HandleSocketInit(handle);
+      });
+  ws_client_.set_open_handler([WEAK_THIS](const websocketpp::connection_hdl& handle) {
     DEFINE_AND_CHECK_SELF(WebsocketClient)
+    self->HandleSocketConnectOpen(handle);
+  });
+  ws_client_.set_close_handler([WEAK_THIS](const websocketpp::connection_hdl& handle) {
+    DEFINE_AND_CHECK_SELF(WebsocketClient)
+    self->HandleSocketConnectClose(handle);
+    self->promise_.set_value(true);
+  });
+  ws_client_.set_fail_handler([WEAK_THIS](const websocketpp::connection_hdl& handle) {
+    DEFINE_AND_CHECK_SELF(WebsocketClient)
+    self->HandleSocketConnectFail(handle);
+  });
+  ws_client_.set_message_handler(
+      [WEAK_THIS](const websocketpp::connection_hdl& handle, const WSMessagePtr& message_ptr) {
+        DEFINE_AND_CHECK_SELF(WebsocketClient)
+        self->HandleSocketConnectMessage(handle, message_ptr);
+      });
 
-    std::string recv_message;
-    auto curl = self->curl_wrapper_->GetCurlRawPointer();
-    size_t i = 0;
-    size_t nread = 0;
-    struct curl_ws_frame* meta;
-    char buffer[256];
-    while (true) {
-      auto res = curl_ws_recv(curl, buffer, sizeof(buffer), &nread, &meta);
-      if (res == CURLE_AGAIN) {
-        FOOTSTONE_DLOG(INFO) << "curl_ws_recv() continue";
-        recv_message += std::string(buffer, meta->len);
-        continue;
-      } else if (res == CURLE_OK) {
-        recv_message += std::string(buffer, meta->len);
-        if (self->websocket_event_listener_) self->websocket_event_listener_->Message(recv_message);
-        return;
-      } else {
-        if (self->websocket_event_listener_) self->websocket_event_listener_->Error(curl_easy_strerror(res));
-        return;
-      }
-    }
-  };
-  task_runner_->PostTask(recv_frame);
+  ws_thread_ = websocketpp::lib::make_shared<websocketpp::lib::thread>(&WSClient::run, &ws_client_);
+  websocketpp::lib::error_code error_code;
+  auto con = ws_client_.get_connection(ws_url_, error_code);
+  if (error_code) {
+    ws_client_.get_alog().write(websocketpp::log::alevel::app, error_code.message());
+    return;
+  }
+  ws_client_.connect(con);
 }
 
-// TODO(charleeshen): 改用 frame 传递数据， 传递 code 和 reason 给服务器
+void WebsocketClient::Send(const std::string& message) {
+  if (!ws_connection_handle_.lock()) {
+    unset_messages_.emplace_back(message);
+    return;
+  }
+  websocketpp::lib::error_code error_code;
+  ws_client_.send(ws_connection_handle_, message, websocketpp::frame::opcode::text, error_code);
+}
+
 void WebsocketClient::Disconnect(const int32_t code, const std::string& reason) {
-  auto disconnect = [WEAK_THIS]() {
-    DEFINE_AND_CHECK_SELF(WebsocketClient)
-    // clean up websocket
-    auto curl = self->curl_wrapper_->GetCurlRawPointer();
-    self->curl_wrapper_->Cleanup();
-    if (self->websocket_event_listener_) self->websocket_event_listener_->Close(0, "closed");
-  };
-  task_runner_->PostTask(disconnect);
+  if (!ws_connection_handle_.lock()) {
+    FOOTSTONE_DLOG(INFO) << "send message error, handler is null";
+    promise_.set_value(false);
+    return;
+  }
+  FOOTSTONE_DLOG(INFO) << "close websocket, code: %d, reason: " << code << reason.c_str();
+  websocketpp::lib::error_code error_code;
+  ws_client_.close(ws_connection_handle_, static_cast<websocketpp::close::status::value>(code), reason, error_code);
+  ws_client_.stop_perpetual();
+}
+
+void WebsocketClient::HandleSocketInit(const websocketpp::connection_hdl& handle) {
+  FOOTSTONE_DLOG(INFO) << "websocket init";
+}
+
+void WebsocketClient::HandleSocketConnectFail(const websocketpp::connection_hdl& handle) {
+  websocketpp::lib::error_code error_code;
+  auto con = ws_client_.get_con_from_hdl(handle, error_code);
+  unset_messages_.clear();
+  FOOTSTONE_DLOG(INFO) << "websocket connect fail, state: " << con->get_state()
+                       << ", error message:" << con->get_ec().message().c_str()
+                       << ", local close code:" << con->get_local_close_code()
+                       << ", local close reason: " << con->get_local_close_reason().c_str()
+                       << ", remote close code:" << con->get_remote_close_code()
+                       << ", remote close reason:" << con->get_remote_close_reason().c_str();
+}
+
+void WebsocketClient::HandleSocketConnectOpen(const websocketpp::connection_hdl& handle) {
+  ws_connection_handle_ = handle.lock();
+  FOOTSTONE_DLOG(INFO) << "websocket connect open";
+  if (ws_event_listener_) ws_event_listener_->Open();
+  if (!ws_connection_handle_.lock() || unset_messages_.empty()) {
+    return;
+  }
+  for (auto& message : unset_messages_) {
+    websocketpp::lib::error_code error_code;
+    ws_client_.send(ws_connection_handle_, message, websocketpp::frame::opcode::text, error_code);
+  }
+  unset_messages_.clear();
+}
+
+void WebsocketClient::HandleSocketConnectMessage(const websocketpp::connection_hdl& handle,
+                                                 const WSMessagePtr& message_ptr) {
+  auto message = message_ptr->get_payload();
+  std::string data(message.c_str(), message.length());
+  if (ws_event_listener_) ws_event_listener_->Message(data);
+}
+
+void WebsocketClient::HandleSocketConnectClose(const websocketpp::connection_hdl& handle) {
+  websocketpp::lib::error_code error_code;
+  auto con = ws_client_.get_con_from_hdl(handle, error_code);
+  if (ws_event_listener_) ws_event_listener_->Close(0, "closed");
+  unset_messages_.clear();
+  FOOTSTONE_DLOG(INFO) << "websocket connect close, state: " << con->get_state()
+                       << ", error message:" << con->get_ec().message().c_str()
+                       << ", local close code:" << con->get_local_close_code()
+                       << ", local close reason: " << con->get_local_close_reason().c_str()
+                       << ", remote close code:" << con->get_remote_close_code()
+                       << ", remote close reason:" << con->get_remote_close_reason().c_str();
 }
 
 }  // namespace module

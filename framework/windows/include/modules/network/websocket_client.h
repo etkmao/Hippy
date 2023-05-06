@@ -22,62 +22,68 @@
 
 #pragma once
 
+#include <future>
 #include <memory>
-#include <mutex>
 #include <string>
-#include <thread>
 #include <unordered_map>
 
-#include "curl/curl.h"
-#include "curl/curl_wrapper.h"
-#include "footstone/task_runner.h"
 #include "modules/network/websocket_listener.h"
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated"
+#pragma clang diagnostic ignored "-Wshadow"
+#pragma clang diagnostic ignored "-Wimplicit-fallthrough"
+#pragma clang diagnostic ignored "-Wconversion"
+#pragma clang diagnostic ignored "-Wunknown-warning-option"
+#pragma clang diagnostic ignored "-Wextra"
+#pragma clang diagnostic ignored "-Wtautological-type-limit-compare"
+#pragma clang diagnostic ignored "-Wzero-as-null-pointer-constant"
+#pragma clang diagnostic ignored "-Wnonportable-system-include-path"
+#pragma clang diagnostic ignored "-Wlanguage-extension-token"
+#pragma clang diagnostic ignored "-Wcast-align"
+#pragma clang diagnostic ignored "-Wunused-private-field"
+#pragma clang diagnostic ignored "-Wsuggest-override"
+#define ASIO_STANDALONE
+#include "websocketpp/client.hpp"
+#include "websocketpp/config/asio_no_tls_client.hpp"
+#pragma clang diagnostic pop
 
 namespace hippy {
 inline namespace windows {
 inline namespace framework {
 inline namespace module {
 
-struct WebsocketResponseHeader {
-  std::string ws_accept;
-};
-
-struct WebsockeFrame {
-  unsigned char fin;
-  unsigned char opcode;
-  unsigned char mask;
-  unsigned long long payload_len;
-  unsigned char masking_key[4];
-  unsigned char* payload;
-};
+using WSClient = websocketpp::client<websocketpp::config::asio_client>;
+using WSConnectionHandle = websocketpp::connection_hdl;
+using WSMessagePtr = websocketpp::config::asio_client::message_type::ptr;
+using WSThread = websocketpp::lib::shared_ptr<websocketpp::lib::thread>;
 
 class WebsocketClient : public std::enable_shared_from_this<WebsocketClient> {
  public:
-  WebsocketClient(uint32_t id, std::string url, std::unordered_map<std::string, std::string> extra_headers);
+  WebsocketClient(uint32_t id, std::string ws_url, std::unordered_map<std::string, std::string> extra_headers);
   ~WebsocketClient();
-  void Initial(std::shared_ptr<footstone::TaskRunner> task_runner);
-
   void Connect();
   void Disconnect(const int32_t code, const std::string& reason);
   void Send(const std::string& send_message);
-  void Receive();
-
-  void SetEventListener(std::shared_ptr<WebsocketEventListener> listener) { websocket_event_listener_ = listener; }
-
- private:
-  bool CreateSecretKey();
+  void SetEventListener(std::shared_ptr<WebsocketEventListener> listener) { ws_event_listener_ = listener; }
+  std::future<bool> GetFuture() { return promise_.get_future(); }
 
  private:
-  std::mutex mutex_;
-  bool is_connected_{false};
+  void HandleSocketInit(const websocketpp::connection_hdl& handle);
+  void HandleSocketConnectFail(const websocketpp::connection_hdl& handle);
+  void HandleSocketConnectOpen(const websocketpp::connection_hdl& handle);
+  void HandleSocketConnectMessage(const websocketpp::connection_hdl& handle, const WSMessagePtr& message_ptr);
+  void HandleSocketConnectClose(const websocketpp::connection_hdl& handle);
+
+ private:
   uint32_t id_;
-  std::string url_;
-  struct curl_slist* headers_{nullptr};
+  std::string ws_url_;
   std::unordered_map<std::string, std::string> extra_headers_;
-  std::string secret_key_;
-  std::unique_ptr<CurlWrapper> curl_wrapper_;
-  std::shared_ptr<WebsocketEventListener> websocket_event_listener_;
-  std::shared_ptr<footstone::TaskRunner> task_runner_;
+  WSClient ws_client_;
+  WSThread ws_thread_;
+  WSConnectionHandle ws_connection_handle_;
+  std::vector<std::string> unset_messages_{};
+  std::shared_ptr<WebsocketEventListener> ws_event_listener_;
+  std::promise<bool> promise_;
 };
 
 }  // namespace module
