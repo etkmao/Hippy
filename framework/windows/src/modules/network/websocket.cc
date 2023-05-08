@@ -194,7 +194,6 @@ void Websocket::Disconnect(const footstone::value::HippyValue& request, uint32_t
   }
 
   auto client = iter->second;
-  std::future<bool> future = iter->second->GetFuture();
   client->Disconnect(code, reason);
   return;
 }

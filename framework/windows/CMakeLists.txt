@@ -103,10 +103,10 @@ InfraPackage_Add(asio
     LOCAL "third_party/asio")
 target_compile_definitions(${PROJECT_NAME}
     # no rtti
-    PRIVATE "ASIO_NO_TYPEID"
+    PUBLIC "ASIO_NO_TYPEID"
     # no exception
-    PRIVATE "ASIO_NO_EXCEPTIONS"
-    PRIVATE "ASIO_DISABLE_ALIGNOF")
+    PUBLIC "ASIO_NO_EXCEPTIONS"
+    PUBLIC "ASIO_DISABLE_ALIGNOF")
 target_include_directories(${PROJECT_NAME} PUBLIC ${asio_SOURCE_DIR}/asio/include)
 # endregion
 

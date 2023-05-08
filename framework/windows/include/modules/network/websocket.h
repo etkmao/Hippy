@@ -37,7 +37,7 @@ inline namespace module {
 class Websocket : public std::enable_shared_from_this<Websocket> {
  public:
   Websocket() = default;
-  ~Websocket() = default;
+  ~Websocket();
 
   void Initial();
   void Connect(const footstone::value::HippyValue& request, uint32_t runtime_id,
