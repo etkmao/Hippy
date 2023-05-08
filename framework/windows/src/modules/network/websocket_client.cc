@@ -54,10 +54,6 @@ WebsocketClient::WebsocketClient(uint32_t id, std::string ws_url,
   ws_client_.start_perpetual();
 }
 
-WebsocketClient::~WebsocketClient() {
-  if (ws_thread_->joinable()) ws_thread_->join();
-}
-
 void WebsocketClient::Connect() {
   if (ws_url_.empty()) {
     FOOTSTONE_DLOG(INFO) << "websocket uri is empty, connect error";
@@ -75,7 +71,7 @@ void WebsocketClient::Connect() {
   ws_client_.set_close_handler([WEAK_THIS](const websocketpp::connection_hdl& handle) {
     DEFINE_AND_CHECK_SELF(WebsocketClient)
     self->HandleSocketConnectClose(handle);
-    self->promise_.set_value(true);
+    if (self->callback_) self->callback_(self->id_);
   });
   ws_client_.set_fail_handler([WEAK_THIS](const websocketpp::connection_hdl& handle) {
     DEFINE_AND_CHECK_SELF(WebsocketClient)
@@ -88,6 +84,7 @@ void WebsocketClient::Connect() {
       });
 
   ws_thread_ = websocketpp::lib::make_shared<websocketpp::lib::thread>(&WSClient::run, &ws_client_);
+  ws_thread_->detach();
   websocketpp::lib::error_code error_code;
   auto con = ws_client_.get_connection(ws_url_, error_code);
   if (error_code) {
@@ -107,15 +104,14 @@ void WebsocketClient::Send(const std::string& message) {
 }
 
 void WebsocketClient::Disconnect(const int32_t code, const std::string& reason) {
+  ws_client_.stop_perpetual();
   if (!ws_connection_handle_.lock()) {
     FOOTSTONE_DLOG(INFO) << "send message error, handler is null";
-    promise_.set_value(false);
     return;
   }
   FOOTSTONE_DLOG(INFO) << "close websocket, code: %d, reason: " << code << reason.c_str();
   websocketpp::lib::error_code error_code;
   ws_client_.close(ws_connection_handle_, static_cast<websocketpp::close::status::value>(code), reason, error_code);
-  ws_client_.stop_perpetual();
 }
 
 void WebsocketClient::HandleSocketInit(const websocketpp::connection_hdl& handle) {
