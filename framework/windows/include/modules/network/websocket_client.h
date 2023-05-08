@@ -22,11 +22,12 @@
 
 #pragma once
 
-#include <future>
+#include <functional>
 #include <memory>
 #include <string>
 #include <unordered_map>
 
+#include "footstone/logging.h"
 #include "modules/network/websocket_listener.h"
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated"
@@ -60,12 +61,12 @@ using WSThread = websocketpp::lib::shared_ptr<websocketpp::lib::thread>;
 class WebsocketClient : public std::enable_shared_from_this<WebsocketClient> {
  public:
   WebsocketClient(uint32_t id, std::string ws_url, std::unordered_map<std::string, std::string> extra_headers);
-  ~WebsocketClient();
+  ~WebsocketClient() = default;
   void Connect();
   void Disconnect(const int32_t code, const std::string& reason);
   void Send(const std::string& send_message);
   void SetEventListener(std::shared_ptr<WebsocketEventListener> listener) { ws_event_listener_ = listener; }
-  std::future<bool> GetFuture() { return promise_.get_future(); }
+  void SetCloseCallback(std::function<void(uint32_t)> callback) { callback_ = callback; }
 
  private:
   void HandleSocketInit(const websocketpp::connection_hdl& handle);
@@ -83,7 +84,7 @@ class WebsocketClient : public std::enable_shared_from_this<WebsocketClient> {
   WSConnectionHandle ws_connection_handle_;
   std::vector<std::string> unset_messages_{};
   std::shared_ptr<WebsocketEventListener> ws_event_listener_;
-  std::promise<bool> promise_;
+  std::function<void(uint32_t)> callback_;
 };
 
 }  // namespace module

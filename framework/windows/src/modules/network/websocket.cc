@@ -139,6 +139,12 @@ Websocket::RetCode Websocket::ParseRequest(const footstone::value::HippyValue& r
   return RetCode::Success;
 }
 
+Websocket::~Websocket() {
+  for (const auto& [id, client] : websocket_client_map_) {
+    client->Disconnect(0, "client close");
+  }
+}
+
 void Websocket::Connect(const footstone::value::HippyValue& request, uint32_t runtime_id,
                         std::function<void(footstone::value::HippyValue)> callback) {
   std::unordered_map<std::string, std::string> headers;
@@ -163,6 +169,10 @@ void Websocket::Connect(const footstone::value::HippyValue& request, uint32_t ru
   auto listener = std::make_shared<WebsocketEventListener>(runtime_id, id);
   client->SetEventListener(listener);
   websocket_client_map_.insert({id, client});
+  client->SetCloseCallback([WEAK_THIS](uint32_t websocket_id) {
+    DEFINE_AND_CHECK_SELF(Websocket)
+    self->websocket_client_map_.erase(websocket_id);
+  });
 
   client->Connect();
   footstone::value::HippyValue::HippyValueObjectType callback_object;
@@ -184,10 +194,7 @@ void Websocket::Disconnect(const footstone::value::HippyValue& request, uint32_t
   }
 
   auto client = iter->second;
-  std::future<bool> future = iter->second->GetFuture();
   client->Disconnect(code, reason);
-  future.get();
-  websocket_client_map_.erase(websocket_id);
   return;
 }
 
