@@ -309,7 +309,7 @@ void ModuleDispatcher::ImageLoaderModuleHandle(const std::shared_ptr<UriLoader>&
     };
     image_loader_module_->GetSize(uri_loader, buffer, callback);
   } else if (func == kImageLoaderFunctionPrefetch) {
-    image_loader_module_->Prefetch();
+    image_loader_module_->Prefetch(uri_loader, buffer);
   } else {
     FOOTSTONE_LOG(WARNING) << "function " << func << " is not support !!!";
   }

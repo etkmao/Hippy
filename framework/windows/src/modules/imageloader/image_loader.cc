@@ -84,7 +84,22 @@ void ImageLoader::GetSize(const std::shared_ptr<UriLoader>& uri_loader, const fo
   return;
 }
 
-void ImageLoader::Prefetch() { return; }
+void ImageLoader::Prefetch(const std::shared_ptr<UriLoader>& uri_loader, const footstone::value::HippyValue& request) {
+  std::string url;
+  auto ret = ParserRequestUrl(request, url);
+  FOOTSTONE_DCHECK(ret);
+
+  auto loader_callback = [url](UriLoader::RetCode code, std::unordered_map<std::string, std::string> rsp_meta,
+                               vfs::UriHandler::bytes rsp_content) {
+    if (code == UriLoader::RetCode::Success) {
+      FOOTSTONE_DLOG(INFO) << "Prefetch Image Success !! Url = " << url;
+    } else {
+      FOOTSTONE_DLOG(INFO) << "Prefetch Image Fail!! Url = " << url;
+    }
+  };
+  uri_loader->RequestUntrustedContent(footstone::stringview::string_view(url), {}, loader_callback);
+  return;
+}
 
 bool ImageLoader::ParserRequestUrl(const footstone::value::HippyValue& request, std::string& url) {
   footstone::value::HippyValue::HippyValueArrayType parameters;
