@@ -24,15 +24,17 @@
 
 #include <functional>
 #include <memory>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 #include "adaptor/storage/storage.h"
+#include "footstone/hippy_value.h"
 
 namespace hippy {
 inline namespace windows {
 inline namespace framework {
 inline namespace module {
-
-using StorageResponse = hippy::windows::framework::module::StorageResponse;
 
 class Storage {
  public:
@@ -42,11 +44,23 @@ class Storage {
 
   bool Initial();
 
-  void GetItemsValue(std::vector<std::string> keys,
-                     std::function<void(StorageResponse, std::unordered_map<std::string, std::string>)> callback);
-  void SetItemsValue(std::unordered_map<std::string, std::string> kvs, std::function<void(StorageResponse)> callback);
-  void RemoveItems(std::vector<std::string> keys, std::function<void(StorageResponse)> callback);
-  void GetAllItemsKey(std::function<void(StorageResponse, std::vector<std::string>)> callback);
+  void GetItemsValue(const footstone::value::HippyValue& request,
+                     std::function<void(const footstone::value::HippyValue&)> success_callback,
+                     std::function<void(const footstone::value::HippyValue&)> fail_callback);
+  void SetItemsValue(const footstone::value::HippyValue& request,
+                     std::function<void(const footstone::value::HippyValue&)> success_callback,
+                     std::function<void(const footstone::value::HippyValue&)> fail_callback);
+  void RemoveItems(const footstone::value::HippyValue& request,
+                   std::function<void(const footstone::value::HippyValue&)> success_callback,
+                   std::function<void(const footstone::value::HippyValue&)> fail_callback);
+  void GetAllItemsKey(std::function<void(const footstone::value::HippyValue&)> success_callback,
+                      std::function<void(const footstone::value::HippyValue&)> fail_callback);
+
+ private:
+  bool ParserRequestKeys(const footstone::value::HippyValue& request, std::vector<std::string>& parsed_keys);
+
+  bool ParserRequestKVs(const footstone::value::HippyValue& request,
+                        std::unordered_map<std::string, std::string>& parsed_kvs);
 
  private:
   std::shared_ptr<hippy::adaptor::Storage> storage_adaptor_;

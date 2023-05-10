@@ -221,55 +221,76 @@ bool SqliteStorage::Initial() {
   return true;
 }
 
-void SqliteStorage::GetItemsValue(
-    std::vector<std::string> keys,
-    std::function<void(StorageResponse, std::unordered_map<std::string, std::string>)> callback) {
-  std::unordered_map<std::string, std::string> values;
+void SqliteStorage::GetItemsValue(std::vector<std::string> keys,
+                                  std::function<void(const footstone::value::HippyValue&)> success_callback,
+                                  std::function<void(const footstone::value::HippyValue&)> fail_callback) {
+  std::unordered_map<std::string, std::string> kvs;
   std::string query;
   query = sqlite_->ConditionToSelect(keys);
-  bool ret = sqlite_->Query(query, values);
+  bool ret = sqlite_->Query(query, kvs);
   if (!ret) {
-    callback(StorageResponse(hippy::module::RetCode::Failed, "Get items value failed!!"), std::move(values));
+    fail_callback(footstone::HippyValue("Get items value failed!!"));
   } else {
-    callback(StorageResponse(hippy::module::RetCode::Success), std::move(values));
+    footstone::HippyValue params;
+    if (kvs.size() == 0) {
+      success_callback(footstone::HippyValue::Null());
+    } else {
+      footstone::HippyValue::HippyValueArrayType array;
+      for (const auto& kv : kvs) {
+        footstone::HippyValue::HippyValueArrayType kv_array;
+        kv_array.push_back(footstone::HippyValue(kv.first));
+        kv_array.push_back(footstone::HippyValue(kv.second));
+        array.push_back(footstone::HippyValue(kv_array));
+      }
+      success_callback(footstone::HippyValue(array));
+    }
   }
+  return;
 };
 
 void SqliteStorage::SetItemsValue(std::unordered_map<std::string, std::string> kvs,
-                                  std::function<void(StorageResponse)> callback) {
+                                  std::function<void(const footstone::value::HippyValue&)> success_callback,
+                                  std::function<void(const footstone::value::HippyValue&)> fail_callback) {
   std::vector<std::string> querys;
   querys = sqlite_->ConditionToInsert(kvs);
   bool ret = sqlite_->Transaction(querys);
   if (!ret) {
-    callback(StorageResponse(hippy::module::RetCode::Failed, "Set items value failed!!"));
+    fail_callback(footstone::HippyValue("Set items value failed!!"));
   } else {
-    callback(StorageResponse(hippy::module::RetCode::Success));
+    success_callback(footstone::HippyValue("sucess"));
   }
 };
 
-void SqliteStorage::RemoveItems(std::vector<std::string> keys, std::function<void(StorageResponse)> callback) {
+void SqliteStorage::RemoveItems(std::vector<std::string> keys,
+                                std::function<void(const footstone::value::HippyValue&)> success_callback,
+                                std::function<void(const footstone::value::HippyValue&)> fail_callback) {
   std::string query;
   query = sqlite_->ConditionToDelete(keys);
   if (query.empty()) {
-    callback(StorageResponse(hippy::module::RetCode::Failed, "Delete Empty keys!!"));
+    fail_callback(footstone::HippyValue("Delete Empty keys!!"));
   }
   bool ret = sqlite_->Query(query);
   if (!ret) {
-    callback(StorageResponse(hippy::module::RetCode::Failed, "Delete items value failed!!"));
+    fail_callback(footstone::HippyValue("Delete items value failed!!"));
   } else {
-    callback(StorageResponse(hippy::module::RetCode::Success));
+    success_callback(footstone::HippyValue::Null());
   }
 };
 
-void SqliteStorage::GetAllItemsKey(std::function<void(StorageResponse, std::vector<std::string>)> callback) {
+void SqliteStorage::GetAllItemsKey(std::function<void(const footstone::value::HippyValue&)> success_callback,
+                                   std::function<void(const footstone::value::HippyValue&)> fail_callback) {
   std::vector<std::string> values;
   std::string query;
   query = sqlite_->Select();
   bool ret = sqlite_->Query(query, values);
   if (!ret) {
-    callback(StorageResponse(hippy::module::RetCode::Failed, "Get items value failed!!"), std::move(values));
+    fail_callback(footstone::HippyValue("Get items value failed!!"));
   } else {
-    callback(StorageResponse(hippy::module::RetCode::Success), std::move(values));
+    footstone::HippyValue::HippyValueArrayType array;
+    for (const auto& value : values) {
+      array.push_back(footstone::HippyValue(value));
+    }
+    success_callback(footstone::HippyValue(array));
   }
 };
 
