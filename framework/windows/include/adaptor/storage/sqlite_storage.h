@@ -29,14 +29,13 @@
 #include <vector>
 
 #include "adaptor/storage/storage.h"
+#include "footstone/hippy_value.h"
 #include "sqlite/sqlite3.h"
 
 namespace hippy {
 inline namespace windows {
 inline namespace framework {
 inline namespace adaptor {
-
-using StorageResponse = hippy::windows::framework::module::StorageResponse;
 
 class Sqlite {
  public:
@@ -77,13 +76,17 @@ class SqliteStorage : public Storage {
   SqliteStorage& operator=(const SqliteStorage&) = delete;
   SqliteStorage& operator=(SqliteStorage&&) = delete;
 
-  virtual void GetItemsValue(
-      std::vector<std::string> keys,
-      std::function<void(StorageResponse, std::unordered_map<std::string, std::string>)> callback) override;
+  virtual void GetItemsValue(std::vector<std::string> keys,
+                             std::function<void(const footstone::value::HippyValue&)> success_callback,
+                             std::function<void(const footstone::value::HippyValue&)> fail_callback) override;
   virtual void SetItemsValue(std::unordered_map<std::string, std::string> kvs,
-                             std::function<void(StorageResponse)> callback) override;
-  virtual void RemoveItems(std::vector<std::string> keys, std::function<void(StorageResponse)> callback) override;
-  virtual void GetAllItemsKey(std::function<void(StorageResponse, std::vector<std::string>)> callback) override;
+                             std::function<void(const footstone::value::HippyValue&)> success_callback,
+                             std::function<void(const footstone::value::HippyValue&)> fail_callback) override;
+  virtual void RemoveItems(std::vector<std::string> keys,
+                           std::function<void(const footstone::value::HippyValue&)> success_callback,
+                           std::function<void(const footstone::value::HippyValue&)> fail_callback) override;
+  virtual void GetAllItemsKey(std::function<void(const footstone::value::HippyValue&)> success_callback,
+                              std::function<void(const footstone::value::HippyValue&)> fail_callback) override;
 
   virtual bool Initial() override;
 

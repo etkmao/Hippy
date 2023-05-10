@@ -118,7 +118,6 @@ set(SOURCE_SET
     src/modules/clipboard/clipboard.cc
     src/modules/imageloader/image_loader.cc
     src/modules/storage/storage.cc
-    src/modules/storage/storage_response.cc
     src/modules/network/network.cc
     src/modules/network/websocket.cc
     src/modules/network/websocket_client.cc
