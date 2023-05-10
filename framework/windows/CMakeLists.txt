@@ -116,6 +116,7 @@ set(SOURCE_SET
     src/adaptor/network/http_cookie.cc
     src/adaptor/network/http_network.cc
     src/modules/clipboard/clipboard.cc
+    src/modules/imageloader/image_loader.cc
     src/modules/storage/storage.cc
     src/modules/storage/storage_response.cc
     src/modules/network/network.cc

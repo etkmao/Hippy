@@ -29,7 +29,9 @@
 #include "config.h"
 #include "driver/runtime/v8/runtime.h"
 #include "driver/runtime/v8/v8_bridge_utils.h"
+#include "footstone/serializer.h"
 #include "modules/clipboard/clipboard.h"
+#include "modules/imageloader/image_loader.h"
 #include "modules/netinfo/net_info.h"
 #include "modules/network/network.h"
 #include "modules/network/websocket.h"
@@ -63,13 +65,20 @@ class ModuleDispatcher : public std::enable_shared_from_this<ModuleDispatcher> {
                            const string_view& cb_id, const footstone::value::HippyValue& buffer);
   void ClipboardModuleHandle(const string_view& func, int32_t runtime_id, const string_view& cb_id,
                              const footstone::value::HippyValue& buffer);
+  void ImageLoaderModuleHandle(const std::shared_ptr<UriLoader>& uri_loader, const string_view& func,
+                               int32_t runtime_id, const string_view& cb_id,
+                               const footstone::value::HippyValue& buffer);
+  void CallJs(const uint32_t runtime_id, const std::string& module_name, const std::string& function_name,
+              const string_view& callback_id, const footstone::value::HippyValue& callback_parameters);
 
  private:
-  std::shared_ptr<hippy::windows::framework::module::Storage> storage_module_;      // storage module
-  std::shared_ptr<hippy::windows::framework::module::Websocket> websocket_module_;  // websocket module
-  std::shared_ptr<hippy::windows::framework::module::NetInfo> net_info_module_;     // net info module
-  std::shared_ptr<hippy::windows::framework::module::Network> network_module_;      // network module
-  std::shared_ptr<hippy::windows::framework::module::Clipboard> clipboard_module_;  // clipboard module
+  std::shared_ptr<hippy::windows::framework::module::Clipboard> clipboard_module_;       // clipboard module
+  std::shared_ptr<hippy::windows::framework::module::ImageLoader> image_loader_module_;  // image loader module
+  std::shared_ptr<hippy::windows::framework::module::NetInfo> net_info_module_;          // net info module
+  std::shared_ptr<hippy::windows::framework::module::Network> network_module_;           // network module
+  std::shared_ptr<hippy::windows::framework::module::Websocket> websocket_module_;       // websocket module
+  std::shared_ptr<hippy::windows::framework::module::Storage> storage_module_;           // storage module
+  footstone::Serializer serializer_;
 };
 
 }  // namespace framework
