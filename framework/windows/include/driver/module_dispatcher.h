@@ -51,10 +51,6 @@ class ModuleDispatcher : public std::enable_shared_from_this<ModuleDispatcher> {
   void ModuleDispatcher::Dispatcher(const CallbackInfo& info, const std::shared_ptr<Runtime>& runtime);
 
  private:
-  bool ParserParameters(const footstone::value::HippyValue& value,
-                        std::unordered_map<std::string, std::string>& parsed);
-  bool ParserParameters(const footstone::value::HippyValue& value, std::vector<std::string>& parsed);
-
   void StorageModuleHandle(const string_view& func, int32_t runtime_id, const string_view& cb_id,
                            const footstone::value::HippyValue& buffer);
   void WebsocketModuleHandle(const string_view& func, int32_t runtime_id, const string_view& cb_id,
@@ -69,7 +65,8 @@ class ModuleDispatcher : public std::enable_shared_from_this<ModuleDispatcher> {
                                int32_t runtime_id, const string_view& cb_id,
                                const footstone::value::HippyValue& buffer);
   void CallJs(const uint32_t runtime_id, const std::string& module_name, const std::string& function_name,
-              const string_view& callback_id, const footstone::value::HippyValue& callback_parameters);
+              const string_view& callback_id, const footstone::value::HippyValue& result,
+              const footstone::value::HippyValue& callback_parameters);
 
  private:
   std::shared_ptr<hippy::windows::framework::module::Clipboard> clipboard_module_;       // clipboard module

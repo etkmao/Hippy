@@ -27,26 +27,28 @@
 #include <unordered_map>
 #include <vector>
 
-#include "modules/storage/storage_response.h"
+#include "footstone/hippy_value.h"
 
 namespace hippy {
 inline namespace windows {
 inline namespace framework {
 inline namespace adaptor {
 
-using StorageResponse = hippy::module::StorageResponse;
-
 class Storage {
  public:
   virtual ~Storage() = default;
   virtual bool Initial() = 0;
-  virtual void GetItemsValue(
-      std::vector<std::string> keys,
-      std::function<void(StorageResponse, std::unordered_map<std::string, std::string>)> callback) = 0;
+  virtual void GetItemsValue(std::vector<std::string> keys,
+                             std::function<void(const footstone::value::HippyValue&)> success_callback,
+                             std::function<void(const footstone::value::HippyValue&)> fail_callback) = 0;
   virtual void SetItemsValue(std::unordered_map<std::string, std::string> kvs,
-                             std::function<void(StorageResponse)> callback) = 0;
-  virtual void GetAllItemsKey(std::function<void(StorageResponse, std::vector<std::string>)> callback) = 0;
-  virtual void RemoveItems(std::vector<std::string> keys, std::function<void(StorageResponse)> callback) = 0;
+                             std::function<void(const footstone::value::HippyValue&)> success_callback,
+                             std::function<void(const footstone::value::HippyValue&)> fail_callback) = 0;
+  virtual void GetAllItemsKey(std::function<void(const footstone::value::HippyValue&)> success_callback,
+                              std::function<void(const footstone::value::HippyValue&)> fail_callback) = 0;
+  virtual void RemoveItems(std::vector<std::string> keys,
+                           std::function<void(const footstone::value::HippyValue&)> success_callback,
+                           std::function<void(const footstone::value::HippyValue&)> fail_callback) = 0;
 };
 
 }  // namespace adaptor
