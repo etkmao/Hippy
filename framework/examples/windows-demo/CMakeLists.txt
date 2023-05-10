@@ -59,7 +59,7 @@ set(SOURCE_SET
 
 add_executable(${PROJECT_NAME} WIN32 ${SOURCE_SET})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE winmm imm32 iphlpapi wininet)
+target_link_libraries(${PROJECT_NAME} PRIVATE winmm imm32 iphlpapi wininet gdiplus)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/assets/index.bundle ${CMAKE_CURRENT_BINARY_DIR}/index.bundle)
 if( CMAKE_BUILD_TYPE STREQUAL "Debug" )
