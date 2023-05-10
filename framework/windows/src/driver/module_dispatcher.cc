@@ -35,23 +35,28 @@ constexpr char kNetworkFunctionSetCookie[] = "setCookie";
 constexpr char kClipboardModule[] = "ClipboardModule";
 constexpr char kClipboardFunctionGetString[] = "getString";
 constexpr char kClipboardFunctionSetString[] = "setString";
+constexpr char kImageLoaderModule[] = "ImageLoaderModule";
+constexpr char kImageLoaderFunctionGetSize[] = "getSize";
+constexpr char kImageLoaderFunctionPrefetch[] = "prefetch";
 
 constexpr uint32_t kSuccess = 0;
 constexpr uint32_t kError = 2;
 
 ModuleDispatcher::ModuleDispatcher()
-    : storage_module_(std::make_shared<hippy::windows::framework::module::Storage>()),
-      websocket_module_(std::make_shared<hippy::windows::framework::module::Websocket>()),
+    : clipboard_module_(std::make_shared<hippy::windows::framework::module::Clipboard>()),
+      image_loader_module_(std::make_shared<hippy::windows::framework::module::ImageLoader>()),
       net_info_module_(std::make_shared<hippy::windows::framework::module::NetInfo>()),
       network_module_(std::make_shared<hippy::windows::framework::module::Network>()),
-      clipboard_module_(std::make_shared<hippy::windows::framework::module::Clipboard>()){};
+      websocket_module_(std::make_shared<hippy::windows::framework::module::Websocket>()),
+      storage_module_(std::make_shared<hippy::windows::framework::module::Storage>()){};
 
 void ModuleDispatcher::Initial(const std::shared_ptr<hippy::Config>& config) {
-  storage_module_->Initial();
-  websocket_module_->Initial();
+  clipboard_module_->Initial();
+  image_loader_module_->Initial();
   net_info_module_->Initial();
   network_module_->Initial();
-  clipboard_module_->Initial();
+  websocket_module_->Initial();
+  storage_module_->Initial();
 };
 
 void ModuleDispatcher::Dispatcher(const CallbackInfo& info, const std::shared_ptr<Runtime>& runtime) {
@@ -121,24 +126,47 @@ void ModuleDispatcher::Dispatcher(const CallbackInfo& info, const std::shared_pt
 
   FOOTSTONE_DLOG(INFO) << "module name = " << module_name << ", function name = " << fn_name
                        << ", parameter = " << buffer_data;
-  if (module_name == kStorageModule) {
-    StorageModuleHandle(fn_name, runtime->GetId(), cb_id_str, value);
-  } else if (module_name == kWebsocketModule) {
-    WebsocketModuleHandle(fn_name, runtime->GetId(), cb_id_str, value);
+  if (module_name == kClipboardModule) {
+    ClipboardModuleHandle(fn_name, runtime->GetId(), cb_id_str, value);
+  } else if (module_name == kImageLoaderModule) {
+    auto loader = runtime->GetScope()->GetUriLoader().lock();
+    if (loader != nullptr) ImageLoaderModuleHandle(loader, fn_name, runtime->GetId(), cb_id_str, value);
   } else if (module_name == kNetInfoModule) {
     NetInfoModuleHandle(fn_name, runtime->GetId(), cb_id_str, value);
   } else if (module_name == kNetworkModule) {
     auto loader = runtime->GetScope()->GetUriLoader().lock();
     if (loader != nullptr) NetworkModuleHandle(loader, fn_name, runtime->GetId(), cb_id_str, value);
-  } else if (module_name == kClipboardModule) {
-    ClipboardModuleHandle(fn_name, runtime->GetId(), cb_id_str, value);
+  } else if (module_name == kWebsocketModule) {
+    WebsocketModuleHandle(fn_name, runtime->GetId(), cb_id_str, value);
+  } else if (module_name == kStorageModule) {
+    StorageModuleHandle(fn_name, runtime->GetId(), cb_id_str, value);
   } else {
     FOOTSTONE_LOG(WARNING) << "module " << module_name << " is not support !!!";
   }
 }
 
+void ModuleDispatcher::CallJs(const uint32_t runtime_id, const std::string& module_name,
+                              const std::string& function_name, const string_view& callback_id,
+                              const footstone::value::HippyValue& callback_parameters) {
+  serializer_.Release();
+  serializer_.WriteHeader();
+  footstone::HippyValue::HippyValueObjectType object;
+  object.insert({"result", footstone::HippyValue(kSuccess)});
+  object.insert({"moduleName", footstone::HippyValue(module_name)});
+  object.insert({"moduleFunc", footstone::HippyValue(function_name)});
+  object.insert({"callId", footstone::HippyValue(callback_id.latin1_value())});
+  object.insert({"params", callback_parameters});
+  serializer_.WriteValue(footstone::HippyValue(object));
+  std::pair<uint8_t*, size_t> buffer = serializer_.Release();
+  byte_string buffer_data{reinterpret_cast<char*>(buffer.first), buffer.second};
+  auto call_js_callback = [](CALL_FUNCTION_CB_STATE state, const string_view& msg) { FOOTSTONE_DLOG(INFO) << msg; };
+  auto on_js_runner = []() {};
+  V8BridgeUtils::CallJs(u"callBack", runtime_id, call_js_callback, buffer_data, on_js_runner);
+}
+
 void ModuleDispatcher::StorageModuleHandle(const string_view& func, int32_t runtime_id, const string_view& cb_id,
                                            const footstone::value::HippyValue& value) {
+  if (storage_module_ == nullptr) return;
   if (func == kStroageFunctionGetItemsValue) {
     std::vector<std::string> keys;
     auto ret = ParserParameters(value, keys);
@@ -287,6 +315,7 @@ void ModuleDispatcher::StorageModuleHandle(const string_view& func, int32_t runt
 
 void ModuleDispatcher::WebsocketModuleHandle(const string_view& func, int32_t runtime_id, const string_view& cb_id,
                                              const footstone::value::HippyValue& buffer) {
+  if (websocket_module_ == nullptr) return;
   if (func == kWebsocketFunctionConnect) {
     auto callback = [runtime_id, cb_id](footstone::value::HippyValue response) {
       footstone::Serializer serializer;
@@ -317,6 +346,7 @@ void ModuleDispatcher::WebsocketModuleHandle(const string_view& func, int32_t ru
 
 void ModuleDispatcher::NetInfoModuleHandle(const string_view& func, int32_t runtime_id, const string_view& cb_id,
                                            const footstone::value::HippyValue& buffer) {
+  if (net_info_module_ == nullptr) return;
   if (func == kNetInfoFunctionGetCurrentConnectivity) {
     auto callback = [runtime_id, cb_id](footstone::value::HippyValue params) {
       footstone::Serializer serializer;
@@ -411,6 +441,23 @@ void ModuleDispatcher::ClipboardModuleHandle(const string_view& func, int32_t ru
     clipboard_module_->GetString(callback);
   } else if (func == kClipboardFunctionSetString) {
     clipboard_module_->SetString(buffer);
+  } else {
+    FOOTSTONE_LOG(WARNING) << "function " << func << " is not support !!!";
+  }
+}
+
+void ModuleDispatcher::ImageLoaderModuleHandle(const std::shared_ptr<UriLoader>& uri_loader, const string_view& func,
+                                               int32_t runtime_id, const string_view& cb_id,
+                                               const footstone::value::HippyValue& buffer) {
+  if (image_loader_module_ == nullptr) return;
+  if (func == kImageLoaderFunctionGetSize) {
+    auto callback = [WEAK_THIS, runtime_id, cb_id](footstone::value::HippyValue params) {
+      DEFINE_AND_CHECK_SELF(ModuleDispatcher)
+      self->CallJs(runtime_id, kImageLoaderModule, kImageLoaderFunctionGetSize, cb_id, params);
+    };
+    image_loader_module_->GetSize(uri_loader, buffer, callback);
+  } else if (func == kImageLoaderFunctionPrefetch) {
+    image_loader_module_->Prefetch();
   } else {
     FOOTSTONE_LOG(WARNING) << "function " << func << " is not support !!!";
   }
