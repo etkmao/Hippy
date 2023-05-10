@@ -43,7 +43,7 @@ class ImageLoader {
   bool Initial();
   void GetSize(const std::shared_ptr<UriLoader>& uri_loader, const footstone::value::HippyValue& request,
                std::function<void(const footstone::HippyValue& callback_parameter)> callback);
-  void Prefetch();
+  void Prefetch(const std::shared_ptr<UriLoader>& uri_loader, const footstone::value::HippyValue& request);
 
  private:
   bool ParserRequestUrl(const footstone::value::HippyValue& request, std::string& url);
