@@ -66,13 +66,6 @@ function(GlobalPackages_Add_devtools_integration)
   endif()
 endfunction()
 
-function(GlobalPackages_Add_curl_wrapper)
-  if (NOT TARGET curl_wrapper)
-    InfraPackage_Add(CURL_WRAPPER
-            LOCAL "${PROJECT_ROOT_DIR}/modules/windows/curl")
-  endif()
-endfunction()
-
 # TODO(charleeshen): move to hip
 function(GlobalPackages_Add_sqlite)
   if (NOT TARGET sqlite)

@@ -22,53 +22,24 @@
 
 #pragma once
 
-#include <functional>
-#include <mutex>
+#include <WinSock2.h>
+#include <wininet.h>
+
 #include <string>
 #include <vector>
-
-#include "footstone/hippy_value.h"
-#include "sqlite/sqlite3.h"
 
 namespace hippy {
 inline namespace windows {
 inline namespace framework {
 inline namespace adaptor {
 
-enum class CookieUpdateType {
-  kNone,
-  kInsert,
-  kUpdate,
-};
-
-// TODO(charleeshen): COOKIE 估计需要重构
 class HttpCookie {
  public:
   HttpCookie() = default;
-  ~HttpCookie();
+  ~HttpCookie() = default;
 
-  bool Initial();
-
-  bool SetCookie(const std::string& url, const std::string& cookies, const std::string& expires);
-  bool GetCookie(const std::string& url, std::function<void(footstone::value::HippyValue)> callback);
-  bool GetCookies(const std::string& url, std::vector<std::string>& cookies);
-
- private:
-  bool ParsedUrl(const std::string& url, std::string& domain, std::string& path);
-  bool ClearCookies(const std::string& url);
-  std::string DeleteCookieSql(const std::string& domain, const std::string& path);
-  bool InsertCookies(const std::string& url, const std::string& cookies, const std::string& expires);
-  std::vector<std::string> InsertOrUpdateCookiesSql(const std::string& domain, const std::string& path,
-                                                    const std::vector<std::string>& cookies,
-                                                    const std::vector<CookieUpdateType>& need_insert_or_update);
-  std::vector<std::string> QueryCookiesSql(const std::string& domain, const std::string& path,
-                                           const std::vector<std::string>& cookies);
-
- private:
-  std::mutex mutex_;
-  sqlite3* db_;
-  std::string db_name_{"db_hippy_cookie"};
-  std::string table_name_{"t_hippy_cookie"};
+  bool HttpCookie::SetCookies(const std::string& uri, const std::string& cookies, const std::string& expires);
+  bool GetCookies(const std::string& uri, std::string& cookies);
 };
 
 }  // namespace adaptor
