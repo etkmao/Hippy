@@ -31,22 +31,23 @@ inline namespace vfs {
 
 class HttpResponse {
  public:
-  HttpResponse(std::vector<uint8_t> header, std::vector<uint8_t> body);
+  HttpResponse(std::vector<char> header, std::vector<char> body);
   ~HttpResponse() = default;
 
   void Parser();
   std::string GetHttpVersion() { return http_version_; }
   std::string GetStatusCode() { return status_code_; }
   std::string GetStatusMessage() { return status_message_; }
-  void ResponseBuffer(std::string& buffer);
+  std::unordered_map<std::string, std::string> ResponseHeaders() { return response_headers_; }
+  std::string ResponseBody();
 
  private:
-  std::vector<uint8_t> header_;
-  std::vector<uint8_t> body_;
+  std::vector<char> header_;
+  std::vector<char> body_;
   std::string http_version_;
   std::string status_code_;
   std::string status_message_;
-  std::unordered_map<std::string, std::string> header_fields_;
+  std::unordered_map<std::string, std::string> response_headers_;
 };
 
 }  // namespace vfs

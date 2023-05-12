@@ -33,39 +33,35 @@ constexpr uint32_t kDefaultTimeoutMS = 3000;
 class HttpRequest {
  public:
   using string_view = footstone::string_view;
-  HttpRequest(string_view url, std::unordered_map<std::string, std::string> headers,
-              std::unordered_map<std::string, std::string> parameters);
+  HttpRequest(string_view uri, std::unordered_map<std::string, std::string> meta);
   ~HttpRequest() = default;
   HttpRequest(const HttpRequest&) = default;
   HttpRequest(HttpRequest&&) = default;
   HttpRequest& operator=(const HttpRequest&) = default;
   HttpRequest& operator=(HttpRequest&&) = default;
 
-
-  string_view GetUrl() const { return url_; }
-  void SetUrl(string_view url) { url_ = url; }
+  string_view GetUri() const { return uri_; }
+  void SetUri(string_view uri) { uri_ = uri; }
   uint32_t GetConnectionTimeout() const { return connection_time_ms_; }
   void SetConnectionTimeout(uint32_t connection_time_ms) { connection_time_ms_ = connection_time_ms; }
   uint32_t GetReadTimeout() const { return read_time_ms_; }
   void SetReadTimeout(uint32_t read_time_ms) { read_time_ms_ = read_time_ms; }
   bool GetUseCache() const { return use_cache_; }
   void SetUseCache(bool use_cache) { use_cache_ = use_cache; }
-  std::string GetCookie() const;
 
   std::string RequestMethod() const;
   bool EnableFollowLocation() const;
-  std::unordered_map<std::string, std::string> RequestHeaders() const { return headers_; }
+  std::string RequestHeaders() const;
   std::string RequestBody() const;
   std::string RequestUserAgent() const;
 
  private:
-  string_view url_;
+  string_view uri_;
   uint32_t connection_time_ms_{kDefaultTimeoutMS};
   uint32_t read_time_ms_{kDefaultTimeoutMS};
   bool use_cache_{true};
 
-  std::unordered_map<std::string, std::string> headers_;
-  std::unordered_map<std::string, std::string> parameters_;
+  std::unordered_map<std::string, std::string> meta_;
 };
 
 }  // namespace vfs

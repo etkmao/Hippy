@@ -74,12 +74,6 @@ GlobalPackages_Add(sqlite)
 target_link_libraries(${PROJECT_NAME} PUBLIC sqlite)
 #endregion
 
-# region curl
-GlobalPackages_Add(curl_wrapper)
-target_link_libraries(${PROJECT_NAME} PRIVATE curl_wrapper)
-target_include_directories(${PROJECT_NAME} PUBLIC $<TARGET_PROPERTY:curl_wrapper,INTERFACE_INCLUDE_DIRECTORIES>)
-# endregion
-
 # region asio
 InfraPackage_Add(asio
     REMOTE "devtools/backend/third_party/asio/1.22.1/asio.tar.gz"

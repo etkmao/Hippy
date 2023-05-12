@@ -23,36 +23,31 @@
 namespace hippy {
 inline namespace vfs {
 
+constexpr char kHttpHeaders[] = "headers";
 constexpr char kHttpMethod[] = "method";
 constexpr char kHttpRedirect[] = "redirect";
 constexpr char kHttpBody[] = "body";
 
-HttpRequest::HttpRequest(string_view url, std::unordered_map<std::string, std::string> headers,
-                         std::unordered_map<std::string, std::string> parameters)
-    : url_(std::move(url)), headers_(std::move(headers)), parameters_(std::move(parameters)) {}
+HttpRequest::HttpRequest(string_view uri, std::unordered_map<std::string, std::string> meta)
+    : uri_(std::move(uri)), meta_(std::move(meta)) {}
 
 std::string HttpRequest::RequestMethod() const {
-  for (const auto& [key, value] : parameters_) {
+  for (const auto& [key, value] : meta_) {
     if (key == kHttpMethod && !value.empty()) return value;
   }
   return "GET";
 }
 
-std::string HttpRequest::GetCookie() const {
-  for (const auto& [key, value] : parameters_) {
-    if (key == "COOKIE" && !value.empty()) return value;
-  }
-  return "";
-}
-
 bool HttpRequest::EnableFollowLocation() const {
-  for (const auto& [key, value] : parameters_) {
+  for (const auto& [key, value] : meta_) {
     if (key == kHttpRedirect && value == "follow") return true;
   }
   return false;
 }
 
-std::string HttpRequest::RequestBody() const { return parameters_.count(kHttpBody) ? parameters_.at(kHttpBody) : ""; }
+std::string HttpRequest::RequestHeaders() const { return meta_.count(kHttpHeaders) ? meta_.at(kHttpHeaders) : ""; }
+
+std::string HttpRequest::RequestBody() const { return meta_.count(kHttpBody) ? meta_.at(kHttpBody) : ""; }
 
 // TODO add user agent
 std::string HttpRequest::RequestUserAgent() const { return ""; }

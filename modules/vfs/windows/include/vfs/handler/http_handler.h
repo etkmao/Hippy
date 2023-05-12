@@ -20,6 +20,8 @@
 
 #pragma once
 
+#include <WinSock2.h>
+#include <wininet.h>
 #include <string>
 #include <unordered_map>
 
@@ -31,13 +33,13 @@
 namespace hippy {
 inline namespace vfs {
 
-class HttpHandler : public UriHandler {
+class HttpHandler : public UriHandler, public std::enable_shared_from_this<HttpHandler> {
  public:
   using string_view = footstone::string_view;
   using TaskRunner = footstone::TaskRunner;
 
-  HttpHandler() = default;
-  virtual ~HttpHandler() override = default;
+  HttpHandler();
+  virtual ~HttpHandler() override;
 
   inline void SetWorkerTaskRunner(std::weak_ptr<TaskRunner> runner) { runner_ = runner; }
 
@@ -48,19 +50,14 @@ class HttpHandler : public UriHandler {
                                        std::function<std::shared_ptr<UriHandler>()> next) override;
 
  private:
-  void ParsedHeaders(const footstone::HippyValue& headers,
-                     std::unordered_map<std::string, std::string>& parsed_headers);
-  bool ParserParameters(const footstone::HippyValue& value,
-                        std::unordered_map<std::string, std::string>& parsed_parameters,
-                        std::unordered_map<std::string, std::string>& parsed_headers);
-  void LoadByCurl(const string_view& url, std::function<void(std::shared_ptr<JobResponse>)> cb);
-  void LoadByCurl(const string_view& url, const std::unordered_map<std::string, std::string>& parameters,
-                  const std::unordered_map<std::string, std::string>& headers,
-                  std::function<void(std::shared_ptr<JobResponse>)> cb);
-  void LoadByCurl(const string_view& url, const std::shared_ptr<JobResponse>& response);
+  void LoadUriContent(const std::shared_ptr<RequestJob>& request, const std::shared_ptr<JobResponse>& response);
+  void LoadUriContent(const std::shared_ptr<RequestJob>& request,
+                      std::function<void(std::shared_ptr<JobResponse>)> callback);
+  void LogLastErrorMessage();
 
  private:
   std::weak_ptr<TaskRunner> runner_;
+  HINTERNET internet_handle_;
 };
 
 }  // namespace vfs
