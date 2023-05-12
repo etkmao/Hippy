@@ -27,12 +27,13 @@
 namespace hippy {
 inline namespace vfs {
 
+constexpr char kHttpVersion[] = "httpVersion";
 constexpr char kStatusCode[] = "statusCode";
 constexpr char kStatusLine[] = "statusLine";
 constexpr char kResponseHeaders[] = "respHeaders";
 constexpr char kResponseBody[] = "respBody";
 
-HttpResponse::HttpResponse(std::vector<uint8_t> header, std::vector<uint8_t> body)
+HttpResponse::HttpResponse(std::vector<char> header, std::vector<char> body)
     : header_(std::move(header)), body_(std::move(body)) {}
 
 static std::vector<std::string> Split(const std::string& str, const std::string& delimiter) {
@@ -64,35 +65,20 @@ void HttpResponse::Parser() {
       status_code_ = parts[1];
       status_message_ = parts[2];
     }
+    response_headers_.insert({kHttpVersion, http_version_});
+    response_headers_.insert({kStatusCode, status_code_});
+    response_headers_.insert({kStatusLine, status_message_});
 
     if (headers.size() > 1) {
       for (size_t i = 1; i < headers.size(); i++) {
         std::vector<std::string> header_parts = Split(headers[i], ":");
-        header_fields_.insert({header_parts[0], header_parts[1]});
+        response_headers_.insert({header_parts[0], header_parts[1]});
       }
     }
   }
 }
 
-void HttpResponse::ResponseBuffer(std::string& buffer) {
-  footstone::HippyValue::HippyValueObjectType object;
-  object.insert({kStatusCode, footstone::HippyValue(status_code_)});
-  object.insert({kStatusLine, footstone::HippyValue(status_message_)});
-  footstone::HippyValue::HippyValueObjectType header_fields_object;
-  for (const auto& [key, value] : header_fields_) {
-    header_fields_object.insert({key, footstone::HippyValue(value)});
-  }
-  object.insert({kResponseHeaders, footstone::HippyValue(header_fields_object)});
-  std::string body(body_.begin(), body_.end());
-  object.insert({kResponseBody, footstone::HippyValue(body)});
-
-  footstone::value::Serializer serializer;
-  serializer.WriteHeader();
-  serializer.WriteValue(footstone::HippyValue(object));
-  std::pair<uint8_t*, size_t> serializer_buffer = serializer.Release();
-  buffer = std::string(reinterpret_cast<const char*>(serializer_buffer.first), serializer_buffer.second);
-  return;
-}
+std::string HttpResponse::ResponseBody() { return std::string{body_.begin(), body_.end()}; }
 
 }  // namespace vfs
 }  // namespace hippy

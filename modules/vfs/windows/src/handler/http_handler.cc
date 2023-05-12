@@ -20,10 +20,10 @@
 
 #include "vfs/handler/http_handler.h"
 
-#include "curl/curl_wrapper.h"
 #include "footstone/deserializer.h"
 #include "footstone/hippy_value.h"
 #include "footstone/logging.h"
+#include "footstone/macros.h"
 #include "footstone/task.h"
 #include "vfs/handler/http_request.h"
 #include "vfs/handler/http_response.h"
@@ -31,63 +31,31 @@
 namespace hippy {
 inline namespace vfs {
 
-constexpr char kHttpHeaders[] = "headers";
-
-void HttpHandler::ParsedHeaders(const footstone::value::HippyValue& headers,
-                                std::unordered_map<std::string, std::string>& parsed_headers) {
-  footstone::value::HippyValue::HippyValueObjectType object_headers;
-  if (!headers.ToObject(object_headers)) return;
-  for (const auto& kv : object_headers) {
-    if (kv.second.IsString()) {
-      parsed_headers.insert({kv.first, kv.second.ToStringChecked()});
-    } else if (kv.second.IsArray()) {
-      footstone::value::HippyValue::HippyValueArrayType array;
-      kv.second.ToArray(array);
-      if (array.size() == 0) {
-        return;
-      } else if (array.size() == 1) {
-        if (array[0].IsString()) parsed_headers.insert({kv.first, array[0].ToStringChecked()});
-      } else {
-        std::vector<std::string> vecs;
-        std::string str;
-        for (const auto& arr : array) {
-          if (arr.IsString()) vecs.push_back(arr.ToStringChecked());
-        }
-        for (size_t i = 0; i < vecs.size(); i++) {
-          str += vecs[i];
-          if (i != vecs.size() - 1) str += ",";
-        }
-        if (vecs.size() > 0) parsed_headers.insert({kv.first, str});
-      }
-    }
-  }
+HttpHandler::HttpHandler() {
+  internet_handle_ = InternetOpen("HTTP", INTERNET_OPEN_TYPE_DIRECT, nullptr, nullptr, 0);
 }
 
-bool HttpHandler::ParserParameters(const footstone::value::HippyValue& value,
-                                   std::unordered_map<std::string, std::string>& parsed_parameters,
-                                   std::unordered_map<std::string, std::string>& parsed_headers) {
-  footstone::value::HippyValue::HippyValueArrayType parameters;
-  bool ret = value.ToArray(parameters);
-  if (!ret) return false;
-  if (parameters.size() != 1) return false;
+HttpHandler::~HttpHandler() {
+  if (internet_handle_) InternetCloseHandle(internet_handle_);
+}
 
-  footstone::value::HippyValue::HippyValueObjectType objects;
-  ret = parameters[0].ToObject(objects);
-  if (!ret) return false;
-  for (const auto& kv : objects) {
-    if (kv.first == kHttpHeaders) {
-      ParsedHeaders(kv.second, parsed_headers);
-      continue;
-    }
-    if (kv.second.IsString()) parsed_parameters.insert({kv.first, kv.second.ToStringChecked()});
-  }
-  return true;
+bool static CreateUrlComponents(const std::string& url, URL_COMPONENTS& url_components) {
+  url_components.dwStructSize = sizeof(URL_COMPONENTS);
+  url_components.lpszHostName = new char[256];
+  url_components.dwHostNameLength = 256;
+  url_components.lpszUrlPath = new char[1024];
+  url_components.dwUrlPathLength = 1024;
+  return InternetCrackUrl(url.c_str(), url.size(), 0, &url_components);
+}
+
+void static FreeUrlComponents(URL_COMPONENTS& url_components) {
+  delete[] url_components.lpszHostName;
+  delete[] url_components.lpszUrlPath;
 }
 
 void HttpHandler::RequestUntrustedContent(std::shared_ptr<RequestJob> request, std::shared_ptr<JobResponse> response,
                                           std::function<std::shared_ptr<UriHandler>()> next) {
-  string_view url = request->GetUri();
-  LoadByCurl(url, response);
+  LoadUriContent(request, response);
   auto next_handler = next();
   if (next_handler) {
     next_handler->RequestUntrustedContent(request, response, next);
@@ -97,190 +65,161 @@ void HttpHandler::RequestUntrustedContent(std::shared_ptr<RequestJob> request, s
 void HttpHandler::RequestUntrustedContent(std::shared_ptr<RequestJob> request,
                                           std::function<void(std::shared_ptr<JobResponse>)> cb,
                                           [[maybe_unused]] std::function<std::shared_ptr<UriHandler>()> next) {
-  string_view url = request->GetUri();
-  // TODO(chareeshen): cookie 传递可能需要重构
+  string_view uri = request->GetUri();
+  auto new_cb = [orig_cb = cb](std::shared_ptr<JobResponse> response) { orig_cb(response); };
+  LoadUriContent(request, new_cb);
+}
+
+void HttpHandler::LoadUriContent(const std::shared_ptr<RequestJob>& request,
+                                 const std::shared_ptr<JobResponse>& response) {
+  string_view uri = request->GetUri();
+  URL_COMPONENTS url_components = {0};
+  if (!CreateUrlComponents(uri.latin1_value(), url_components)) {
+    FOOTSTONE_DLOG(INFO) << "Internet crack url!!";
+    FreeUrlComponents(url_components);
+    response->SetRetCode(hippy::JobResponse::RetCode::Failed);
+    return;
+  }
+  auto handle_connect = InternetConnect(internet_handle_, url_components.lpszHostName, url_components.nPort, nullptr,
+                                        nullptr, INTERNET_SERVICE_HTTP, 0, 0);
+  if (!handle_connect) {
+    FOOTSTONE_DLOG(INFO) << "Internet connect error!!";
+    FreeUrlComponents(url_components);
+    response->SetRetCode(hippy::JobResponse::RetCode::Failed);
+    return;
+  }
+
+  auto handle_request = HttpOpenRequest(handle_connect, "GET", url_components.lpszUrlPath, nullptr, nullptr, nullptr,
+                                        INTERNET_FLAG_RELOAD, 0);
+  if (!handle_request) {
+    FOOTSTONE_DLOG(INFO) << "Internet connect error!!";
+    InternetCloseHandle(handle_connect);
+    FreeUrlComponents(url_components);
+    response->SetRetCode(hippy::JobResponse::RetCode::Failed);
+    return;
+  }
+
+  if (!HttpSendRequest(handle_request, nullptr, 0, nullptr, 0)) {
+    FOOTSTONE_DLOG(INFO) << "http send request error!!";
+    InternetCloseHandle(handle_request);
+    InternetCloseHandle(handle_connect);
+    FreeUrlComponents(url_components);
+    response->SetRetCode(hippy::JobResponse::RetCode::Failed);
+    return;
+  }
+
+  std::vector<char> buffer, recv_buffer;
+  recv_buffer.resize(1024);
+  DWORD bytes_read = 0;
+  while (InternetReadFile(handle_request, &recv_buffer[0], 1024, &bytes_read) && bytes_read > 0) {
+    buffer.insert(buffer.end(), &recv_buffer[0], &recv_buffer[0] + bytes_read);
+  }
+  UriHandler::bytes content{buffer.begin(), buffer.end()};
+  response->SetRetCode(hippy::JobResponse::RetCode::Success);
+  response->SetContent(std::move(content));
+
+  InternetCloseHandle(handle_request);
+  InternetCloseHandle(handle_connect);
+  FreeUrlComponents(url_components);
+  return;
+}
+
+static void QueryInfo(const HINTERNET& handle_request, const DWORD query_flag, std::vector<char>& buffer) {
+  DWORD size = 0;
+  HttpQueryInfo(handle_request, query_flag, nullptr, &size, nullptr);
+  buffer.resize(size);
+  HttpQueryInfo(handle_request, query_flag, &buffer[0], &size, nullptr);
+}
+
+void HttpHandler::LoadUriContent(const std::shared_ptr<RequestJob>& request,
+                                 std::function<void(std::shared_ptr<JobResponse>)> callback) {
+  auto runner = runner_.lock();
+  if (!runner) {
+    callback(std::make_shared<JobResponse>(UriHandler::RetCode::DelegateError));
+    return;
+  }
+  auto uri = request->GetUri();
   auto meta = request->GetMeta();
-  std::string cookie_string;
-  if (meta.find("COOKIE") != meta.end()) {
-    cookie_string = meta.find("COOKIE")->second;
-  }
+  HttpRequest http_request(uri, meta);
+  http_request.SetConnectionTimeout(10 * 1000);
+  http_request.SetReadTimeout(16 * 1000);
+  http_request.SetUseCache(false);
+  runner->PostTask([WEAK_THIS, http_request, callback] {
+    DEFINE_AND_CHECK_SELF(HttpHandler);
+    string_view uri = http_request.GetUri();
+    URL_COMPONENTS url_components = {0};
+    if (CreateUrlComponents(uri.latin1_value(), url_components)) {
+      auto handle_connect = InternetConnect(self->internet_handle_, url_components.lpszHostName, url_components.nPort,
+                                            nullptr, nullptr, INTERNET_SERVICE_HTTP, 0, 0);
+      if (handle_connect != nullptr) {
+        DWORD flags = 0;
+        if (!http_request.EnableFollowLocation()) flags = flags | INTERNET_FLAG_NO_AUTO_REDIRECT;  // redirect policy
+        if (url_components.nPort == INTERNET_DEFAULT_HTTPS_PORT) flags = flags | INTERNET_FLAG_SECURE;  // https policy
+        auto method = http_request.RequestMethod();
+        auto handle_request = HttpOpenRequest(handle_connect, method.c_str(), url_components.lpszUrlPath, nullptr,
+                                              nullptr, nullptr, flags, 0);
+        // set connect time out
+        DWORD send_timeout = http_request.GetConnectionTimeout();
+        InternetSetOption(handle_request, INTERNET_OPTION_SEND_TIMEOUT, &send_timeout, sizeof(send_timeout));
+        // set read time out
+        DWORD read_timeout = http_request.GetReadTimeout();  // 5 seconds
+        InternetSetOption(handle_request, INTERNET_OPTION_RECEIVE_TIMEOUT, &read_timeout, sizeof(read_timeout));
 
-  auto buffer = request->GetBuffer();
-  if (!buffer.empty()) {
-    auto new_cb = [orig_cb = cb](std::shared_ptr<JobResponse> response) { orig_cb(response); };
-    std::unordered_map<std::string, std::string> parameters;
-    std::unordered_map<std::string, std::string> headers;
-    footstone::HippyValue hippy_value;
-    footstone::Deserializer deserializer(reinterpret_cast<const uint8_t*>(buffer.c_str()), buffer.length());
-    deserializer.ReadHeader();
-    deserializer.ReadValue(hippy_value);
-    auto ret = ParserParameters(hippy_value, parameters, headers);
-    if (!cookie_string.empty()) {
-      parameters.insert({"COOKIE", cookie_string});
-    }
+        auto ret = true;
+        // set request headers
+        if (!http_request.RequestHeaders().empty())
+          HttpAddRequestHeaders(handle_request, http_request.RequestHeaders().c_str(), -1L, HTTP_ADDREQ_FLAG_ADD);
+        // send request
+        if (!http_request.RequestBody().empty()) {
+          auto body = http_request.RequestBody();
+          // ret = HttpSendRequest(handle_request, nullptr, 0, body.c_str(), body.size());
+        } else {
+          ret = HttpSendRequest(handle_request, nullptr, 0, nullptr, 0);
+        }
+        if (!ret) self->LogLastErrorMessage();
 
-    if (ret) {
-      LoadByCurl(url, parameters, headers, new_cb);
-    }
-  } else {
-    auto new_cb = [orig_cb = cb](std::shared_ptr<JobResponse> response) { orig_cb(response); };
-    LoadByCurl(url, new_cb);
-  }
-}
+        // // http version
+        // std::vector<char> status_version_buffer;
+        // QueryInfo(handle_request, HTTP_QUERY_VERSION, status_version_buffer);
+        // // status code
+        // std::vector<char> status_code_buffer;
+        // QueryInfo(handle_request, HTTP_QUERY_STATUS_CODE, status_code_buffer);
+        // // status text
+        // std::vector<char> status_text_buffer;
+        // QueryInfo(handle_request, HTTP_QUERY_STATUS_TEXT, status_text_buffer);
 
-static size_t WriteHeaderCallback(void* content, size_t size, size_t nmemb, void* userp) {
-  auto read_buffer = static_cast<std::vector<uint8_t>*>(userp);
-  read_buffer->insert(read_buffer->end(), static_cast<uint8_t*>(content),
-                      static_cast<uint8_t*>(content) + size * nmemb);
-  return size * nmemb;
-}
+        // // header buffer
+        std::vector<char> header_buffer;
+        QueryInfo(handle_request, HTTP_QUERY_RAW_HEADERS_CRLF, header_buffer);
 
-static size_t WriteBodyCallback(void* content, size_t size, size_t nmemb, void* userp) {
-  auto read_buffer = static_cast<std::vector<uint8_t>*>(userp);
-  read_buffer->insert(read_buffer->end(), static_cast<uint8_t*>(content),
-                      static_cast<uint8_t*>(content) + size * nmemb);
-  return size * nmemb;
-}
+        // read body
+        std::vector<char> body_buffer, recv_buffer;
+        recv_buffer.resize(1024);
+        DWORD bytes_read = 0;
+        while (InternetReadFile(handle_request, &recv_buffer[0], 1024, &bytes_read) && bytes_read > 0) {
+          body_buffer.insert(body_buffer.end(), &recv_buffer[0], &recv_buffer[0] + bytes_read);
+        }
 
-void HttpHandler::LoadByCurl(const string_view& url, std::function<void(std::shared_ptr<JobResponse>)> cb) {
-  auto runner = runner_.lock();
-  if (!runner) {
-    cb(std::make_shared<JobResponse>(UriHandler::RetCode::DelegateError));
-    return;
-  }
-  runner->PostTask([url, cb] {
-    std::vector<uint8_t> read_buffer;
-    CurlWrapper curl_wrapper;
-    auto ret = curl_wrapper.Initialize();
-    if (!ret) {
-      cb(std::make_shared<JobResponse>(hippy::JobResponse::RetCode::Failed));
-      return;
-    }
-
-    auto curl_ptr = curl_wrapper.GetCurlRawPointer();
-    curl_easy_setopt(curl_ptr, CURLOPT_URL, url.latin1_value().c_str());
-    curl_easy_setopt(curl_ptr, CURLOPT_CUSTOMREQUEST, "GET");
-    curl_easy_setopt(curl_ptr, CURLOPT_HEADER, 0);
-    curl_easy_setopt(curl_ptr, CURLOPT_NOBODY, 0);
-    curl_easy_setopt(curl_ptr, CURLOPT_WRITEFUNCTION, WriteBodyCallback);
-    curl_easy_setopt(curl_ptr, CURLOPT_WRITEDATA, &read_buffer);
-    auto res = curl_easy_perform(curl_ptr);
-
-    if (res == 0) {
-      UriHandler::bytes content{read_buffer.begin(), read_buffer.end()};
-      cb(std::make_shared<JobResponse>(hippy::JobResponse::RetCode::Success, "",
-                                       std::unordered_map<std::string, std::string>{}, std::move(content)));
-    } else {
-      cb(std::make_shared<JobResponse>(hippy::JobResponse::RetCode::Failed));
+        HttpResponse response(header_buffer, body_buffer);
+        response.Parser();
+        auto headers = response.ResponseHeaders();
+        auto content = response.ResponseBody();
+        callback(std::make_shared<JobResponse>(hippy::JobResponse::RetCode::Success, "", headers, std::move(content)));
+      }
     }
   });
+  return;
 }
 
-// TODO(charleeshen): 302 请求需要处理。 获取 cookie 需要处理
-void HttpHandler::LoadByCurl(const string_view& url, const std::unordered_map<std::string, std::string>& parameters,
-                             const std::unordered_map<std::string, std::string>& headers,
-                             std::function<void(std::shared_ptr<JobResponse>)> cb) {
-  auto runner = runner_.lock();
-  if (!runner) {
-    cb(std::make_shared<JobResponse>(UriHandler::RetCode::DelegateError));
-    return;
+void HttpHandler::LogLastErrorMessage() {
+  DWORD error_code = GetLastError();
+  LPSTR error_message;
+  FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr,
+                error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&error_message, 0, nullptr);
+  if (error_message != nullptr) {
+    FOOTSTONE_DLOG(INFO) << "windows error code: %d, error message: %s" << error_code << error_message;
   }
-
-  HttpRequest request(url, headers, parameters);
-  request.SetConnectionTimeout(10 * 1000);
-  request.SetReadTimeout(16 * 1000);
-  request.SetUseCache(false);
-  runner->PostTask([request, cb] {
-    std::vector<uint8_t> read_header_buffer;
-    std::vector<uint8_t> read_body_buffer;
-    CurlWrapper curl_wrapper;
-    auto ret = curl_wrapper.Initialize();
-    if (!ret) {
-      cb(std::make_shared<JobResponse>(hippy::JobResponse::RetCode::Failed));
-      return;
-    }
-
-    auto curl_ptr = curl_wrapper.GetCurlRawPointer();
-    curl_easy_setopt(curl_ptr, CURLOPT_URL, request.GetUrl().latin1_value().c_str());
-    curl_easy_setopt(curl_ptr, CURLOPT_VERBOSE, 1L);
-    curl_easy_setopt(curl_ptr, CURLOPT_CUSTOMREQUEST, request.RequestMethod().c_str());
-    if (!request.GetUseCache()) curl_easy_setopt(curl_ptr, CURLOPT_FRESH_CONNECT, 1L);
-    curl_easy_setopt(curl_ptr, CURLOPT_CONNECTTIMEOUT_MS, request.GetConnectionTimeout());
-    curl_easy_setopt(curl_ptr, CURLOPT_TIMEOUT, request.GetReadTimeout());
-    curl_easy_setopt(curl_ptr, CURLOPT_FOLLOWLOCATION, 1L);
-    if (!request.GetCookie().empty()) curl_easy_setopt(curl_ptr, CURLOPT_COOKIE, request.GetCookie().c_str());
-    if (!request.EnableFollowLocation()) curl_easy_setopt(curl_ptr, CURLOPT_FOLLOWLOCATION, 0L);
-
-    curl_slist* curl_headers{nullptr};
-    auto request_headers = request.RequestHeaders();
-    for (const auto& [key, value] : request_headers) {
-      std::string header_string = key;
-      header_string += ": ";
-      header_string += value;
-      curl_headers = curl_slist_append(curl_headers, header_string.c_str());
-    }
-    curl_easy_setopt(curl_ptr, CURLOPT_HTTPHEADER, curl_headers);
-
-    auto body = request.RequestBody();
-    if (!body.empty()) {
-      curl_easy_setopt(curl_ptr, CURLOPT_POSTFIELDS, body.c_str());
-    }
-
-    auto user_agent = request.RequestUserAgent();
-    if (!user_agent.empty()) {
-      curl_easy_setopt(curl_ptr, CURLOPT_USERAGENT, user_agent.c_str());
-    }
-
-    curl_easy_setopt(curl_ptr, CURLOPT_HEADERFUNCTION, WriteHeaderCallback);
-    curl_easy_setopt(curl_ptr, CURLOPT_HEADERDATA, &read_header_buffer);
-    curl_easy_setopt(curl_ptr, CURLOPT_WRITEFUNCTION, WriteBodyCallback);
-    curl_easy_setopt(curl_ptr, CURLOPT_WRITEDATA, &read_body_buffer);
-    auto res = curl_easy_perform(curl_ptr);
-    curl_slist_free_all(curl_headers);
-
-    if (res == CURLE_OK) {
-      HttpResponse response(read_header_buffer, read_body_buffer);
-      std::string buffer;
-      response.Parser();
-      response.ResponseBuffer(buffer);
-      cb(std::make_shared<JobResponse>(hippy::JobResponse::RetCode::Success, "",
-                                       std::unordered_map<std::string, std::string>{}, std::move(buffer)));
-    } else {
-      FOOTSTONE_DLOG(INFO) << "curl_easy_perform() failed: " << curl_easy_strerror(res);
-      std::string error_message = "Load remote resource failed: ";
-      error_message += curl_easy_strerror(res);
-      cb(std::make_shared<JobResponse>(hippy::JobResponse::RetCode::Failed, error_message.c_str(),
-                                       std::unordered_map<std::string, std::string>{}, ""));
-    }
-  });
+  LocalFree(error_message);
 }
-
-void HttpHandler::LoadByCurl(const string_view& url, const std::shared_ptr<JobResponse>& response) {
-  std::vector<uint8_t> read_buffer;
-  CurlWrapper curl_wrapper;
-  auto ret = curl_wrapper.Initialize();
-  if (!ret) {
-    response->SetRetCode(hippy::JobResponse::RetCode::Failed);
-    return;
-  }
-
-  auto curl_ptr = curl_wrapper.GetCurlRawPointer();
-  curl_easy_setopt(curl_ptr, CURLOPT_URL, url.latin1_value().c_str());
-  curl_easy_setopt(curl_ptr, CURLOPT_CUSTOMREQUEST, "GET");
-  curl_easy_setopt(curl_ptr, CURLOPT_HEADER, 0);
-  curl_easy_setopt(curl_ptr, CURLOPT_NOBODY, 0);
-  curl_easy_setopt(curl_ptr, CURLOPT_WRITEFUNCTION, WriteBodyCallback);
-  curl_easy_setopt(curl_ptr, CURLOPT_WRITEDATA, &read_buffer);
-  auto res = curl_easy_perform(curl_ptr);
-
-  if (res == 0) {
-    UriHandler::bytes content{read_buffer.begin(), read_buffer.end()};
-    response->SetRetCode(hippy::JobResponse::RetCode::Success);
-    response->SetContent(std::move(content));
-  } else {
-    response->SetRetCode(hippy::JobResponse::RetCode::Failed);
-  }
-}
-
 }  // namespace vfs
 }  // namespace hippy

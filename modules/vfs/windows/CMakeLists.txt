@@ -35,11 +35,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC include)
 target_compile_options(${PROJECT_NAME} PRIVATE ${COMPILE_OPTIONS})
 # endregion
 
-# region curl
-GlobalPackages_Add(curl_wrapper)
-target_link_libraries(${PROJECT_NAME} PRIVATE curl_wrapper)
-# endregion
-
 # region footstone
 GlobalPackages_Add(footstone)
 target_link_libraries(${PROJECT_NAME} PRIVATE footstone)
@@ -49,6 +44,10 @@ target_link_libraries(${PROJECT_NAME} PRIVATE footstone)
 add_subdirectory(${PROJECT_ROOT_DIR}/modules/vfs/native ${CMAKE_CURRENT_BINARY_DIR}/vfs/native)
 target_link_libraries(${PROJECT_NAME} PRIVATE vfs_native)
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_ROOT_DIR}/modules/vfs/native/include)
+# endregion
+
+# region windows
+target_link_libraries(${PROJECT_NAME} PRIVATE wininet)
 # endregion
 
 # region source set

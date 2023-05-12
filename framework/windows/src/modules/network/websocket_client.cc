@@ -27,7 +27,6 @@
 #include <iomanip>
 #include <thread>
 
-#include "curl/curl_wrapper.h"
 #include "footstone/cv_driver.h"
 #include "footstone/logging.h"
 #include "footstone/macros.h"

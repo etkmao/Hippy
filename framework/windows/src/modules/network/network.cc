@@ -72,8 +72,8 @@ void Network::Fetch(const std::shared_ptr<UriLoader>& uri_loader, const footston
   std::string url;
   auto ret = ParserRequestUrl(request, url);
   FOOTSTONE_DCHECK(ret);
-  if (ret) {
-    if (network_adaptor_ == nullptr) return;
+  FOOTSTONE_DCHECK(network_adaptor_ != nullptr);
+  if (ret && network_adaptor_) {
     auto new_callback = [callback](std::string content) {
       footstone::Deserializer deserializer(reinterpret_cast<const uint8_t*>(&content[0]), content.size());
       deserializer.ReadHeader();
@@ -90,15 +90,17 @@ void Network::GetCookie(const footstone::value::HippyValue& request, uint32_t ru
   std::string url;
   auto ret = ParserRequestUrl(request, url);
   FOOTSTONE_DCHECK(ret);
-  if (ret) {
-    if (network_adaptor_ == nullptr) return;
+  FOOTSTONE_DCHECK(network_adaptor_ != nullptr);
+  if (ret && network_adaptor_) {
     network_adaptor_->GetCookie(url, callback);
   }
 }
 
 void Network::SetCookie(const footstone::value::HippyValue& request) {
-  if (network_adaptor_ == nullptr) return;
-  network_adaptor_->SetCookie(request);
+  FOOTSTONE_DCHECK(network_adaptor_ != nullptr);
+  if (network_adaptor_) {
+    network_adaptor_->SetCookie(request);
+  }
 }
 
 }  // namespace module

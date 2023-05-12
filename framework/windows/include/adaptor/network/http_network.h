@@ -43,14 +43,19 @@ class HttpNetwork : public Network {
   HttpNetwork& operator=(HttpNetwork&&) = delete;
 
   virtual bool Initial() override;
-  virtual void Fetch(const std::shared_ptr<UriLoader>& uri_loader, const std::string& url,
+  virtual void Fetch(const std::shared_ptr<UriLoader>& uri_loader, const std::string& uri,
                      const footstone::value::HippyValue& request, std::function<void(std::string)> callback) override;
   virtual void GetCookie(const std::string& url, std::function<void(footstone::value::HippyValue)> callback) override;
   virtual void SetCookie(const footstone::value::HippyValue& request) override;
 
  private:
-  bool PrasedRequest(const footstone::value::HippyValue& request, std::string& url, std::string& kv,
-                     std::string& expires);
+  bool ParserRequestCookie(const footstone::value::HippyValue& request, std::string& url, std::string& kv,
+                           std::string& expires);
+  bool ParserRequestHeadersAndParameters(const footstone::value::HippyValue& value,
+                                         std::unordered_map<std::string, std::string>& parsed_headers,
+                                         std::unordered_map<std::string, std::string>& parsed_parameters);
+  void ParserRequestHeaders(const footstone::value::HippyValue& headers,
+                            std::unordered_map<std::string, std::string>& parsed_headers);
 
  private:
   std::shared_ptr<HttpCookie> http_cookie_;
