@@ -68,7 +68,7 @@ bool Network::ParserRequestUrl(const footstone::value::HippyValue& value, std::s
 }
 
 void Network::Fetch(const std::shared_ptr<UriLoader>& uri_loader, const footstone::value::HippyValue& request,
-                    uint32_t runtime_id, std::function<void(footstone::value::HippyValue)> callback) {
+                    std::function<void(footstone::value::HippyValue)> callback) {
   std::string url;
   auto ret = ParserRequestUrl(request, url);
   FOOTSTONE_DCHECK(ret);
@@ -85,7 +85,7 @@ void Network::Fetch(const std::shared_ptr<UriLoader>& uri_loader, const footston
   }
 }
 
-void Network::GetCookie(const footstone::value::HippyValue& request, uint32_t runtime_id,
+void Network::GetCookie(const footstone::value::HippyValue& request,
                         std::function<void(footstone::value::HippyValue)> callback) {
   std::string url;
   auto ret = ParserRequestUrl(request, url);

@@ -108,7 +108,7 @@ void WebsocketClient::Disconnect(const int32_t code, const std::string& reason) 
     FOOTSTONE_DLOG(INFO) << "send message error, handler is null";
     return;
   }
-  FOOTSTONE_DLOG(INFO) << "close websocket, code: %d, reason: " << code << reason.c_str();
+  FOOTSTONE_DLOG(INFO) << "close websocket, code: " << code << ", reason: " << reason.c_str();
   websocketpp::lib::error_code error_code;
   ws_client_.close(ws_connection_handle_, static_cast<websocketpp::close::status::value>(code), reason, error_code);
 }

@@ -3,8 +3,8 @@
 #include <Windows.h>
 #include <sstream>
 
-#include "driver/runtime/v8/v8_bridge_utils.h"
-#include "driver/scope.h"
+#include "driver/js_driver_utils.h"
+#include "driver/vm/v8/v8_vm.h"
 #include "footstone/macros.h"
 #include "footstone/string_view_utils.h"
 #include "vfs/handler/asset_handler.h"
@@ -14,6 +14,8 @@
 #  include "devtools/vfs/devtools_handler.h"
 #endif
 
+using V8VMInitParam = hippy::V8VMInitParam;
+
 namespace hippy {
 inline namespace windows {
 
@@ -21,18 +23,8 @@ constexpr char kHippyCurrentDirectoryKey[] = "__HIPPYCURDIR__";
 constexpr char kAssetSchema[] = "asset";
 constexpr char kHttpSchema[] = "http";
 constexpr char kHttpsSchema[] = "https";
-constexpr uint8_t kDispatcherSlot = 3;
 
 Driver::Driver() : module_dispatcher_(std::make_shared<hippy::ModuleDispatcher>()) {}
-
-static std::shared_ptr<hippy::V8VMInitParam> CreateV8VMInitParam(const std::shared_ptr<Config>& config) {
-  std::shared_ptr<hippy::V8VMInitParam> v8_init_param = std::make_shared<hippy::V8VMInitParam>();
-  if (config->GetJsEngine()->GetInitalHeapSize() != kInvalidInitialHeapSize)
-    v8_init_param->initial_heap_size_in_bytes = config->GetJsEngine()->GetInitalHeapSize();
-  if (config->GetJsEngine()->GetMaximumHeapSize() != kInvalidMaximumHeapSize)
-    v8_init_param->maximum_heap_size_in_bytes = config->GetJsEngine()->GetMaximumHeapSize();
-  return v8_init_param;
-}
 
 static string_view CreateGlobalConfig(const std::shared_ptr<Config>& config) {
   std::stringstream ss;
@@ -56,77 +48,70 @@ static string_view CreateGlobalConfig(const std::shared_ptr<Config>& config) {
 
 bool Driver::Initialize(const std::shared_ptr<Config>& config, const std::shared_ptr<DomManager>& dom_manager,
                         const std::shared_ptr<RootNode>& root_node, const std::shared_ptr<UriLoader>& uri_loader,
-                        const uint32_t devtools_id, const bool reload) {
+                        const std::shared_ptr<DevtoolsDataSource>& devtools_data_source, const bool reload) {
   FOOTSTONE_DCHECK(module_dispatcher_);
   if (module_dispatcher_ == nullptr) return false;
   module_dispatcher_->Initial(config);
 
-  RegisterExceptionHandler();
-
-  // init v8 instance
-  bool enable_v8_serialization = config->GetJsEngine()->GetEnableV8Serialization();
-  bool is_development_module = config->GetDebug()->GetDevelopmentModule();
-  string_view global_config = CreateGlobalConfig(config);
-  uint64_t group_id = config->GetJsEngine()->GetGroupId();
-  auto& work_manager = uri_loader->GetWorkerManager();
-  auto task_runner = dom_manager->GetTaskRunner();
-  std::shared_ptr<hippy::V8VMInitParam> v8_init_param = CreateV8VMInitParam(config);
-  ScopeCallBack scope_create_callback = [WEAK_THIS](void* data) {
+  // v8 init parameter
+  auto param = std::make_shared<V8VMInitParam>();
+  param->enable_v8_serialization = config->GetJsEngine()->GetEnableV8Serialization();
+  param->is_debug = config->GetDebug()->GetDevelopmentModule();
+  if (config->GetJsEngine()->GetInitalHeapSize() != kInvalidInitialHeapSize)
+    param->initial_heap_size_in_bytes = config->GetJsEngine()->GetInitalHeapSize();
+  if (config->GetJsEngine()->GetMaximumHeapSize() != kInvalidMaximumHeapSize)
+    param->maximum_heap_size_in_bytes = config->GetJsEngine()->GetMaximumHeapSize();
+  param->uncaught_exception_callback = [WEAK_THIS](const std::any& bridge, const string_view& desc,
+                                                   const string_view& stack) {
     DEFINE_AND_CHECK_SELF(Driver)
-    FOOTSTONE_LOG(INFO) << "run scope cb";
-    auto scope_callback = self->GetScopeCallBack();
-    if (scope_callback) scope_callback(data);
+    if (self->exception_handler_) self->exception_handler_(desc, stack);
   };
-  JsCallback js_callback = [](CallbackInfo& info, void* data) {
-    int32_t runtime_id = reinterpret_cast<int32_t>(data);
-    std::shared_ptr<Runtime> runtime = Runtime::Find(runtime_id);
-    auto module_dispatcher = std::any_cast<std::shared_ptr<ModuleDispatcher>>(runtime->GetData(kDispatcherSlot));
-    module_dispatcher->Dispatcher(info, runtime);
-  };
-
-  runtime_id_ = hippy::V8BridgeUtils::InitInstance(enable_v8_serialization, is_development_module, global_config,
-                                                   group_id, work_manager, task_runner, v8_init_param, nullptr,
-                                                   scope_create_callback, js_callback, devtools_id);
-
-  // runtime bind
-  auto runtime = hippy::Runtime::Find(runtime_id_);
-  if (runtime == nullptr) return false;
-  auto scope = runtime->GetScope();
-  scope->SetDomManager(dom_manager);
-  runtime->GetScope()->SetRootNode(root_node);
-  runtime->SetData(kDispatcherSlot, module_dispatcher_);
-
-  runtime->GetScope()->SetUriLoader(uri_loader);
-  if (!reload) {
-    auto http_handler = std::make_shared<hippy::vfs::HttpHandler>();
-    http_handler->SetWorkerTaskRunner(runtime->GetEngine()->GetWorkerTaskRunner());
-    uri_loader->RegisterUriHandler(kHttpSchema, http_handler);
-    uri_loader->RegisterUriHandler(kHttpsSchema, http_handler);
-    auto asset_handler = std::make_shared<hippy::vfs::AssetHandler>();
-    asset_handler->SetWorkerTaskRunner(runtime->GetEngine()->GetWorkerTaskRunner());
-    uri_loader->RegisterUriHandler(kAssetSchema, asset_handler);
+  auto dom_task_runner = dom_manager->GetTaskRunner();
+  auto group_id = config->GetJsEngine()->GetGroupId();
+  if (param->is_debug) {
+    param->devtools_data_source = devtools_data_source;
+#ifdef ENABLE_INSPECTOR
+    if (devtools_data_source) {
+      auto network_notification = devtools_data_source->GetNotificationCenter()->network_notification;
+      auto devtools_handler = std::make_shared<hippy::devtools::DevtoolsHandler>();
+      devtools_handler->SetNetworkNotification(network_notification);
+      // uri_loader->RegisterUriInterceptor(devtools_handler);
+    }
+#endif
   }
 
-  return true;
-}
+  js_engine_ = JsDriverUtils::CreateEngineAndAsyncInitialize(dom_task_runner, param, group_id);
+  auto http_handler = std::make_shared<hippy::vfs::HttpHandler>();
+  http_handler->SetWorkerTaskRunner(js_engine_->GetJsTaskRunner());
+  uri_loader->RegisterUriHandler(kHttpSchema, http_handler);
+  uri_loader->RegisterUriHandler(kHttpsSchema, http_handler);
+  auto asset_handler = std::make_shared<hippy::vfs::AssetHandler>();
+  asset_handler->SetWorkerTaskRunner(js_engine_->GetJsTaskRunner());
+  uri_loader->RegisterUriHandler(kAssetSchema, asset_handler);
 
-void Driver::RegisterExceptionHandler() {
-  V8BridgeUtils::SetOnThrowExceptionToJS([WEAK_THIS](const std::shared_ptr<Runtime>& runtime,
-                                                     const hippy::driver::napi::Ctx::string_view& desc,
-                                                     const hippy::driver::napi::Ctx::string_view& stack) {
+  auto call_host_callback = [](CallbackInfo& info, void* data) {
+    FOOTSTONE_DLOG(INFO) << "CallHost";
+    auto scope_wrapper = reinterpret_cast<ScopeWrapper*>(std::any_cast<void*>(info.GetSlot()));
+    auto scope = scope_wrapper->scope.lock();
+    FOOTSTONE_CHECK(scope);
+    auto module_dispatcher = std::any_cast<std::shared_ptr<ModuleDispatcher>>(scope->GetBridge());
+    if (module_dispatcher) module_dispatcher->Dispatcher(info, scope);
+  };
+  string_view global_config = CreateGlobalConfig(config);
+  auto scope_initialized_callback = [WEAK_THIS](std::shared_ptr<Scope> scope) {
     DEFINE_AND_CHECK_SELF(Driver)
-    if (self->exception_handler_) self->exception_handler_(runtime, desc, stack);
-  });
+    FOOTSTONE_LOG(INFO) << "run scope cb";
+    self->SetScope(scope);
+    scope->SetBridge(self->module_dispatcher_);
+    auto scope_initialized_callback = self->GetScopeInitializedCallBack();
+    if (scope_initialized_callback) scope_initialized_callback(scope);
+  };
+  JsDriverUtils::InitInstance(js_engine_, global_config, scope_initialized_callback, call_host_callback);
+  return true;
 }
 
 bool Driver::RunScriptFromUri(string_view uri, const std::shared_ptr<UriLoader>& uri_loader,
                               const std::shared_ptr<Config>& config) {
-  auto runtime = hippy::Runtime::Find(runtime_id_);
-  if (runtime == nullptr) {
-    FOOTSTONE_DLOG(WARNING) << "RunScriptFromUri, runtime invalid";
-    return false;
-  }
-
   const string_view code_cache_dir = config->GetJsEngine()->GetCodeCacheDirectory();
   auto pos = footstone::stringview::StringViewUtils::FindLastOf(uri, EXTEND_LITERAL('/'));
   size_t len = footstone::stringview::StringViewUtils::GetLength(uri);
@@ -137,8 +122,8 @@ bool Driver::RunScriptFromUri(string_view uri, const std::shared_ptr<UriLoader>&
   FOOTSTONE_DLOG(INFO) << "runScriptFromUri uri = " << uri << ", script_name = " << script_name
                        << ", base_path = " << base_path << ", code_cache_dir = " << code_cache_dir;
 
-  auto runner = runtime->GetEngine()->GetJsTaskRunner();
-  auto ctx = runtime->GetScope()->GetContext();
+  auto runner = scope_->GetTaskRunner();
+  auto ctx = scope_->GetContext();
   runner->PostTask([ctx, base_path] {
     if (ctx != nullptr) {
       auto key = ctx->CreateString(kHippyCurrentDirectoryKey);
@@ -148,18 +133,12 @@ bool Driver::RunScriptFromUri(string_view uri, const std::shared_ptr<UriLoader>&
     }
   });
 
-#ifdef ENABLE_INSPECTOR
-  auto devtools_data_source = runtime->GetDevtoolsDataSource();
-  if (devtools_data_source) {
-    auto network_notification = devtools_data_source->GetNotificationCenter()->network_notification;
-    auto devtools_handler = std::make_shared<hippy::devtools::DevtoolsHandler>();
-    devtools_handler->SetNetworkNotification(network_notification);
-    uri_loader->RegisterUriInterceptor(devtools_handler);
-  }
-#endif
-  auto func = [runtime, script_name, code_cache_dir, uri] {
+  auto func = [WEAK_THIS, script_name, code_cache_dir, uri] {
+    DEFINE_AND_CHECK_SELF(Driver)
     FOOTSTONE_DLOG(INFO) << "runScriptFromUri enter";
-    bool flag = hippy::V8BridgeUtils::RunScript(runtime, script_name, false, code_cache_dir, uri, false);
+    // TODO(charleeshen): code cache use
+    auto scope = self->GetScope();
+    bool flag = JsDriverUtils::RunScript(scope, script_name, false, code_cache_dir, uri, false);
   };
   runner->PostTask(std::move(func));
 
@@ -167,7 +146,7 @@ bool Driver::RunScriptFromUri(string_view uri, const std::shared_ptr<UriLoader>&
 }
 
 void Driver::LoadInstance(std::string& load_instance_message) {
-  hippy::V8BridgeUtils::LoadInstance(runtime_id_, std::move(load_instance_message));
+  JsDriverUtils::LoadInstance(scope_, std::move(load_instance_message));
 }
 
 void Driver::ReloadInstance(const uint32_t root_id, std::function<void()> reload_callback) {
@@ -178,7 +157,7 @@ void Driver::ReloadInstance(const uint32_t root_id, std::function<void()> reload
   serializer_.WriteValue(footstone::value::HippyValue(object));
   std::pair<uint8_t*, size_t> buffer = serializer_.Release();
   std::string byte_string(reinterpret_cast<char*>(buffer.first), buffer.second);
-  V8BridgeUtils::UnloadInstance(runtime_id_, std::move(byte_string));
+  JsDriverUtils::UnloadInstance(scope_, std::move(byte_string));
 
   auto callback = [reload_callback](bool ret) {
     if (ret) {
@@ -187,7 +166,7 @@ void Driver::ReloadInstance(const uint32_t root_id, std::function<void()> reload
       FOOTSTONE_DLOG(INFO) << "reload engine failed !!!";
     }
   };
-  V8BridgeUtils::DestroyInstance(runtime_id_, callback, true);
+  JsDriverUtils::DestroyInstance(js_engine_, scope_, callback, true);
 }
 
 }  // namespace windows

@@ -319,18 +319,18 @@ bool JsDriverUtils::RunScript(const std::shared_ptr<Scope>& scope,
   if (is_use_code_cache) {
     if (!StringViewUtils::IsEmpty(code_cache_content)) {
       auto func = [code_cache_path, code_cache_dir, code_cache_content] {
-        int check_dir_ret = HippyFile::CheckDir(code_cache_dir, F_OK);
+        int check_dir_ret = HippyFile::CheckDir(code_cache_dir);
         FOOTSTONE_DLOG(INFO) << "check_parent_dir_ret = " << check_dir_ret;
         if (check_dir_ret) {
-          HippyFile::CreateDir(code_cache_dir, S_IRWXU);
+          HippyFile::CreateDir(code_cache_dir);
         }
 
         size_t pos = StringViewUtils::FindLastOf(code_cache_path, EXTEND_LITERAL('/'));
         string_view code_cache_parent_dir = StringViewUtils::SubStr(code_cache_path, 0, pos);
-        int check_parent_dir_ret = HippyFile::CheckDir(code_cache_parent_dir, F_OK);
+        int check_parent_dir_ret = HippyFile::CheckDir(code_cache_parent_dir);
         FOOTSTONE_DLOG(INFO) << "check_parent_dir_ret = " << check_parent_dir_ret;
         if (check_parent_dir_ret) {
-          HippyFile::CreateDir(code_cache_parent_dir, S_IRWXU);
+          HippyFile::CreateDir(code_cache_parent_dir);
         }
 
         auto u8_code_cache_content = StringViewUtils::ToStdString(StringViewUtils::ConvertEncoding(

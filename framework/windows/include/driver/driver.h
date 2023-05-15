@@ -26,17 +26,18 @@
 
 #include "config.h"
 #include "dom/dom_manager.h"
+#include "driver/js_driver_utils.h"
 #include "driver/module_dispatcher.h"
 #include "footstone/serializer.h"
 
 namespace hippy {
 inline namespace windows {
 
-using ScopeCallBack = hippy::driver::runtime::V8BridgeUtils::RegisterFunction;
-using ExceptionHandler = std::function<void(const std::shared_ptr<hippy::Runtime>& runtime,
-                                            const hippy::driver::napi::Ctx::string_view& desc,
-                                            const hippy::driver::napi::Ctx::string_view& stack)>;
+using string_view = footstone::stringview::string_view;
+using ScopeInitializedCallBack = std::function<void(std::shared_ptr<Scope>)>;
+using ExceptionHandler = std::function<void(const string_view& desc, const string_view& stack)>;
 using Serializer = footstone::value::Serializer;
+using DevtoolsDataSource = hippy::devtools::DevtoolsDataSource;
 
 class Driver : public std::enable_shared_from_this<Driver> {
  public:
@@ -45,12 +46,14 @@ class Driver : public std::enable_shared_from_this<Driver> {
 
   bool Initialize(const std::shared_ptr<Config>& config, const std::shared_ptr<DomManager>& dom_manager,
                   const std::shared_ptr<RootNode>& root_node, const std::shared_ptr<UriLoader>& uri_loader,
-                  const uint32_t devtools_id, bool reload = false);
+                  const std::shared_ptr<DevtoolsDataSource>& devtools_data_source, bool reload = false);
+  void SetScope(std::shared_ptr<Scope> scope) { scope_ = scope; }
+  std::shared_ptr<Scope> GetScope() { return scope_; }
 
-  void RegisterExceptionHandler();
+  // void RegisterExceptionHandler();
   void SetExceptionHandler(ExceptionHandler exception_handler) { exception_handler_ = exception_handler; }
-  void SetScopeCallBack(ScopeCallBack scope_callback) { scope_callback_ = scope_callback; }
-  ScopeCallBack GetScopeCallBack() { return scope_callback_; }
+  void ScopeInitializedCallBack(ScopeInitializedCallBack scope_initialized_callback) { scope_initialized_callback_ = scope_initialized_callback; }
+  hippy::ScopeInitializedCallBack GetScopeInitializedCallBack() { return scope_initialized_callback_; }
   bool RunScriptFromUri(string_view uri, const std::shared_ptr<UriLoader>& uri_loader,
                         const std::shared_ptr<Config>& config);
   void LoadInstance(std::string& load_instance_message);
@@ -58,10 +61,11 @@ class Driver : public std::enable_shared_from_this<Driver> {
   void ReloadInstance(const uint32_t root_id, std::function<void()> reload_callback);
 
  private:
-  int32_t runtime_id_;
+  std::shared_ptr<Scope> scope_;
+  std::shared_ptr<Engine> js_engine_;
   std::shared_ptr<hippy::ModuleDispatcher> module_dispatcher_;
   ExceptionHandler exception_handler_;
-  ScopeCallBack scope_callback_;
+  hippy::ScopeInitializedCallBack scope_initialized_callback_;
   Serializer serializer_;
 };
 

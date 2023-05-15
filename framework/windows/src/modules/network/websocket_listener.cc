@@ -22,7 +22,7 @@
 
 #include "modules/network/websocket_listener.h"
 
-#include "driver/runtime/v8/v8_bridge_utils.h"
+#include "driver/js_driver_utils.h"
 #include "footstone/deserializer.h"
 #include "footstone/string_view.h"
 
@@ -43,8 +43,8 @@ constexpr char kData[] = "data";
 constexpr char kType[] = "type";
 constexpr char kCode[] = "code";
 
-WebsocketEventListener::WebsocketEventListener(uint32_t runtime_id, uint32_t websocket_client_id)
-    : runtime_id_(runtime_id), websocket_client_id_(websocket_client_id) {}
+WebsocketEventListener::WebsocketEventListener(const std::shared_ptr<Scope>& scope, uint32_t websocket_client_id)
+    : weak_scope_(scope), websocket_client_id_(websocket_client_id) {}
 
 void WebsocketEventListener::Open() { SendWebsocketEvent(kEventTypeOpen, footstone::HippyValue::Null()); }
 
@@ -85,12 +85,13 @@ void WebsocketEventListener::SendWebsocketEvent(std::string event_type, footston
 
   serializer.WriteValue(footstone::HippyValue(object));
   std::pair<uint8_t*, size_t> buffer = serializer.Release();
-  V8BridgeUtils::byte_string buffer_data{reinterpret_cast<char*>(buffer.first), buffer.second};
+  JsDriverUtils::byte_string buffer_data{reinterpret_cast<char*>(buffer.first), buffer.second};
   auto call_js_callback = [](CALL_FUNCTION_CB_STATE state, const footstone::string_view& msg) {
     FOOTSTONE_DLOG(INFO) << msg;
   };
   auto on_js_runner = []() {};
-  V8BridgeUtils::CallJs(u"callJsModule", runtime_id_, call_js_callback, buffer_data, on_js_runner);
+  auto scope = weak_scope_.lock();
+  if (scope) JsDriverUtils::CallJs(u"callJsModule", scope, call_js_callback, buffer_data, on_js_runner);
 }
 
 }  // namespace module

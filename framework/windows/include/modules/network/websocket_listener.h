@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "driver/scope.h"
 #include "footstone/hippy_value.h"
 
 namespace hippy {
@@ -31,7 +32,7 @@ inline namespace module {
 
 class WebsocketEventListener {
  public:
-  WebsocketEventListener(uint32_t runtime_id, uint32_t websocket_client_id);
+  WebsocketEventListener(const std::shared_ptr<Scope>& scope, uint32_t websocket_client_id);
   void Open();
   void Close(const int32_t code, const std::string& reason);
   void Error(const std::string& error_message);
@@ -39,7 +40,7 @@ class WebsocketEventListener {
 
  private:
   void SendWebsocketEvent(std::string event_type, footstone::HippyValue data);
-  uint32_t runtime_id_;
+  std::weak_ptr<Scope> weak_scope_;
   uint32_t websocket_client_id_;
 };
 

@@ -145,7 +145,7 @@ Websocket::~Websocket() {
   }
 }
 
-void Websocket::Connect(const footstone::value::HippyValue& request, uint32_t runtime_id,
+void Websocket::Connect(const std::shared_ptr<Scope>& scope, const footstone::value::HippyValue& request,
                         std::function<void(footstone::value::HippyValue)> callback) {
   std::unordered_map<std::string, std::string> headers;
   std::string url;
@@ -166,7 +166,7 @@ void Websocket::Connect(const footstone::value::HippyValue& request, uint32_t ru
 
   uint32_t id = global_websocket_id.fetch_add(1);
   auto client = std::make_shared<WebsocketClient>(id, url, headers);
-  auto listener = std::make_shared<WebsocketEventListener>(runtime_id, id);
+  auto listener = std::make_shared<WebsocketEventListener>(scope, id);
   client->SetEventListener(listener);
   websocket_client_map_.insert({id, client});
   client->SetCloseCallback([WEAK_THIS](uint32_t websocket_id) {
@@ -182,7 +182,7 @@ void Websocket::Connect(const footstone::value::HippyValue& request, uint32_t ru
   callback(footstone::value::HippyValue(callback_object));
 }
 
-void Websocket::Disconnect(const footstone::value::HippyValue& request, uint32_t runtime_id) {
+void Websocket::Disconnect(const footstone::value::HippyValue& request) {
   int32_t websocket_id;
   int32_t code;
   std::string reason;
@@ -198,7 +198,7 @@ void Websocket::Disconnect(const footstone::value::HippyValue& request, uint32_t
   return;
 }
 
-void Websocket::Send(const footstone::value::HippyValue& request, uint32_t runtime_id) {
+void Websocket::Send(const footstone::value::HippyValue& request) {
   int32_t websocket_id;
   std::string data;
   RetCode ret_code = ParseRequest(request, websocket_id, data);

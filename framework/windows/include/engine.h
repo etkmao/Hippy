@@ -27,6 +27,7 @@
 #include "config.h"
 #include "dom/dom_manager.h"
 #include "driver/driver.h"
+#include "driver/scope.h"
 #include "footstone/string_view_utils.h"
 #include "renderer/tdf/tdf_render_manager.h"
 #include "vfs/uri_loader.h"
@@ -46,7 +47,7 @@ using TDFRenderManager = hippy::render::tdf::TDFRenderManager;
 using DevtoolsDataSource = hippy::devtools::DevtoolsDataSource;
 using UriLoader = hippy::vfs::UriLoader;
 using string_view = footstone::stringview::StringViewUtils::string_view;
-using ScopeCallBack = hippy::driver::runtime::V8BridgeUtils::RegisterFunction;
+using ScopeInitializedCallBack = std::function<void(uint32_t root_id)>;
 
 class Engine : public std::enable_shared_from_this<Engine> {
  public:
@@ -55,8 +56,10 @@ class Engine : public std::enable_shared_from_this<Engine> {
 
   void Initialize();
   bool RunScriptFromUri(const string_view& uri);
-  void SetScopeCallback(ScopeCallBack scope_callback) { scope_callback_ = scope_callback; }
-  ScopeCallBack GetScopeCallBack() { return scope_callback_; }
+  void SetScopeInitializedCallback(ScopeInitializedCallBack scope_initialized_callback) {
+    scope_initialized_callback_ = scope_initialized_callback;
+  };
+  ScopeInitializedCallBack GetScopeInitializedCallBack() { return scope_initialized_callback_; }
   void LoadInstance(std::string& load_instance_message);
   std::shared_ptr<hippy::Config> GetConfig() { return config_; }
   void ReloadInstance(uint32_t new_root_id);
@@ -81,8 +84,7 @@ class Engine : public std::enable_shared_from_this<Engine> {
   std::shared_ptr<RootNode> root_node_{nullptr};
   std::shared_ptr<UriLoader> uri_loader_{nullptr};
   std::shared_ptr<DevtoolsDataSource> devtools_data_source_{nullptr};
-  uint32_t devtools_id_;
-  ScopeCallBack scope_callback_;
+  ScopeInitializedCallBack scope_initialized_callback_;
 };
 
 }  // namespace framework
