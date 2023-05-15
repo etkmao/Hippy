@@ -79,7 +79,6 @@ void Engine::CreateDevtools() {
   std::string ws_url = "ws://127.0.0.1:38989/debugger-proxy?role=android_client&clientId=%s&hash=%s&contextName=%s";
   auto worker_manager = std::make_shared<footstone::WorkerManager>(kPoolSize);
   devtools_data_source_ = std::make_shared<hippy::devtools::DevtoolsDataSource>(ws_url, worker_manager);
-  devtools_id_ = devtools::DevtoolsDataSource::Insert(devtools_data_source_);
 }
 
 void Engine::CreateUriLoader() { uri_loader_ = std::make_shared<UriLoader>(); }
@@ -103,14 +102,18 @@ void Engine::Bind() {
   tdf_render_manager_->RegisterShell(config_->GetRootId(), config_->GetShell());
 
   // Init driver to create V8 JS Engine
-  driver_->Initialize(config_, dom_manager_, root_node_, uri_loader_, devtools_id_);
+  driver_->Initialize(config_, dom_manager_, root_node_, uri_loader_, devtools_data_source_);
 
-  auto scope_callback = [WEAK_THIS](void* data) {
+  auto scope_initialized_callback = [WEAK_THIS](std::shared_ptr<Scope> scope) {
     DEFINE_AND_CHECK_SELF(Engine)
-    auto scope_callback = self->GetScopeCallBack();
-    if (scope_callback) scope_callback(data);
+    scope->SetDomManager(self->dom_manager_);
+    scope->SetRootNode(self->root_node_);
+    scope->SetUriLoader(self->uri_loader_);
+    auto root_id = self->root_node_->GetId();
+    auto scope_initialized_callback = self->GetScopeInitializedCallBack();
+    if (scope_initialized_callback) scope_initialized_callback(root_id);
   };
-  driver_->SetScopeCallBack(scope_callback);
+  driver_->ScopeInitializedCallBack(scope_initialized_callback);
 }
 
 bool Engine::RunScriptFromUri(const string_view& uri) {
@@ -130,7 +133,6 @@ void Engine::ReloadInstance(uint32_t new_root_id) {
       self->CreateDriver();
       self->CreateTdfRenderManager(config->GetDensity());
       self->CreateRootNode(config->GetRootId(), config->GetDensity());
-      // self->CreateUriLoader();
 
       self->tdf_render_manager_->SetDomManager(self->dom_manager_);
       self->dom_manager_->SetRenderManager(self->tdf_render_manager_);
@@ -138,25 +140,18 @@ void Engine::ReloadInstance(uint32_t new_root_id) {
       self->tdf_render_manager_->SetUriLoader(self->uri_loader_);
       self->tdf_render_manager_->RegisterShell(config->GetRootId(), config->GetShell());
 
-      self->driver_->Initialize(config, self->dom_manager_, self->root_node_, self->uri_loader_, self->devtools_id_, true);
-      auto scope_callback = [weak_this = self->weak_from_this()](void* data) {
+      self->driver_->Initialize(config, self->dom_manager_, self->root_node_, self->uri_loader_,
+                                self->devtools_data_source_, true);
+      auto scope_initialized_callback = [weak_this = self->weak_from_this()](std::shared_ptr<Scope> scope) {
         DEFINE_AND_CHECK_SELF(Engine)
-        auto scope_callback = self->GetScopeCallBack();
-        if (scope_callback) scope_callback(data);
+        scope->SetDomManager(self->dom_manager_);
+        scope->SetRootNode(self->root_node_);
+        scope->SetUriLoader(self->uri_loader_);
+        auto root_id = self->root_node_->GetId();
+        auto scope_initialized_callback = self->GetScopeInitializedCallBack();
+        if (scope_initialized_callback) scope_initialized_callback(root_id);
       };
-      self->driver_->SetScopeCallBack(scope_callback);
-
-      std::string load_instance_message = Engine::CreateLoadInstanceMessage(config->GetRootId());
-      if (config->GetDebug()->GetDevelopmentModule()) {
-        std::string remote_uri = Engine::CreateRemoteUri(config);
-        self->RunScriptFromUri(string_view(remote_uri));
-        self->LoadInstance(load_instance_message);
-      } else {
-        auto core_js = config->GetJsAssetsPath()->GetCorePath();
-        self->RunScriptFromUri(string_view(core_js));
-        self->RunScriptFromUri("asset:/index.android.js");
-        self->LoadInstance(load_instance_message);
-      }
+      self->driver_->ScopeInitializedCallBack(scope_initialized_callback);
     };
     driver_->ReloadInstance(root_node_->GetId(), callback);
   }

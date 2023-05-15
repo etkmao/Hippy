@@ -31,12 +31,21 @@
 namespace hippy {
 inline namespace vfs {
 
-HttpHandler::HttpHandler() {
-  internet_handle_ = InternetOpen("HTTP", INTERNET_OPEN_TYPE_DIRECT, nullptr, nullptr, 0);
-}
+HttpHandler::HttpHandler() { internet_handle_ = InternetOpen("HTTP", INTERNET_OPEN_TYPE_DIRECT, nullptr, nullptr, 0); }
 
 HttpHandler::~HttpHandler() {
   if (internet_handle_) InternetCloseHandle(internet_handle_);
+}
+
+static void LogLastErrorMessage() {
+  DWORD error_code = GetLastError();
+  LPSTR error_message;
+  FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr,
+                error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&error_message, 0, nullptr);
+  if (error_message != nullptr) {
+    FOOTSTONE_DLOG(INFO) << "windows error code: " << error_code << ", error message: " << error_message;
+  }
+  LocalFree(error_message);
 }
 
 bool static CreateUrlComponents(const std::string& url, URL_COMPONENTS& url_components) {
@@ -51,6 +60,14 @@ bool static CreateUrlComponents(const std::string& url, URL_COMPONENTS& url_comp
 void static FreeUrlComponents(URL_COMPONENTS& url_components) {
   delete[] url_components.lpszHostName;
   delete[] url_components.lpszUrlPath;
+}
+
+static void FreeRequestHandle(HINTERNET connection_handle, HINTERNET request_handle, URL_COMPONENTS& url_components,
+                              bool error_log = true) {
+  if (!request_handle) InternetCloseHandle(request_handle);
+  if (!connection_handle) InternetCloseHandle(connection_handle);
+  FreeUrlComponents(url_components);
+  if (error_log) LogLastErrorMessage();
 }
 
 void HttpHandler::RequestUntrustedContent(std::shared_ptr<RequestJob> request, std::shared_ptr<JobResponse> response,
@@ -75,35 +92,28 @@ void HttpHandler::LoadUriContent(const std::shared_ptr<RequestJob>& request,
   string_view uri = request->GetUri();
   URL_COMPONENTS url_components = {0};
   if (!CreateUrlComponents(uri.latin1_value(), url_components)) {
-    FOOTSTONE_DLOG(INFO) << "Internet crack url!!";
-    FreeUrlComponents(url_components);
+    FreeRequestHandle(nullptr, nullptr, url_components, true);
     response->SetRetCode(hippy::JobResponse::RetCode::Failed);
     return;
   }
   auto handle_connect = InternetConnect(internet_handle_, url_components.lpszHostName, url_components.nPort, nullptr,
                                         nullptr, INTERNET_SERVICE_HTTP, 0, 0);
-  if (!handle_connect) {
-    FOOTSTONE_DLOG(INFO) << "Internet connect error!!";
-    FreeUrlComponents(url_components);
+  if (handle_connect == nullptr) {
+    FreeRequestHandle(nullptr, nullptr, url_components, true);
     response->SetRetCode(hippy::JobResponse::RetCode::Failed);
     return;
   }
 
   auto handle_request = HttpOpenRequest(handle_connect, "GET", url_components.lpszUrlPath, nullptr, nullptr, nullptr,
                                         INTERNET_FLAG_RELOAD, 0);
-  if (!handle_request) {
-    FOOTSTONE_DLOG(INFO) << "Internet connect error!!";
-    InternetCloseHandle(handle_connect);
-    FreeUrlComponents(url_components);
+  if (handle_request == nullptr) {
+    FreeRequestHandle(handle_connect, nullptr, url_components, true);
     response->SetRetCode(hippy::JobResponse::RetCode::Failed);
     return;
   }
 
   if (!HttpSendRequest(handle_request, nullptr, 0, nullptr, 0)) {
-    FOOTSTONE_DLOG(INFO) << "http send request error!!";
-    InternetCloseHandle(handle_request);
-    InternetCloseHandle(handle_connect);
-    FreeUrlComponents(url_components);
+    FreeRequestHandle(handle_connect, handle_request, url_components, true);
     response->SetRetCode(hippy::JobResponse::RetCode::Failed);
     return;
   }
@@ -117,10 +127,7 @@ void HttpHandler::LoadUriContent(const std::shared_ptr<RequestJob>& request,
   UriHandler::bytes content{buffer.begin(), buffer.end()};
   response->SetRetCode(hippy::JobResponse::RetCode::Success);
   response->SetContent(std::move(content));
-
-  InternetCloseHandle(handle_request);
-  InternetCloseHandle(handle_connect);
-  FreeUrlComponents(url_components);
+  FreeRequestHandle(handle_connect, handle_request, url_components, false);
   return;
 }
 
@@ -151,75 +158,56 @@ void HttpHandler::LoadUriContent(const std::shared_ptr<RequestJob>& request,
     if (CreateUrlComponents(uri.latin1_value(), url_components)) {
       auto handle_connect = InternetConnect(self->internet_handle_, url_components.lpszHostName, url_components.nPort,
                                             nullptr, nullptr, INTERNET_SERVICE_HTTP, 0, 0);
-      if (handle_connect != nullptr) {
-        DWORD flags = 0;
-        if (!http_request.EnableFollowLocation()) flags = flags | INTERNET_FLAG_NO_AUTO_REDIRECT;  // redirect policy
-        if (url_components.nPort == INTERNET_DEFAULT_HTTPS_PORT) flags = flags | INTERNET_FLAG_SECURE;  // https policy
-        auto method = http_request.RequestMethod();
-        auto handle_request = HttpOpenRequest(handle_connect, method.c_str(), url_components.lpszUrlPath, nullptr,
-                                              nullptr, nullptr, flags, 0);
-        // set connect time out
-        DWORD send_timeout = http_request.GetConnectionTimeout();
-        InternetSetOption(handle_request, INTERNET_OPTION_SEND_TIMEOUT, &send_timeout, sizeof(send_timeout));
-        // set read time out
-        DWORD read_timeout = http_request.GetReadTimeout();  // 5 seconds
-        InternetSetOption(handle_request, INTERNET_OPTION_RECEIVE_TIMEOUT, &read_timeout, sizeof(read_timeout));
+      if (handle_connect == nullptr) return FreeRequestHandle(nullptr, nullptr, url_components, true);
+      DWORD flags = 0;
+      if (!http_request.EnableFollowLocation()) flags = flags | INTERNET_FLAG_NO_AUTO_REDIRECT;       // redirect policy
+      if (url_components.nPort == INTERNET_DEFAULT_HTTPS_PORT) flags = flags | INTERNET_FLAG_SECURE;  // https policy
+      auto method = http_request.RequestMethod();
+      auto handle_request = HttpOpenRequest(handle_connect, method.c_str(), url_components.lpszUrlPath, nullptr,
+                                            nullptr, nullptr, flags, 0);
+      if (handle_request == nullptr) return FreeRequestHandle(handle_connect, nullptr, url_components, true);
+      // set connect time out
+      DWORD send_timeout = http_request.GetConnectionTimeout();
+      InternetSetOption(handle_request, INTERNET_OPTION_SEND_TIMEOUT, &send_timeout, sizeof(send_timeout));
+      // set read time out
+      DWORD read_timeout = http_request.GetReadTimeout();  // 5 seconds
+      InternetSetOption(handle_request, INTERNET_OPTION_RECEIVE_TIMEOUT, &read_timeout, sizeof(read_timeout));
 
-        auto ret = true;
-        // set request headers
-        if (!http_request.RequestHeaders().empty())
-          HttpAddRequestHeaders(handle_request, http_request.RequestHeaders().c_str(), -1L, HTTP_ADDREQ_FLAG_ADD);
-        // send request
-        if (!http_request.RequestBody().empty()) {
-          auto body = http_request.RequestBody();
-          // ret = HttpSendRequest(handle_request, nullptr, 0, body.c_str(), body.size());
-        } else {
-          ret = HttpSendRequest(handle_request, nullptr, 0, nullptr, 0);
-        }
-        if (!ret) self->LogLastErrorMessage();
-
-        // // http version
-        // std::vector<char> status_version_buffer;
-        // QueryInfo(handle_request, HTTP_QUERY_VERSION, status_version_buffer);
-        // // status code
-        // std::vector<char> status_code_buffer;
-        // QueryInfo(handle_request, HTTP_QUERY_STATUS_CODE, status_code_buffer);
-        // // status text
-        // std::vector<char> status_text_buffer;
-        // QueryInfo(handle_request, HTTP_QUERY_STATUS_TEXT, status_text_buffer);
-
-        // // header buffer
-        std::vector<char> header_buffer;
-        QueryInfo(handle_request, HTTP_QUERY_RAW_HEADERS_CRLF, header_buffer);
-
-        // read body
-        std::vector<char> body_buffer, recv_buffer;
-        recv_buffer.resize(1024);
-        DWORD bytes_read = 0;
-        while (InternetReadFile(handle_request, &recv_buffer[0], 1024, &bytes_read) && bytes_read > 0) {
-          body_buffer.insert(body_buffer.end(), &recv_buffer[0], &recv_buffer[0] + bytes_read);
-        }
-
-        HttpResponse response(header_buffer, body_buffer);
-        response.Parser();
-        auto headers = response.ResponseHeaders();
-        auto content = response.ResponseBody();
-        callback(std::make_shared<JobResponse>(hippy::JobResponse::RetCode::Success, "", headers, std::move(content)));
+      auto ret = true;
+      // set request headers
+      if (!http_request.RequestHeaders().empty())
+        HttpAddRequestHeaders(handle_request, http_request.RequestHeaders().c_str(), -1L, HTTP_ADDREQ_FLAG_ADD);
+      // send request
+      if (!http_request.RequestBody().empty()) {
+        auto body = http_request.RequestBody();
+        ret = HttpSendRequest(handle_request, nullptr, 0, body.data(), body.size());
+      } else {
+        ret = HttpSendRequest(handle_request, nullptr, 0, nullptr, 0);
       }
+      if (!ret) return FreeRequestHandle(handle_connect, handle_request, url_components, true);
+
+      // header buffer
+      std::vector<char> header_buffer;
+      QueryInfo(handle_request, HTTP_QUERY_RAW_HEADERS_CRLF, header_buffer);
+
+      // read body
+      std::vector<char> body_buffer, recv_buffer;
+      recv_buffer.resize(1024);
+      DWORD bytes_read = 0;
+      while (InternetReadFile(handle_request, &recv_buffer[0], 1024, &bytes_read) && bytes_read > 0) {
+        body_buffer.insert(body_buffer.end(), &recv_buffer[0], &recv_buffer[0] + bytes_read);
+      }
+      FreeRequestHandle(handle_connect, handle_request, url_components, false);
+
+      HttpResponse response(header_buffer, body_buffer);
+      response.Parser();
+      auto headers = response.ResponseHeaders();
+      auto content = response.ResponseBody();
+      callback(std::make_shared<JobResponse>(hippy::JobResponse::RetCode::Success, "", headers, std::move(content)));
     }
   });
   return;
 }
 
-void HttpHandler::LogLastErrorMessage() {
-  DWORD error_code = GetLastError();
-  LPSTR error_message;
-  FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr,
-                error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&error_message, 0, nullptr);
-  if (error_message != nullptr) {
-    FOOTSTONE_DLOG(INFO) << "windows error code: %d, error message: %s" << error_code << error_message;
-  }
-  LocalFree(error_message);
-}
 }  // namespace vfs
 }  // namespace hippy

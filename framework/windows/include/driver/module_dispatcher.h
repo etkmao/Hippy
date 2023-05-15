@@ -27,8 +27,7 @@
 #include <vector>
 
 #include "config.h"
-#include "driver/runtime/v8/runtime.h"
-#include "driver/runtime/v8/v8_bridge_utils.h"
+#include "driver/js_driver_utils.h"
 #include "footstone/serializer.h"
 #include "modules/clipboard/clipboard.h"
 #include "modules/imageloader/image_loader.h"
@@ -48,23 +47,22 @@ class ModuleDispatcher : public std::enable_shared_from_this<ModuleDispatcher> {
  public:
   ModuleDispatcher();
   void Initial(const std::shared_ptr<hippy::Config>& config);
-  void ModuleDispatcher::Dispatcher(const CallbackInfo& info, const std::shared_ptr<Runtime>& runtime);
+  void ModuleDispatcher::Dispatcher(const CallbackInfo& info, const std::shared_ptr<Scope>& scope);
 
  private:
-  void StorageModuleHandle(const string_view& func, int32_t runtime_id, const string_view& cb_id,
+  void StorageModuleHandle(const std::shared_ptr<Scope>& scope, const string_view& func, const string_view& cb_id,
                            const footstone::value::HippyValue& buffer);
-  void WebsocketModuleHandle(const string_view& func, int32_t runtime_id, const string_view& cb_id,
+  void WebsocketModuleHandle(const std::shared_ptr<Scope>& scope, const string_view& func, const string_view& cb_id,
                              const footstone::value::HippyValue& buffer);
-  void NetInfoModuleHandle(const string_view& func, int32_t runtime_id, const string_view& cb_id,
+  void NetInfoModuleHandle(const std::shared_ptr<Scope>& scope, const string_view& func, const string_view& cb_id,
                            const footstone::value::HippyValue& buffer);
-  void NetworkModuleHandle(const std::shared_ptr<UriLoader>& uri_loader, const string_view& func, int32_t runtime_id,
-                           const string_view& cb_id, const footstone::value::HippyValue& buffer);
-  void ClipboardModuleHandle(const string_view& func, int32_t runtime_id, const string_view& cb_id,
+  void NetworkModuleHandle(const std::shared_ptr<Scope>& scope, const string_view& func, const string_view& cb_id,
+                           const footstone::value::HippyValue& buffer);
+  void ClipboardModuleHandle(const std::shared_ptr<Scope>& scope, const string_view& func, const string_view& cb_id,
                              const footstone::value::HippyValue& buffer);
-  void ImageLoaderModuleHandle(const std::shared_ptr<UriLoader>& uri_loader, const string_view& func,
-                               int32_t runtime_id, const string_view& cb_id,
+  void ImageLoaderModuleHandle(const std::shared_ptr<Scope>& scope, const string_view& func, const string_view& cb_id,
                                const footstone::value::HippyValue& buffer);
-  void CallJs(const uint32_t runtime_id, const std::string& module_name, const std::string& function_name,
+  void CallJs(const std::shared_ptr<Scope>& scope, const std::string& module_name, const std::string& function_name,
               const string_view& callback_id, const footstone::value::HippyValue& result,
               const footstone::value::HippyValue& callback_parameters);
 

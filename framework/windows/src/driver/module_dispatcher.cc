@@ -3,9 +3,10 @@
 #include <utility>
 
 #include "config.h"
+#include "driver/js_driver_utils.h"
 #include "driver/napi/v8/v8_ctx.h"
-#include "driver/runtime/v8/v8_bridge_utils.h"
 #include "driver/scope.h"
+#include "driver/vm/v8/v8_vm.h"
 #include "footstone/deserializer.h"
 #include "footstone/logging.h"
 #include "footstone/string_utils.h"
@@ -59,9 +60,9 @@ void ModuleDispatcher::Initial(const std::shared_ptr<hippy::Config>& config) {
   storage_module_->Initial();
 };
 
-void ModuleDispatcher::Dispatcher(const CallbackInfo& info, const std::shared_ptr<Runtime>& runtime) {
+void ModuleDispatcher::Dispatcher(const CallbackInfo& info, const std::shared_ptr<Scope>& scope) {
   FOOTSTONE_DLOG(INFO) << "Call Windows Module";
-  auto context = runtime->GetScope()->GetContext();
+  auto context = scope->GetContext();
 
   string_view module_name;
   if (info[0]) {
@@ -101,22 +102,20 @@ void ModuleDispatcher::Dispatcher(const CallbackInfo& info, const std::shared_pt
   std::string buffer_data;
   footstone::value::HippyValue value;
   if (info[3] && context->IsObject(info[3])) {
-    if (runtime->IsEnableV8Serialization()) {
-      auto v8_ctx = std::static_pointer_cast<hippy::napi::V8Ctx>(context);
-      buffer_data = v8_ctx->GetSerializationBuffer(info[3], runtime->GetBuffer());
-    } else {
-      string_view json;
-      auto flag = context->GetValueJson(info[3], &json);
-      FOOTSTONE_DCHECK(flag);
-      buffer_data = footstone::StringViewUtils::ToStdString(
-          footstone::StringViewUtils::ConvertEncoding(json, string_view::Encoding::Utf8).utf8_value());
+    auto engine = scope->GetEngine().lock();
+    FOOTSTONE_DCHECK(engine);
+    if (!engine) {
+      return;
     }
-
-    auto v8_ctx = std::static_pointer_cast<hippy::napi::V8Ctx>(context);
-    buffer_data = v8_ctx->GetSerializationBuffer(info[3], runtime->GetBuffer());
-    footstone::Deserializer deserializer(reinterpret_cast<const uint8_t*>(buffer_data.c_str()), buffer_data.length());
-    deserializer.ReadHeader();
-    deserializer.ReadValue(value);
+    auto vm = engine->GetVM();
+    auto v8_vm = std::static_pointer_cast<hippy::driver::vm::V8VM>(vm);
+    if (v8_vm->IsEnableV8Serialization()) {
+      auto v8_ctx = std::static_pointer_cast<hippy::napi::V8Ctx>(context);
+      buffer_data = v8_ctx->GetSerializationBuffer(info[3], v8_vm->GetBuffer());
+      footstone::Deserializer deserializer(reinterpret_cast<const uint8_t*>(buffer_data.c_str()), buffer_data.length());
+      deserializer.ReadHeader();
+      deserializer.ReadValue(value);
+    }
   }
 
   int32_t transfer_type = 0;
@@ -127,25 +126,23 @@ void ModuleDispatcher::Dispatcher(const CallbackInfo& info, const std::shared_pt
   FOOTSTONE_DLOG(INFO) << "module name = " << module_name << ", function name = " << fn_name
                        << ", parameter = " << buffer_data;
   if (module_name == kClipboardModule) {
-    ClipboardModuleHandle(fn_name, runtime->GetId(), cb_id_str, value);
+    ClipboardModuleHandle(scope, fn_name, cb_id_str, value);
   } else if (module_name == kImageLoaderModule) {
-    auto loader = runtime->GetScope()->GetUriLoader().lock();
-    if (loader != nullptr) ImageLoaderModuleHandle(loader, fn_name, runtime->GetId(), cb_id_str, value);
+    ImageLoaderModuleHandle(scope, fn_name, cb_id_str, value);
   } else if (module_name == kNetInfoModule) {
-    NetInfoModuleHandle(fn_name, runtime->GetId(), cb_id_str, value);
+    NetInfoModuleHandle(scope, fn_name, cb_id_str, value);
   } else if (module_name == kNetworkModule) {
-    auto loader = runtime->GetScope()->GetUriLoader().lock();
-    if (loader != nullptr) NetworkModuleHandle(loader, fn_name, runtime->GetId(), cb_id_str, value);
+    NetworkModuleHandle(scope, fn_name, cb_id_str, value);
   } else if (module_name == kWebsocketModule) {
-    WebsocketModuleHandle(fn_name, runtime->GetId(), cb_id_str, value);
+    WebsocketModuleHandle(scope, fn_name, cb_id_str, value);
   } else if (module_name == kStorageModule) {
-    StorageModuleHandle(fn_name, runtime->GetId(), cb_id_str, value);
+    StorageModuleHandle(scope, fn_name, cb_id_str, value);
   } else {
     FOOTSTONE_LOG(WARNING) << "module " << module_name << " is not support !!!";
   }
 }
 
-void ModuleDispatcher::CallJs(const uint32_t runtime_id, const std::string& module_name,
+void ModuleDispatcher::CallJs(const std::shared_ptr<Scope>& scope, const std::string& module_name,
                               const std::string& function_name, const string_view& callback_id,
                               const footstone::value::HippyValue& result,
                               const footstone::value::HippyValue& callback_parameters) {
@@ -160,59 +157,61 @@ void ModuleDispatcher::CallJs(const uint32_t runtime_id, const std::string& modu
   serializer_.WriteValue(footstone::HippyValue(object));
   std::pair<uint8_t*, size_t> buffer = serializer_.Release();
   byte_string buffer_data{reinterpret_cast<char*>(buffer.first), buffer.second};
-  auto call_js_callback = [](CALL_FUNCTION_CB_STATE state, const string_view& msg) { FOOTSTONE_DLOG(INFO) << msg; };
+  auto call_js_callback = [](hippy::driver::CALL_FUNCTION_CB_STATE state, const string_view& msg) {
+    FOOTSTONE_DLOG(INFO) << msg;
+  };
   auto on_js_runner = []() {};
-  V8BridgeUtils::CallJs(u"callBack", runtime_id, call_js_callback, buffer_data, on_js_runner);
+  JsDriverUtils::CallJs(u"callBack", scope, call_js_callback, buffer_data, on_js_runner);
 }
 
-void ModuleDispatcher::StorageModuleHandle(const string_view& func, int32_t runtime_id, const string_view& cb_id,
-                                           const footstone::value::HippyValue& buffer) {
+void ModuleDispatcher::StorageModuleHandle(const std::shared_ptr<Scope>& scope, const string_view& func,
+                                           const string_view& cb_id, const footstone::value::HippyValue& buffer) {
   if (storage_module_ == nullptr) return;
   if (func == kStroageFunctionGetItemsValue) {
-    auto success_callback = [WEAK_THIS, runtime_id, cb_id](const footstone::value::HippyValue& params) {
+    auto success_callback = [WEAK_THIS, scope, cb_id](const footstone::value::HippyValue& params) {
       DEFINE_AND_CHECK_SELF(ModuleDispatcher)
-      self->CallJs(runtime_id, kStorageModule, kStroageFunctionGetItemsValue, cb_id,
-                   footstone::value::HippyValue(kSuccess), params);
+      self->CallJs(scope, kStorageModule, kStroageFunctionGetItemsValue, cb_id, footstone::value::HippyValue(kSuccess),
+                   params);
     };
-    auto fail_callback = [WEAK_THIS, runtime_id, cb_id](const footstone::value::HippyValue& params) {
+    auto fail_callback = [WEAK_THIS, scope, cb_id](const footstone::value::HippyValue& params) {
       DEFINE_AND_CHECK_SELF(ModuleDispatcher)
-      self->CallJs(runtime_id, kStorageModule, kStroageFunctionGetItemsValue, cb_id,
-                   footstone::value::HippyValue(kError), params);
+      self->CallJs(scope, kStorageModule, kStroageFunctionGetItemsValue, cb_id, footstone::value::HippyValue(kError),
+                   params);
     };
     storage_module_->GetItemsValue(buffer, success_callback, fail_callback);
   } else if (func == kStroageFunctionSetItemsValue) {
-    auto success_callback = [WEAK_THIS, runtime_id, cb_id](const footstone::value::HippyValue& params) {
+    auto success_callback = [WEAK_THIS, scope, cb_id](const footstone::value::HippyValue& params) {
       DEFINE_AND_CHECK_SELF(ModuleDispatcher)
-      self->CallJs(runtime_id, kStorageModule, kStroageFunctionSetItemsValue, cb_id,
-                   footstone::value::HippyValue(kSuccess), params);
+      self->CallJs(scope, kStorageModule, kStroageFunctionSetItemsValue, cb_id, footstone::value::HippyValue(kSuccess),
+                   params);
     };
-    auto fail_callback = [WEAK_THIS, runtime_id, cb_id](const footstone::value::HippyValue& params) {
+    auto fail_callback = [WEAK_THIS, scope, cb_id](const footstone::value::HippyValue& params) {
       DEFINE_AND_CHECK_SELF(ModuleDispatcher)
-      self->CallJs(runtime_id, kStorageModule, kStroageFunctionSetItemsValue, cb_id,
-                   footstone::value::HippyValue(kError), params);
+      self->CallJs(scope, kStorageModule, kStroageFunctionSetItemsValue, cb_id, footstone::value::HippyValue(kError),
+                   params);
     };
     storage_module_->SetItemsValue(buffer, success_callback, fail_callback);
   } else if (func == kStroageFunctionRemoveItems) {
-    auto success_callback = [WEAK_THIS, runtime_id, cb_id](const footstone::value::HippyValue& params) {
+    auto success_callback = [WEAK_THIS, scope, cb_id](const footstone::value::HippyValue& params) {
       DEFINE_AND_CHECK_SELF(ModuleDispatcher)
-      self->CallJs(runtime_id, kStorageModule, kStroageFunctionRemoveItems, cb_id,
-                   footstone::value::HippyValue(kSuccess), params);
+      self->CallJs(scope, kStorageModule, kStroageFunctionRemoveItems, cb_id, footstone::value::HippyValue(kSuccess),
+                   params);
     };
-    auto fail_callback = [WEAK_THIS, runtime_id, cb_id](const footstone::value::HippyValue& params) {
+    auto fail_callback = [WEAK_THIS, scope, cb_id](const footstone::value::HippyValue& params) {
       DEFINE_AND_CHECK_SELF(ModuleDispatcher)
-      self->CallJs(runtime_id, kStorageModule, kStroageFunctionRemoveItems, cb_id, footstone::value::HippyValue(kError),
+      self->CallJs(scope, kStorageModule, kStroageFunctionRemoveItems, cb_id, footstone::value::HippyValue(kError),
                    params);
     };
     storage_module_->RemoveItems(buffer, success_callback, fail_callback);
   } else if (func == kStroageFunctionGetAllItemsKey) {
-    auto success_callback = [WEAK_THIS, runtime_id, cb_id](const footstone::value::HippyValue& params) {
+    auto success_callback = [WEAK_THIS, scope, cb_id](const footstone::value::HippyValue& params) {
       DEFINE_AND_CHECK_SELF(ModuleDispatcher)
-      self->CallJs(runtime_id, kStorageModule, kStroageFunctionRemoveItems, cb_id,
-                   footstone::value::HippyValue(kSuccess), params);
+      self->CallJs(scope, kStorageModule, kStroageFunctionRemoveItems, cb_id, footstone::value::HippyValue(kSuccess),
+                   params);
     };
-    auto fail_callback = [WEAK_THIS, runtime_id, cb_id](const footstone::value::HippyValue& params) {
+    auto fail_callback = [WEAK_THIS, scope, cb_id](const footstone::value::HippyValue& params) {
       DEFINE_AND_CHECK_SELF(ModuleDispatcher)
-      self->CallJs(runtime_id, kStorageModule, kStroageFunctionRemoveItems, cb_id, footstone::value::HippyValue(kError),
+      self->CallJs(scope, kStorageModule, kStroageFunctionRemoveItems, cb_id, footstone::value::HippyValue(kError),
                    params);
     };
     storage_module_->GetAllItemsKey(success_callback, fail_callback);
@@ -221,32 +220,32 @@ void ModuleDispatcher::StorageModuleHandle(const string_view& func, int32_t runt
   }
 }
 
-void ModuleDispatcher::WebsocketModuleHandle(const string_view& func, int32_t runtime_id, const string_view& cb_id,
-                                             const footstone::value::HippyValue& buffer) {
+void ModuleDispatcher::WebsocketModuleHandle(const std::shared_ptr<Scope>& scope, const string_view& func,
+                                             const string_view& cb_id, const footstone::value::HippyValue& buffer) {
   if (websocket_module_ == nullptr) return;
   if (func == kWebsocketFunctionConnect) {
-    auto callback = [WEAK_THIS, runtime_id, cb_id](footstone::value::HippyValue params) {
+    auto callback = [WEAK_THIS, scope, cb_id](footstone::value::HippyValue params) {
       DEFINE_AND_CHECK_SELF(ModuleDispatcher)
-      self->CallJs(runtime_id, kWebsocketModule, kWebsocketFunctionConnect, cb_id,
-                   footstone::value::HippyValue(kSuccess), params);
+      self->CallJs(scope, kWebsocketModule, kWebsocketFunctionConnect, cb_id, footstone::value::HippyValue(kSuccess),
+                   params);
     };
-    websocket_module_->Connect(buffer, runtime_id, callback);
+    websocket_module_->Connect(scope, buffer, callback);
   } else if (func == kWebsocketFunctionClose) {
-    websocket_module_->Disconnect(buffer, runtime_id);
+    websocket_module_->Disconnect(buffer);
   } else if (func == kWebsocketFunctionSend) {
-    websocket_module_->Send(buffer, runtime_id);
+    websocket_module_->Send(buffer);
   } else {
     FOOTSTONE_LOG(WARNING) << "function " << func << " is not support !!!";
   }
 }
 
-void ModuleDispatcher::NetInfoModuleHandle(const string_view& func, int32_t runtime_id, const string_view& cb_id,
-                                           const footstone::value::HippyValue& buffer) {
+void ModuleDispatcher::NetInfoModuleHandle(const std::shared_ptr<Scope>& scope, const string_view& func,
+                                           const string_view& cb_id, const footstone::value::HippyValue& buffer) {
   if (net_info_module_ == nullptr) return;
   if (func == kNetInfoFunctionGetCurrentConnectivity) {
-    auto callback = [WEAK_THIS, runtime_id, cb_id](footstone::value::HippyValue params) {
+    auto callback = [WEAK_THIS, scope, cb_id](footstone::value::HippyValue params) {
       DEFINE_AND_CHECK_SELF(ModuleDispatcher)
-      self->CallJs(runtime_id, kNetInfoModule, kNetInfoFunctionGetCurrentConnectivity, cb_id,
+      self->CallJs(scope, kNetInfoModule, kNetInfoFunctionGetCurrentConnectivity, cb_id,
                    footstone::value::HippyValue(kSuccess), params);
     };
     net_info_module_->GetCurrentConnectivity(callback);
@@ -255,24 +254,23 @@ void ModuleDispatcher::NetInfoModuleHandle(const string_view& func, int32_t runt
   }
 }
 
-void ModuleDispatcher::NetworkModuleHandle(const std::shared_ptr<UriLoader>& uri_loader, const string_view& func,
-                                           int32_t runtime_id, const string_view& cb_id,
-                                           const footstone::value::HippyValue& buffer) {
+void ModuleDispatcher::NetworkModuleHandle(const std::shared_ptr<Scope>& scope, const string_view& func,
+                                           const string_view& cb_id, const footstone::value::HippyValue& buffer) {
   if (network_module_ == nullptr) return;
   if (func == kNetworkFunctionFetch) {
-    auto callback = [WEAK_THIS, runtime_id, cb_id](footstone::value::HippyValue params) {
+    auto callback = [WEAK_THIS, scope, cb_id](footstone::value::HippyValue params) {
       DEFINE_AND_CHECK_SELF(ModuleDispatcher)
-      self->CallJs(runtime_id, kNetworkModule, kNetworkFunctionFetch, cb_id, footstone::value::HippyValue(kSuccess),
-                   params);
+      self->CallJs(scope, kNetworkModule, kNetworkFunctionFetch, cb_id, footstone::value::HippyValue(kSuccess), params);
     };
-    network_module_->Fetch(uri_loader, buffer, runtime_id, callback);
+    auto uri_loader = scope->GetUriLoader();
+    if (uri_loader.lock()) network_module_->Fetch(uri_loader.lock(), buffer, callback);
   } else if (func == kNetworkFunctionGetCookie) {
-    auto callback = [WEAK_THIS, runtime_id, cb_id](footstone::value::HippyValue params) {
+    auto callback = [WEAK_THIS, scope, cb_id](footstone::value::HippyValue params) {
       DEFINE_AND_CHECK_SELF(ModuleDispatcher)
-      self->CallJs(runtime_id, kNetworkModule, kNetworkFunctionGetCookie, cb_id, footstone::value::HippyValue(kSuccess),
+      self->CallJs(scope, kNetworkModule, kNetworkFunctionGetCookie, cb_id, footstone::value::HippyValue(kSuccess),
                    params);
     };
-    network_module_->GetCookie(buffer, runtime_id, callback);
+    network_module_->GetCookie(buffer, callback);
   } else if (func == kNetworkFunctionSetCookie) {
     network_module_->SetCookie(buffer);
   } else {
@@ -280,14 +278,14 @@ void ModuleDispatcher::NetworkModuleHandle(const std::shared_ptr<UriLoader>& uri
   }
 }
 
-void ModuleDispatcher::ClipboardModuleHandle(const string_view& func, int32_t runtime_id, const string_view& cb_id,
-                                             const footstone::value::HippyValue& buffer) {
+void ModuleDispatcher::ClipboardModuleHandle(const std::shared_ptr<Scope>& scope, const string_view& func,
+                                             const string_view& cb_id, const footstone::value::HippyValue& buffer) {
   if (clipboard_module_ == nullptr) return;
   if (func == kClipboardFunctionGetString) {
-    auto callback = [WEAK_THIS, runtime_id, cb_id](footstone::value::HippyValue params) {
+    auto callback = [WEAK_THIS, scope, cb_id](footstone::value::HippyValue params) {
       DEFINE_AND_CHECK_SELF(ModuleDispatcher)
-      self->CallJs(runtime_id, kClipboardModule, kClipboardFunctionGetString, cb_id,
-                   footstone::value::HippyValue(kSuccess), params);
+      self->CallJs(scope, kClipboardModule, kClipboardFunctionGetString, cb_id, footstone::value::HippyValue(kSuccess),
+                   params);
     };
     clipboard_module_->GetString(callback);
   } else if (func == kClipboardFunctionSetString) {
@@ -297,19 +295,20 @@ void ModuleDispatcher::ClipboardModuleHandle(const string_view& func, int32_t ru
   }
 }
 
-void ModuleDispatcher::ImageLoaderModuleHandle(const std::shared_ptr<UriLoader>& uri_loader, const string_view& func,
-                                               int32_t runtime_id, const string_view& cb_id,
-                                               const footstone::value::HippyValue& buffer) {
+void ModuleDispatcher::ImageLoaderModuleHandle(const std::shared_ptr<Scope>& scope, const string_view& func,
+                                               const string_view& cb_id, const footstone::value::HippyValue& buffer) {
   if (image_loader_module_ == nullptr) return;
   if (func == kImageLoaderFunctionGetSize) {
-    auto callback = [WEAK_THIS, runtime_id, cb_id](footstone::value::HippyValue params) {
+    auto callback = [WEAK_THIS, scope, cb_id](footstone::value::HippyValue params) {
       DEFINE_AND_CHECK_SELF(ModuleDispatcher)
-      self->CallJs(runtime_id, kImageLoaderModule, kImageLoaderFunctionGetSize, cb_id,
+      self->CallJs(scope, kImageLoaderModule, kImageLoaderFunctionGetSize, cb_id,
                    footstone::value::HippyValue(kSuccess), params);
     };
-    image_loader_module_->GetSize(uri_loader, buffer, callback);
+    auto uri_loader = scope->GetUriLoader();
+    if (uri_loader.lock()) image_loader_module_->GetSize(uri_loader.lock(), buffer, callback);
   } else if (func == kImageLoaderFunctionPrefetch) {
-    image_loader_module_->Prefetch(uri_loader, buffer);
+    auto uri_loader = scope->GetUriLoader();
+    if (uri_loader.lock()) image_loader_module_->Prefetch(uri_loader.lock(), buffer);
   } else {
     FOOTSTONE_LOG(WARNING) << "function " << func << " is not support !!!";
   }

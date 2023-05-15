@@ -53,7 +53,6 @@ class HttpHandler : public UriHandler, public std::enable_shared_from_this<HttpH
   void LoadUriContent(const std::shared_ptr<RequestJob>& request, const std::shared_ptr<JobResponse>& response);
   void LoadUriContent(const std::shared_ptr<RequestJob>& request,
                       std::function<void(std::shared_ptr<JobResponse>)> callback);
-  void LogLastErrorMessage();
 
  private:
   std::weak_ptr<TaskRunner> runner_;

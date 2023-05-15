@@ -40,10 +40,10 @@ class Websocket : public std::enable_shared_from_this<Websocket> {
   ~Websocket();
 
   void Initial();
-  void Connect(const footstone::value::HippyValue& request, uint32_t runtime_id,
+  void Connect(const std::shared_ptr<Scope>& scope, const footstone::value::HippyValue& request,
                std::function<void(footstone::value::HippyValue)> callback);
-  void Disconnect(const footstone::value::HippyValue& request, uint32_t runtime_id);
-  void Send(const footstone::value::HippyValue& request, uint32_t runtime_id);
+  void Disconnect(const footstone::value::HippyValue& request);
+  void Send(const footstone::value::HippyValue& request);
 
  private:
   enum class RetCode { Success, Failed, UrlError, HeaderError };

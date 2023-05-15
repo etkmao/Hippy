@@ -70,7 +70,7 @@ void ImageLoader::GetSize(const std::shared_ptr<UriLoader>& uri_loader, const fo
       Gdiplus::Image* image = Gdiplus::Image::FromStream(stream);
       int width = image->GetWidth();
       int height = image->GetHeight();
-      FOOTSTONE_DLOG(INFO) << "image width = %d, height = %d" << width << height;
+      FOOTSTONE_DLOG(INFO) << "image width = " << width << ", height = " << height;
 
       footstone::HippyValue::HippyValueObjectType callback_parameters;
       callback_parameters.insert({"width", footstone::HippyValue(width)});

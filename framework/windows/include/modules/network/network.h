@@ -40,9 +40,9 @@ class Network {
   ~Network() = default;
 
   bool Initial();
-  void Fetch(const std::shared_ptr<UriLoader>& uri_loader, const footstone::value::HippyValue& request, uint32_t runtime_id,
+  void Fetch(const std::shared_ptr<UriLoader>& uri_loader, const footstone::value::HippyValue& request,
              std::function<void(footstone::value::HippyValue)> callback);
-  void GetCookie(const footstone::value::HippyValue& request, uint32_t runtime_id,
+  void GetCookie(const footstone::value::HippyValue& request,
                  std::function<void(footstone::value::HippyValue)> callback);
   void SetCookie(const footstone::value::HippyValue& request);
 
