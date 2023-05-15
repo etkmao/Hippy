@@ -106,7 +106,7 @@ bool Driver::Initialize(const std::shared_ptr<Config>& config, const std::shared
     auto scope_initialized_callback = self->GetScopeInitializedCallBack();
     if (scope_initialized_callback) scope_initialized_callback(scope);
   };
-  JsDriverUtils::InitInstance(js_engine_, global_config, scope_initialized_callback, call_host_callback);
+  JsDriverUtils::InitInstance(js_engine_, param, global_config, scope_initialized_callback, call_host_callback);
   return true;
 }
 
