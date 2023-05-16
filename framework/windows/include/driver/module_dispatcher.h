@@ -30,6 +30,7 @@
 #include "driver/js_driver_utils.h"
 #include "footstone/serializer.h"
 #include "modules/clipboard/clipboard.h"
+#include "modules/exception/exception.h"
 #include "modules/imageloader/image_loader.h"
 #include "modules/netinfo/net_info.h"
 #include "modules/network/network.h"
@@ -47,27 +48,32 @@ class ModuleDispatcher : public std::enable_shared_from_this<ModuleDispatcher> {
  public:
   ModuleDispatcher();
   void Initial(const std::shared_ptr<hippy::Config>& config);
-  void ModuleDispatcher::Dispatcher(const CallbackInfo& info, const std::shared_ptr<Scope>& scope);
+  void Dispatcher(const CallbackInfo& info, const std::shared_ptr<Scope>& scope);
+  void Dispatcher(const std::string& module_name, const std::string& func, const std::string& desc,
+                  const std::string& stack);
 
  private:
-  void StorageModuleHandle(const std::shared_ptr<Scope>& scope, const string_view& func, const string_view& cb_id,
-                           const footstone::value::HippyValue& buffer);
-  void WebsocketModuleHandle(const std::shared_ptr<Scope>& scope, const string_view& func, const string_view& cb_id,
-                             const footstone::value::HippyValue& buffer);
-  void NetInfoModuleHandle(const std::shared_ptr<Scope>& scope, const string_view& func, const string_view& cb_id,
-                           const footstone::value::HippyValue& buffer);
-  void NetworkModuleHandle(const std::shared_ptr<Scope>& scope, const string_view& func, const string_view& cb_id,
-                           const footstone::value::HippyValue& buffer);
   void ClipboardModuleHandle(const std::shared_ptr<Scope>& scope, const string_view& func, const string_view& cb_id,
                              const footstone::value::HippyValue& buffer);
   void ImageLoaderModuleHandle(const std::shared_ptr<Scope>& scope, const string_view& func, const string_view& cb_id,
                                const footstone::value::HippyValue& buffer);
+  void NetInfoModuleHandle(const std::shared_ptr<Scope>& scope, const string_view& func, const string_view& cb_id,
+                           const footstone::value::HippyValue& buffer);
+  void NetworkModuleHandle(const std::shared_ptr<Scope>& scope, const string_view& func, const string_view& cb_id,
+                           const footstone::value::HippyValue& buffer);
+  void StorageModuleHandle(const std::shared_ptr<Scope>& scope, const string_view& func, const string_view& cb_id,
+                           const footstone::value::HippyValue& buffer);
+  void WebsocketModuleHandle(const std::shared_ptr<Scope>& scope, const string_view& func, const string_view& cb_id,
+                             const footstone::value::HippyValue& buffer);
   void CallJs(const std::shared_ptr<Scope>& scope, const std::string& module_name, const std::string& function_name,
               const string_view& callback_id, const footstone::value::HippyValue& result,
               const footstone::value::HippyValue& callback_parameters);
 
+  void ExceptionModuleHandle(const std::string& func, const std::string& desc, const std::string& stack);
+
  private:
   std::shared_ptr<hippy::windows::framework::module::Clipboard> clipboard_module_;       // clipboard module
+  std::shared_ptr<hippy::windows::framework::module::Exception> exception_module_;       // exception module
   std::shared_ptr<hippy::windows::framework::module::ImageLoader> image_loader_module_;  // image loader module
   std::shared_ptr<hippy::windows::framework::module::NetInfo> net_info_module_;          // net info module
   std::shared_ptr<hippy::windows::framework::module::Network> network_module_;           // network module

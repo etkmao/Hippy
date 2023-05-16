@@ -26,6 +26,7 @@
 #include <string>
 
 #include "adaptor/console/console.h"
+#include "adaptor/exception/exception.h"
 #include "core/platform/common/tdf_engine.h"
 #include "footstone/string_view.h"
 
@@ -107,9 +108,12 @@ class Config {
    public:
     std::shared_ptr<Console> GetConsoleAdaptor() { return console_adaptor_; }
     void SetConsoleAdaptor(std::shared_ptr<Console> console_adaptor) { console_adaptor_ = console_adaptor; }
+    std::shared_ptr<Exception> GetExceptionAdaptor() { return exception_adaptor_; }
+    void SetExceptionAdaptor(std::shared_ptr<Exception> exception_adaptor) { exception_adaptor_ = exception_adaptor; }
 
    private:
-    std::shared_ptr<Console> console_adaptor_;
+    std::shared_ptr<Console> console_adaptor_{nullptr};
+    std::shared_ptr<Exception> exception_adaptor_{nullptr};
   };
 
   void SetDensity(float density) { density_ = density; }

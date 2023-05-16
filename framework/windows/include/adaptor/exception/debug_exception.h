@@ -22,39 +22,31 @@
 
 #pragma once
 
-#include "adaptor/netinfo/net_info.h"
+#include "adaptor/exception/exception.h"
 
-#include <functional>
 #include <string>
-
-#include <WinSock2.h>
-#include <winternl.h>
-#include <netioapi.h>
 
 namespace hippy {
 inline namespace windows {
 inline namespace framework {
 inline namespace adaptor {
 
-class AdapterAddressesNetInfo : public NetInfo {
+class DebugException : public Exception {
  public:
-  AdapterAddressesNetInfo() = default;
-  virtual ~AdapterAddressesNetInfo() override = default;
-  AdapterAddressesNetInfo(const AdapterAddressesNetInfo&) = delete;
-  AdapterAddressesNetInfo(AdapterAddressesNetInfo&&) = delete;
-  AdapterAddressesNetInfo& operator=(const AdapterAddressesNetInfo&) = delete;
-  AdapterAddressesNetInfo& operator=(AdapterAddressesNetInfo&&) = delete;
+  DebugException(bool debug);
+  virtual ~DebugException() override = default;
+  DebugException(const DebugException&) = delete;
+  DebugException(DebugException&&) = delete;
+  DebugException& operator=(const DebugException&) = delete;
+  DebugException& operator=(DebugException&&) = delete;
 
   virtual bool Initial() override;
-  virtual void GetCurrentConnectivity() override;
-  virtual void SetCurrentConnectivityCallback(std::function<void(std::string network_info)> callback) override;
+  virtual void HandleException(const std::string& desc, const std::string& stack) override;
+  virtual void HandleNativeException(const std::string& desc, const std::string& stack) override;
+  virtual void HandleBackgroundTracing(const std::string& stack) override;
 
  private:
-  void GetNetInfo();
-  void GetAdaptersNetInfo();
-
-  std::string current_network_info_;
-  std::function<void(std::string network_info)> connectivity_callback_;
+  bool debug_;
 };
 
 }  // namespace adaptor

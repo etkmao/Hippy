@@ -15,6 +15,7 @@
 #endif
 
 using V8VMInitParam = hippy::V8VMInitParam;
+using StringViewUtils = footstone::stringview::StringViewUtils;
 
 namespace hippy {
 inline namespace windows {
@@ -56,15 +57,24 @@ bool Driver::Initialize(const std::shared_ptr<Config>& config, const std::shared
   // v8 init parameter
   auto param = std::make_shared<V8VMInitParam>();
   param->enable_v8_serialization = config->GetJsEngine()->GetEnableV8Serialization();
-  param->is_debug = config->GetDebug()->GetDevelopmentModule();
+  bool is_debug = config->GetDebug()->GetDevelopmentModule();
+  param->is_debug = is_debug;
   if (config->GetJsEngine()->GetInitalHeapSize() != kInvalidInitialHeapSize)
     param->initial_heap_size_in_bytes = config->GetJsEngine()->GetInitalHeapSize();
   if (config->GetJsEngine()->GetMaximumHeapSize() != kInvalidMaximumHeapSize)
     param->maximum_heap_size_in_bytes = config->GetJsEngine()->GetMaximumHeapSize();
-  param->uncaught_exception_callback = [WEAK_THIS](const std::any& bridge, const string_view& desc,
-                                                   const string_view& stack) {
-    DEFINE_AND_CHECK_SELF(Driver)
-    if (self->exception_handler_) self->exception_handler_(desc, stack);
+  param->uncaught_exception_callback = [WEAK_THIS, is_debug](const std::any& bridge, const string_view& desc,
+                                                             const string_view& stack) {
+    auto module_dispatcher = std::any_cast<std::shared_ptr<ModuleDispatcher>>(bridge);
+    if (module_dispatcher) {
+      std::string module_name("ExceptionModule");
+      std::string func_name("HandleException");
+      std::string desc_u8 = StringViewUtils::ToStdString(
+          StringViewUtils::ConvertEncoding(desc, string_view::Encoding::Utf8).utf8_value());
+      std::string stack_u8 = StringViewUtils::ToStdString(
+          StringViewUtils::ConvertEncoding(stack, string_view::Encoding::Utf8).utf8_value());
+      module_dispatcher->Dispatcher(module_name, func_name, desc_u8, stack_u8);
+    }
   };
   auto dom_task_runner = dom_manager->GetTaskRunner();
   auto group_id = config->GetJsEngine()->GetGroupId();

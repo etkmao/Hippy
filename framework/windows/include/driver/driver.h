@@ -35,7 +35,6 @@ inline namespace windows {
 
 using string_view = footstone::stringview::string_view;
 using ScopeInitializedCallBack = std::function<void(std::shared_ptr<Scope>)>;
-using ExceptionHandler = std::function<void(const string_view& desc, const string_view& stack)>;
 using Serializer = footstone::value::Serializer;
 using DevtoolsDataSource = hippy::devtools::DevtoolsDataSource;
 
@@ -50,9 +49,9 @@ class Driver : public std::enable_shared_from_this<Driver> {
   void SetScope(std::shared_ptr<Scope> scope) { scope_ = scope; }
   std::shared_ptr<Scope> GetScope() { return scope_; }
 
-  // void RegisterExceptionHandler();
-  void SetExceptionHandler(ExceptionHandler exception_handler) { exception_handler_ = exception_handler; }
-  void ScopeInitializedCallBack(ScopeInitializedCallBack scope_initialized_callback) { scope_initialized_callback_ = scope_initialized_callback; }
+  void ScopeInitializedCallBack(ScopeInitializedCallBack scope_initialized_callback) {
+    scope_initialized_callback_ = scope_initialized_callback;
+  }
   hippy::ScopeInitializedCallBack GetScopeInitializedCallBack() { return scope_initialized_callback_; }
   bool RunScriptFromUri(string_view uri, const std::shared_ptr<UriLoader>& uri_loader,
                         const std::shared_ptr<Config>& config);
@@ -64,7 +63,6 @@ class Driver : public std::enable_shared_from_this<Driver> {
   std::shared_ptr<Scope> scope_;
   std::shared_ptr<Engine> js_engine_;
   std::shared_ptr<hippy::ModuleDispatcher> module_dispatcher_;
-  ExceptionHandler exception_handler_;
   hippy::ScopeInitializedCallBack scope_initialized_callback_;
   Serializer serializer_;
 };

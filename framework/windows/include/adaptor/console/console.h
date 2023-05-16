@@ -22,8 +22,6 @@
 
 #pragma once
 
-#include <Windows.h>
-
 #include "footstone/hippy_value.h"
 
 namespace hippy {

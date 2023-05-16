@@ -22,39 +22,20 @@
 
 #pragma once
 
-#include "adaptor/netinfo/net_info.h"
-
-#include <functional>
 #include <string>
-
-#include <WinSock2.h>
-#include <winternl.h>
-#include <netioapi.h>
 
 namespace hippy {
 inline namespace windows {
 inline namespace framework {
 inline namespace adaptor {
 
-class AdapterAddressesNetInfo : public NetInfo {
+class Exception {
  public:
-  AdapterAddressesNetInfo() = default;
-  virtual ~AdapterAddressesNetInfo() override = default;
-  AdapterAddressesNetInfo(const AdapterAddressesNetInfo&) = delete;
-  AdapterAddressesNetInfo(AdapterAddressesNetInfo&&) = delete;
-  AdapterAddressesNetInfo& operator=(const AdapterAddressesNetInfo&) = delete;
-  AdapterAddressesNetInfo& operator=(AdapterAddressesNetInfo&&) = delete;
-
-  virtual bool Initial() override;
-  virtual void GetCurrentConnectivity() override;
-  virtual void SetCurrentConnectivityCallback(std::function<void(std::string network_info)> callback) override;
-
- private:
-  void GetNetInfo();
-  void GetAdaptersNetInfo();
-
-  std::string current_network_info_;
-  std::function<void(std::string network_info)> connectivity_callback_;
+  virtual ~Exception() = default;
+  virtual bool Initial() = 0;
+  virtual void HandleException(const std::string& desc, const std::string& stack) = 0;
+  virtual void HandleNativeException(const std::string& desc, const std::string& stack) = 0;
+  virtual void HandleBackgroundTracing(const std::string& stack) = 0;
 };
 
 }  // namespace adaptor

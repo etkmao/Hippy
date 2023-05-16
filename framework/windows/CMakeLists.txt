@@ -128,11 +128,13 @@ set(SOURCE_SET
     src/driver/driver.cc
     src/driver/module_dispatcher.cc
     src/adaptor/console/event_viewer_console.cc
+    src/adaptor/exception/debug_exception.cc
     src/adaptor/storage/sqlite_storage.cc
     src/adaptor/netinfo/adapter_addresses_net_info.cc
     src/adaptor/network/http_cookie.cc
     src/adaptor/network/http_network.cc
     src/modules/clipboard/clipboard.cc
+    src/modules/exception/exception.cc
     src/modules/imageloader/image_loader.cc
     src/modules/storage/storage.cc
     src/modules/network/network.cc

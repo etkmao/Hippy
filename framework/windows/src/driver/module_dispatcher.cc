@@ -39,25 +39,30 @@ constexpr char kClipboardFunctionSetString[] = "setString";
 constexpr char kImageLoaderModule[] = "ImageLoaderModule";
 constexpr char kImageLoaderFunctionGetSize[] = "getSize";
 constexpr char kImageLoaderFunctionPrefetch[] = "prefetch";
+constexpr char kExceptionModule[] = "ExceptionModule";
+constexpr char kExceptionFunctionHandleException[] = "HandleException";
+constexpr char kExceptionFunctionHandleBackgroundTracing[] = "HandleBackgroundTracing";
 
 constexpr uint32_t kSuccess = 0;
 constexpr uint32_t kError = 2;
 
 ModuleDispatcher::ModuleDispatcher()
     : clipboard_module_(std::make_shared<hippy::windows::framework::module::Clipboard>()),
+      exception_module_(std::make_shared<hippy::windows::framework::module::Exception>()),
       image_loader_module_(std::make_shared<hippy::windows::framework::module::ImageLoader>()),
       net_info_module_(std::make_shared<hippy::windows::framework::module::NetInfo>()),
       network_module_(std::make_shared<hippy::windows::framework::module::Network>()),
-      websocket_module_(std::make_shared<hippy::windows::framework::module::Websocket>()),
-      storage_module_(std::make_shared<hippy::windows::framework::module::Storage>()){};
+      storage_module_(std::make_shared<hippy::windows::framework::module::Storage>()),
+      websocket_module_(std::make_shared<hippy::windows::framework::module::Websocket>()){};
 
 void ModuleDispatcher::Initial(const std::shared_ptr<hippy::Config>& config) {
   clipboard_module_->Initial();
+  exception_module_->Initial(config);
   image_loader_module_->Initial();
   net_info_module_->Initial();
   network_module_->Initial();
-  websocket_module_->Initial();
   storage_module_->Initial();
+  websocket_module_->Initial();
 };
 
 void ModuleDispatcher::Dispatcher(const CallbackInfo& info, const std::shared_ptr<Scope>& scope) {
@@ -142,6 +147,16 @@ void ModuleDispatcher::Dispatcher(const CallbackInfo& info, const std::shared_pt
   }
 }
 
+void ModuleDispatcher::Dispatcher(const std::string& module_name, const std::string& func, const std::string& desc,
+                                  const std::string& stack) {
+  FOOTSTONE_DLOG(INFO) << "module name = " << module_name << ", function name = " << func;
+  if (module_name == kExceptionModule) {
+    ExceptionModuleHandle(func, desc, stack);
+  } else {
+    FOOTSTONE_LOG(WARNING) << "module " << module_name << " is not support !!!";
+  }
+}
+
 void ModuleDispatcher::CallJs(const std::shared_ptr<Scope>& scope, const std::string& module_name,
                               const std::string& function_name, const string_view& callback_id,
                               const footstone::value::HippyValue& result,
@@ -162,6 +177,81 @@ void ModuleDispatcher::CallJs(const std::shared_ptr<Scope>& scope, const std::st
   };
   auto on_js_runner = []() {};
   JsDriverUtils::CallJs(u"callBack", scope, call_js_callback, buffer_data, on_js_runner);
+}
+
+void ModuleDispatcher::ClipboardModuleHandle(const std::shared_ptr<Scope>& scope, const string_view& func,
+                                             const string_view& cb_id, const footstone::value::HippyValue& buffer) {
+  if (clipboard_module_ == nullptr) return;
+  if (func == kClipboardFunctionGetString) {
+    auto callback = [WEAK_THIS, scope, cb_id](footstone::value::HippyValue params) {
+      DEFINE_AND_CHECK_SELF(ModuleDispatcher)
+      self->CallJs(scope, kClipboardModule, kClipboardFunctionGetString, cb_id, footstone::value::HippyValue(kSuccess),
+                   params);
+    };
+    clipboard_module_->GetString(callback);
+  } else if (func == kClipboardFunctionSetString) {
+    clipboard_module_->SetString(buffer);
+  } else {
+    FOOTSTONE_LOG(WARNING) << "function " << func << " is not support !!!";
+  }
+}
+
+void ModuleDispatcher::ImageLoaderModuleHandle(const std::shared_ptr<Scope>& scope, const string_view& func,
+                                               const string_view& cb_id, const footstone::value::HippyValue& buffer) {
+  if (image_loader_module_ == nullptr) return;
+  if (func == kImageLoaderFunctionGetSize) {
+    auto callback = [WEAK_THIS, scope, cb_id](footstone::value::HippyValue params) {
+      DEFINE_AND_CHECK_SELF(ModuleDispatcher)
+      self->CallJs(scope, kImageLoaderModule, kImageLoaderFunctionGetSize, cb_id,
+                   footstone::value::HippyValue(kSuccess), params);
+    };
+    auto uri_loader = scope->GetUriLoader();
+    if (uri_loader.lock()) image_loader_module_->GetSize(uri_loader.lock(), buffer, callback);
+  } else if (func == kImageLoaderFunctionPrefetch) {
+    auto uri_loader = scope->GetUriLoader();
+    if (uri_loader.lock()) image_loader_module_->Prefetch(uri_loader.lock(), buffer);
+  } else {
+    FOOTSTONE_LOG(WARNING) << "function " << func << " is not support !!!";
+  }
+}
+
+void ModuleDispatcher::NetInfoModuleHandle(const std::shared_ptr<Scope>& scope, const string_view& func,
+                                           const string_view& cb_id, const footstone::value::HippyValue& buffer) {
+  if (net_info_module_ == nullptr) return;
+  if (func == kNetInfoFunctionGetCurrentConnectivity) {
+    auto callback = [WEAK_THIS, scope, cb_id](footstone::value::HippyValue params) {
+      DEFINE_AND_CHECK_SELF(ModuleDispatcher)
+      self->CallJs(scope, kNetInfoModule, kNetInfoFunctionGetCurrentConnectivity, cb_id,
+                   footstone::value::HippyValue(kSuccess), params);
+    };
+    net_info_module_->GetCurrentConnectivity(callback);
+  } else {
+    FOOTSTONE_LOG(WARNING) << "function " << func << " is not support !!!";
+  }
+}
+
+void ModuleDispatcher::NetworkModuleHandle(const std::shared_ptr<Scope>& scope, const string_view& func,
+                                           const string_view& cb_id, const footstone::value::HippyValue& buffer) {
+  if (network_module_ == nullptr) return;
+  if (func == kNetworkFunctionFetch) {
+    auto callback = [WEAK_THIS, scope, cb_id](footstone::value::HippyValue params) {
+      DEFINE_AND_CHECK_SELF(ModuleDispatcher)
+      self->CallJs(scope, kNetworkModule, kNetworkFunctionFetch, cb_id, footstone::value::HippyValue(kSuccess), params);
+    };
+    auto uri_loader = scope->GetUriLoader();
+    if (uri_loader.lock()) network_module_->Fetch(uri_loader.lock(), buffer, callback);
+  } else if (func == kNetworkFunctionGetCookie) {
+    auto callback = [WEAK_THIS, scope, cb_id](footstone::value::HippyValue params) {
+      DEFINE_AND_CHECK_SELF(ModuleDispatcher)
+      self->CallJs(scope, kNetworkModule, kNetworkFunctionGetCookie, cb_id, footstone::value::HippyValue(kSuccess),
+                   params);
+    };
+    network_module_->GetCookie(buffer, callback);
+  } else if (func == kNetworkFunctionSetCookie) {
+    network_module_->SetCookie(buffer);
+  } else {
+    FOOTSTONE_LOG(WARNING) << "function " << func << " is not support !!!";
+  }
 }
 
 void ModuleDispatcher::StorageModuleHandle(const std::shared_ptr<Scope>& scope, const string_view& func,
@@ -239,76 +329,12 @@ void ModuleDispatcher::WebsocketModuleHandle(const std::shared_ptr<Scope>& scope
   }
 }
 
-void ModuleDispatcher::NetInfoModuleHandle(const std::shared_ptr<Scope>& scope, const string_view& func,
-                                           const string_view& cb_id, const footstone::value::HippyValue& buffer) {
-  if (net_info_module_ == nullptr) return;
-  if (func == kNetInfoFunctionGetCurrentConnectivity) {
-    auto callback = [WEAK_THIS, scope, cb_id](footstone::value::HippyValue params) {
-      DEFINE_AND_CHECK_SELF(ModuleDispatcher)
-      self->CallJs(scope, kNetInfoModule, kNetInfoFunctionGetCurrentConnectivity, cb_id,
-                   footstone::value::HippyValue(kSuccess), params);
-    };
-    net_info_module_->GetCurrentConnectivity(callback);
-  } else {
-    FOOTSTONE_LOG(WARNING) << "function " << func << " is not support !!!";
-  }
-}
-
-void ModuleDispatcher::NetworkModuleHandle(const std::shared_ptr<Scope>& scope, const string_view& func,
-                                           const string_view& cb_id, const footstone::value::HippyValue& buffer) {
-  if (network_module_ == nullptr) return;
-  if (func == kNetworkFunctionFetch) {
-    auto callback = [WEAK_THIS, scope, cb_id](footstone::value::HippyValue params) {
-      DEFINE_AND_CHECK_SELF(ModuleDispatcher)
-      self->CallJs(scope, kNetworkModule, kNetworkFunctionFetch, cb_id, footstone::value::HippyValue(kSuccess), params);
-    };
-    auto uri_loader = scope->GetUriLoader();
-    if (uri_loader.lock()) network_module_->Fetch(uri_loader.lock(), buffer, callback);
-  } else if (func == kNetworkFunctionGetCookie) {
-    auto callback = [WEAK_THIS, scope, cb_id](footstone::value::HippyValue params) {
-      DEFINE_AND_CHECK_SELF(ModuleDispatcher)
-      self->CallJs(scope, kNetworkModule, kNetworkFunctionGetCookie, cb_id, footstone::value::HippyValue(kSuccess),
-                   params);
-    };
-    network_module_->GetCookie(buffer, callback);
-  } else if (func == kNetworkFunctionSetCookie) {
-    network_module_->SetCookie(buffer);
-  } else {
-    FOOTSTONE_LOG(WARNING) << "function " << func << " is not support !!!";
-  }
-}
-
-void ModuleDispatcher::ClipboardModuleHandle(const std::shared_ptr<Scope>& scope, const string_view& func,
-                                             const string_view& cb_id, const footstone::value::HippyValue& buffer) {
-  if (clipboard_module_ == nullptr) return;
-  if (func == kClipboardFunctionGetString) {
-    auto callback = [WEAK_THIS, scope, cb_id](footstone::value::HippyValue params) {
-      DEFINE_AND_CHECK_SELF(ModuleDispatcher)
-      self->CallJs(scope, kClipboardModule, kClipboardFunctionGetString, cb_id, footstone::value::HippyValue(kSuccess),
-                   params);
-    };
-    clipboard_module_->GetString(callback);
-  } else if (func == kClipboardFunctionSetString) {
-    clipboard_module_->SetString(buffer);
-  } else {
-    FOOTSTONE_LOG(WARNING) << "function " << func << " is not support !!!";
-  }
-}
-
-void ModuleDispatcher::ImageLoaderModuleHandle(const std::shared_ptr<Scope>& scope, const string_view& func,
-                                               const string_view& cb_id, const footstone::value::HippyValue& buffer) {
-  if (image_loader_module_ == nullptr) return;
-  if (func == kImageLoaderFunctionGetSize) {
-    auto callback = [WEAK_THIS, scope, cb_id](footstone::value::HippyValue params) {
-      DEFINE_AND_CHECK_SELF(ModuleDispatcher)
-      self->CallJs(scope, kImageLoaderModule, kImageLoaderFunctionGetSize, cb_id,
-                   footstone::value::HippyValue(kSuccess), params);
-    };
-    auto uri_loader = scope->GetUriLoader();
-    if (uri_loader.lock()) image_loader_module_->GetSize(uri_loader.lock(), buffer, callback);
-  } else if (func == kImageLoaderFunctionPrefetch) {
-    auto uri_loader = scope->GetUriLoader();
-    if (uri_loader.lock()) image_loader_module_->Prefetch(uri_loader.lock(), buffer);
+void ModuleDispatcher::ExceptionModuleHandle(const std::string& func, const std::string& desc,
+                                             const std::string& stack) {
+  if (func == kExceptionFunctionHandleException) {
+    exception_module_->HandleException(desc, stack);
+  } else if (func == kExceptionFunctionHandleBackgroundTracing) {
+    exception_module_->HandleBackgroundTracing(stack);
   } else {
     FOOTSTONE_LOG(WARNING) << "function " << func << " is not support !!!";
   }

@@ -20,28 +20,38 @@
  *
  */
 
-#pragma once
+#include "modules/exception/exception.h"
 
-#include "adaptor/netinfo/net_info.h"
-#include "footstone/hippy_value.h"
+#include "adaptor/exception/debug_exception.h"
+#include "footstone/logging.h"
 
 namespace hippy {
 inline namespace windows {
 inline namespace framework {
 inline namespace module {
 
-class NetInfo {
- public:
-  NetInfo();
-  NetInfo(std::shared_ptr<hippy::adaptor::NetInfo> net_info_adaptor);
-  ~NetInfo() = default;
+Exception::Exception() : exception_adaptor_(std::make_shared<hippy::adaptor::DebugException>(true)){};
 
-  bool Initial();
-  void GetCurrentConnectivity(std::function<void(footstone::value::HippyValue params)> callback);
+Exception::Exception(std::shared_ptr<hippy::adaptor::Exception> exception_adaptor)
+    : exception_adaptor_(std::move(exception_adaptor)){};
 
- private:
-  std::shared_ptr<hippy::adaptor::NetInfo> net_info_adaptor_;
-};
+bool Exception::Initial(const std::shared_ptr<Config>& config) {
+  auto adaptor = config->GetAdaptor()->GetExceptionAdaptor();
+  if (adaptor) {
+    exception_adaptor_ = adaptor;
+  }
+  return true;
+}
+
+void Exception::HandleException(const std::string& desc, const std::string& stack) {
+  if (exception_adaptor_) exception_adaptor_->HandleException(desc, stack);
+  return;
+}
+
+void Exception::HandleBackgroundTracing(const std::string& stack) {
+  if (exception_adaptor_) exception_adaptor_->HandleBackgroundTracing(stack);
+  return;
+}
 
 }  // namespace module
 }  // namespace framework

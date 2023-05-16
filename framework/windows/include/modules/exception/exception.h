@@ -22,7 +22,10 @@
 
 #pragma once
 
-#include "adaptor/netinfo/net_info.h"
+#include <memory>
+
+#include "adaptor/exception/exception.h"
+#include "config.h"
 #include "footstone/hippy_value.h"
 
 namespace hippy {
@@ -30,17 +33,18 @@ inline namespace windows {
 inline namespace framework {
 inline namespace module {
 
-class NetInfo {
+class Exception {
  public:
-  NetInfo();
-  NetInfo(std::shared_ptr<hippy::adaptor::NetInfo> net_info_adaptor);
-  ~NetInfo() = default;
+  Exception();
+  Exception(std::shared_ptr<hippy::adaptor::Exception> exception_adaptor);
+  ~Exception() = default;
 
-  bool Initial();
-  void GetCurrentConnectivity(std::function<void(footstone::value::HippyValue params)> callback);
+  bool Initial(const std::shared_ptr<Config>& config);
+  void HandleException(const std::string& desc, const std::string& stack);
+  void HandleBackgroundTracing(const std::string& stack);
 
  private:
-  std::shared_ptr<hippy::adaptor::NetInfo> net_info_adaptor_;
+  std::shared_ptr<hippy::adaptor::Exception> exception_adaptor_;
 };
 
 }  // namespace module
