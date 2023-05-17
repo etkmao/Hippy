@@ -24,6 +24,7 @@
 #include "adaptor/exception/debug_exception.h"
 
 #include <Windows.h>
+#include <richedit.h>
 
 #include "footstone/logging.h"
 
@@ -63,8 +64,45 @@ void DebugException::HandleException(const std::string& desc, const std::string&
 #undef ERROR
     FOOTSTONE_DLOG(ERROR) << "desc: " << desc << ", stack: " << stack;
 #endif
-    MessageBox(NULL, stack.c_str(), "Exception", MB_ICONEXCLAMATION | MB_OK);
+
+    LoadLibrary(TEXT("Riched20.dll"));
+
+    HWND handle_edit = CreateWindowEx(
+        0, RICHEDIT_CLASS, "Exception", WS_VISIBLE | WS_VSCROLL | ES_MULTILINE | WS_OVERLAPPEDWINDOW,
+        CW_USEDEFAULT, CW_USEDEFAULT, 600, 600, HWND_DESKTOP, nullptr, GetModuleHandle(nullptr), nullptr);
+    if (handle_edit) {
+      SendMessage(handle_edit, EM_SETEVENTMASK, 0, ENM_SELCHANGE | ENM_LINK);  // 设置事件掩码
+      SendMessage(handle_edit, EM_SETBKGNDCOLOR, 0, RGB(244, 96, 108));       // 设置背景
+
+      CHARFORMAT cf;
+      ZeroMemory(&cf, sizeof(cf));
+      cf.cbSize = sizeof(cf);
+      cf.dwMask = CFM_FACE | CFM_SIZE | CFM_COLOR;
+      // cf.szFaceName = TEXT("宋体");
+      strcpy_s(cf.szFaceName, LF_FACESIZE, "Arial");
+      cf.yHeight = 200;
+      cf.crTextColor = RGB(255, 255, 255);
+      SendMessage(handle_edit, EM_SETCHARFORMAT, SCF_ALL, (LPARAM)&cf);  // 设置默认字符格式
+
+      std::string exception_message = "excption description:";
+      exception_message += "\r\n";
+      exception_message += desc;
+      exception_message += "\r\n\r\n\r\n";
+      exception_message += "exception stack:";
+      exception_message += stack;
+      SendMessage(handle_edit, WM_SETTEXT, 0, (LPARAM)TEXT(exception_message.c_str()));  // 插入文本
+
+      MSG msg;
+      while (GetMessage(&msg, NULL, 0, 0)) {
+        // 处理子窗口消息
+        if (msg.hwnd == handle_edit) {
+          if (msg.message == WM_DESTROY) TranslateMessage(&msg);
+          DispatchMessage(&msg);
+        }
+      }
+    }
   }
+  return;
 }
 
 void DebugException::HandleNativeException(const std::string& desc, const std::string& stack) { return; };
