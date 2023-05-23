@@ -47,6 +47,34 @@ static string_view CreateGlobalConfig(const std::shared_ptr<Config>& config) {
   return string_view(ss.str());
 }
 
+// TODO(charleeshen): source path must change
+static std::string LoadInstanceMessage(uint32_t root_id) {
+  footstone::value::Serializer serializer;
+  serializer.WriteHeader();
+  footstone::value::HippyValue::HippyValueObjectType obj;
+  obj.insert({"name", footstone::value::HippyValue("Demo")});
+  obj.insert({"id", footstone::value::HippyValue(root_id)});
+  footstone::value::HippyValue::HippyValueObjectType params;
+  params.insert({"msgFromNative", footstone::value::HippyValue("Hi js developer,I come from native code !")});
+  params.insert({"sourcePath", footstone::value::HippyValue("index.android.js")});
+  obj.insert({"params", footstone::value::HippyValue(params)});
+  serializer.WriteValue(footstone::value::HippyValue(obj));
+  std::pair<uint8_t*, size_t> buffer = serializer.Release();
+  std::string byte_string(reinterpret_cast<char*>(buffer.first), buffer.second);
+  return byte_string;
+}
+
+static std::string UnloadInstanceMessage(uint32_t root_id) {
+  footstone::value::Serializer serializer;
+  serializer.WriteHeader();
+  footstone::value::HippyValue::HippyValueObjectType object;
+  object.insert({"id", footstone::value::HippyValue(root_id)});
+  serializer.WriteValue(footstone::value::HippyValue(object));
+  std::pair<uint8_t*, size_t> buffer = serializer.Release();
+  std::string byte_string(reinterpret_cast<char*>(buffer.first), buffer.second);
+  return byte_string;
+}
+
 bool Driver::Initialize(const std::shared_ptr<Config>& config, const std::shared_ptr<DomManager>& dom_manager,
                         const std::shared_ptr<RootNode>& root_node, const std::shared_ptr<UriLoader>& uri_loader,
                         const std::shared_ptr<DevtoolsDataSource>& devtools_data_source, const bool reload) {
@@ -155,28 +183,45 @@ bool Driver::RunScriptFromUri(string_view uri, const std::shared_ptr<UriLoader>&
   return true;
 }
 
-void Driver::LoadInstance(std::string& load_instance_message) {
+void Driver::LoadInstance(const uint32_t root_id) {
+  std::string load_instance_message = LoadInstanceMessage(root_id);
   JsDriverUtils::LoadInstance(scope_, std::move(load_instance_message));
 }
 
-void Driver::ReloadInstance(const uint32_t root_id, std::function<void()> reload_callback) {
-  serializer_.Release();
-  serializer_.WriteHeader();
-  footstone::value::HippyValue::HippyValueObjectType object;
-  object.insert({"id", footstone::value::HippyValue(root_id)});
-  serializer_.WriteValue(footstone::value::HippyValue(object));
-  std::pair<uint8_t*, size_t> buffer = serializer_.Release();
-  std::string byte_string(reinterpret_cast<char*>(buffer.first), buffer.second);
-  JsDriverUtils::UnloadInstance(scope_, std::move(byte_string));
+void Driver::ReloadInstance(const uint32_t root_id, std::function<void()> callback) {
+  std::string unload_instance_message = UnloadInstanceMessage(root_id);
+  JsDriverUtils::UnloadInstance(scope_, std::move(unload_instance_message));
 
-  auto callback = [reload_callback](bool ret) {
+  auto new_callback = [callback](bool ret) {
     if (ret) {
-      if (reload_callback) reload_callback();
+      if (callback) callback();
     } else {
       FOOTSTONE_DLOG(INFO) << "reload engine failed !!!";
     }
   };
-  JsDriverUtils::DestroyInstance(js_engine_, scope_, callback, true);
+  auto destroy_callback = [WEAK_THIS, new_callback](bool ret) {
+    DEFINE_AND_CHECK_SELF(Driver);
+    JsDriverUtils::DestroyInstance(self->js_engine_, self->scope_, new_callback, true);
+  };
+  module_dispatcher_->AddDestroyListener(root_id, destroy_callback);
+}
+
+void Driver::DestroyInstance(const uint32_t root_id, std::function<void()> callback) {
+  std::string unload_instance_message = UnloadInstanceMessage(root_id);
+  JsDriverUtils::UnloadInstance(scope_, std::move(unload_instance_message));
+
+  auto new_callback = [callback](bool ret) {
+    if (ret) {
+      if (callback) callback();
+    } else {
+      FOOTSTONE_DLOG(INFO) << "reload engine failed !!!";
+    }
+  };
+  auto destroy_callback = [WEAK_THIS, new_callback](bool ret) {
+    DEFINE_AND_CHECK_SELF(Driver);
+    JsDriverUtils::DestroyInstance(self->js_engine_, self->scope_, new_callback, false);
+  };
+  module_dispatcher_->AddDestroyListener(root_id, destroy_callback);
 }
 
 }  // namespace windows

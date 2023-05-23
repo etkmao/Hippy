@@ -42,6 +42,8 @@ constexpr char kImageLoaderFunctionPrefetch[] = "prefetch";
 constexpr char kExceptionModule[] = "ExceptionModule";
 constexpr char kExceptionFunctionHandleException[] = "HandleException";
 constexpr char kExceptionFunctionHandleBackgroundTracing[] = "HandleBackgroundTracing";
+constexpr char kRootViewManagerModule[] = "RootViewManager";
+constexpr char kRootViewManagerFunctionHandleRemoveRootView[] = "removeRootView";
 
 constexpr uint32_t kSuccess = 0;
 constexpr uint32_t kError = 2;
@@ -142,6 +144,8 @@ void ModuleDispatcher::Dispatcher(const CallbackInfo& info, const std::shared_pt
     WebsocketModuleHandle(scope, fn_name, cb_id_str, value);
   } else if (module_name == kStorageModule) {
     StorageModuleHandle(scope, fn_name, cb_id_str, value);
+  } else if (module_name == kRootViewManagerModule) {
+    RootViewManagerModuleHandle(fn_name, value);
   } else {
     FOOTSTONE_LOG(WARNING) << "module " << module_name << " is not support !!!";
   }
@@ -156,6 +160,12 @@ void ModuleDispatcher::Dispatcher(const std::string& module_name, const std::str
     FOOTSTONE_LOG(WARNING) << "module " << module_name << " is not support !!!";
   }
 }
+
+void ModuleDispatcher::AddDestroyListener(uint32_t root_id, std::function<void(bool)> listener) {
+  destroy_listeners_.insert({root_id, listener});
+}
+
+void ModuleDispatcher::RemoveDestroyListener(uint32_t root_id) { destroy_listeners_.erase(root_id); }
 
 void ModuleDispatcher::CallJs(const std::shared_ptr<Scope>& scope, const std::string& module_name,
                               const std::string& function_name, const string_view& callback_id,
@@ -335,6 +345,24 @@ void ModuleDispatcher::ExceptionModuleHandle(const std::string& func, const std:
     exception_module_->HandleException(desc, stack);
   } else if (func == kExceptionFunctionHandleBackgroundTracing) {
     exception_module_->HandleBackgroundTracing(stack);
+  } else {
+    FOOTSTONE_LOG(WARNING) << "function " << func << " is not support !!!";
+  }
+}
+
+void ModuleDispatcher::RootViewManagerModuleHandle(const string_view& func,
+                                                   const footstone::value::HippyValue& buffer) {
+  if (func == kRootViewManagerFunctionHandleRemoveRootView) {
+    footstone::value::HippyValue::HippyValueArrayType parameters;
+    bool ret = buffer.ToArray(parameters);
+    if (ret && parameters.size() == 1 && parameters[0].IsInt32()) {
+      int32_t root_id;
+      parameters[0].ToInt32(root_id);
+      auto iter = destroy_listeners_.find(root_id);
+      if (iter != destroy_listeners_.end()) iter->second(true);
+    } else {
+      FOOTSTONE_LOG(WARNING) << "function " << func << " parameter error !!!";
+    }
   } else {
     FOOTSTONE_LOG(WARNING) << "function " << func << " is not support !!!";
   }

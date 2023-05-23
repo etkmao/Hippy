@@ -1,21 +1,15 @@
 #include <Windows.h>
 #include <memory>
 
-#include "config.h"
-#include "demo_window.h"
-#include "framework.h"
+#include "main_window.h"
 
 using namespace std;
-using Framework = hippy::windows::framework::Framework;
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow) {
   CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
 
-  std::shared_ptr<Framework> framework = std::make_shared<Framework>();
-  auto demo_window = std::make_shared<DemoWindow>();
-  demo_window->SetFramework(framework);
-  demo_window->Initialize("Hippy Window Demo", tdfcore::TRect::MakeXYWH(0, 0, 600, 800));
-  demo_window->Show();
+  auto main_window = std::make_shared<MainWindow>();
+  main_window->Show();
 
   MSG msg;
   while (::GetMessage(&msg, nullptr, 0, 0)) {

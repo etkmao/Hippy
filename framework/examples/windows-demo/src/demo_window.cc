@@ -37,13 +37,16 @@ void DemoWindow::Initialize(const std::string_view& title, const TRect& frame, D
   SetMenu(GetWindowHandle(), menu);
 }
 
+void DemoWindow::Destroy(std::function<void()> callback) {
+  if (framework_) framework_->Destroy(callback);
+}
+
 LRESULT DemoWindow::MessageHandle(UINT const message, WPARAM const wparam, LPARAM const lparam) noexcept {
   switch (message) {
     case WM_CREATE: {
       auto shell = tdf_engine_->GetShell();
-      auto config = framework_->CreateDefaultConfig();
-      config->SetShell(shell);
-      framework_->Initialize(config);
+      config_->SetShell(shell);
+      framework_->Initialize(config_);
       return 0;
     }
     case WM_COMMAND: {

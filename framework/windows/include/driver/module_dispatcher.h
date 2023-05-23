@@ -51,6 +51,8 @@ class ModuleDispatcher : public std::enable_shared_from_this<ModuleDispatcher> {
   void Dispatcher(const CallbackInfo& info, const std::shared_ptr<Scope>& scope);
   void Dispatcher(const std::string& module_name, const std::string& func, const std::string& desc,
                   const std::string& stack);
+  void AddDestroyListener(uint32_t root_id, std::function<void(bool)> listener);
+  void RemoveDestroyListener(uint32_t root_id);
 
  private:
   void ClipboardModuleHandle(const std::shared_ptr<Scope>& scope, const string_view& func, const string_view& cb_id,
@@ -70,6 +72,7 @@ class ModuleDispatcher : public std::enable_shared_from_this<ModuleDispatcher> {
               const footstone::value::HippyValue& callback_parameters);
 
   void ExceptionModuleHandle(const std::string& func, const std::string& desc, const std::string& stack);
+  void RootViewManagerModuleHandle(const string_view& func, const footstone::value::HippyValue& buffer);
 
  private:
   std::shared_ptr<hippy::windows::framework::module::Clipboard> clipboard_module_;       // clipboard module
@@ -80,6 +83,7 @@ class ModuleDispatcher : public std::enable_shared_from_this<ModuleDispatcher> {
   std::shared_ptr<hippy::windows::framework::module::Websocket> websocket_module_;       // websocket module
   std::shared_ptr<hippy::windows::framework::module::Storage> storage_module_;           // storage module
   footstone::Serializer serializer_;
+  std::unordered_map<uint32_t, std::function<void(bool)>> destroy_listeners_;
 };
 
 }  // namespace framework

@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <functional>
 #include <memory>
 
 #include "config.h"
@@ -38,7 +39,10 @@ class Framework : public std::enable_shared_from_this<Framework> {
 
   void Initialize(std::shared_ptr<Config>& config);
   void Reload();
-  std::shared_ptr<hippy::Config> CreateDefaultConfig();
+  void Destroy(std::function<void()> callback);
+
+ public:
+  static std::shared_ptr<hippy::Config> CreateDefaultConfig();
 
  private:
   std::shared_ptr<hippy::windows::framework::Engine> engine_{nullptr};

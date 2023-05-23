@@ -55,9 +55,9 @@ class Driver : public std::enable_shared_from_this<Driver> {
   hippy::ScopeInitializedCallBack GetScopeInitializedCallBack() { return scope_initialized_callback_; }
   bool RunScriptFromUri(string_view uri, const std::shared_ptr<UriLoader>& uri_loader,
                         const std::shared_ptr<Config>& config);
-  void LoadInstance(std::string& load_instance_message);
-
-  void ReloadInstance(const uint32_t root_id, std::function<void()> reload_callback);
+  void LoadInstance(const uint32_t root_id);
+  void ReloadInstance(const uint32_t root_id, std::function<void()> callback);
+  void DestroyInstance(const uint32_t root_id, std::function<void()> callback);
 
  private:
   std::shared_ptr<Scope> scope_;

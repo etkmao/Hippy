@@ -16,16 +16,15 @@ void Framework::Initialize(std::shared_ptr<Config>& config) {
   engine_->Initialize();
   engine_->SetScopeInitializedCallback([WEAK_THIS, config](uint32_t root_id) {
     DEFINE_AND_CHECK_SELF(Framework)
-    std::string load_instance_message = Engine::CreateLoadInstanceMessage(root_id);
     if (config->GetDebug()->GetDevelopmentModule()) {
       std::string remote_uri = Engine::CreateRemoteUri(config);
       self->engine_->RunScriptFromUri(string_view(remote_uri));
-      self->engine_->LoadInstance(load_instance_message);
+      self->engine_->LoadInstance(root_id);
     } else {
       auto core_js = config->GetJsAssetsPath()->GetCorePath();
       self->engine_->RunScriptFromUri(string_view(core_js));
       self->engine_->RunScriptFromUri("asset:/index.android.js");
-      self->engine_->LoadInstance(load_instance_message);
+      self->engine_->LoadInstance(root_id);
     }
   });
   return;
@@ -35,6 +34,12 @@ void Framework::Reload() {
   if (engine_) {
     auto new_root_id = global_root_id.fetch_add(1);
     engine_->ReloadInstance(new_root_id);
+  }
+}
+
+void Framework::Destroy(std::function<void()> callback) {
+  if (engine_) {
+    engine_->DestroyInstance(callback);
   }
 }
 

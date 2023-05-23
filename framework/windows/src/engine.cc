@@ -14,22 +14,6 @@ constexpr char kDomRunnerName[] = "dom_task_runner";
 
 Engine::Engine(std::shared_ptr<hippy::Config>& config) : config_(config) {}
 
-std::string Engine::CreateLoadInstanceMessage(uint32_t root_id) {
-  footstone::value::Serializer serializer;
-  serializer.WriteHeader();
-  footstone::value::HippyValue::HippyValueObjectType obj;
-  obj.insert({"name", footstone::value::HippyValue("Demo")});
-  obj.insert({"id", footstone::value::HippyValue(root_id)});
-  footstone::value::HippyValue::HippyValueObjectType params;
-  params.insert({"msgFromNative", footstone::value::HippyValue("Hi js developer,I come from native code !")});
-  params.insert({"sourcePath", footstone::value::HippyValue("index.android.js")});
-  obj.insert({"params", footstone::value::HippyValue(params)});
-  serializer.WriteValue(footstone::value::HippyValue(obj));
-  std::pair<uint8_t*, size_t> buffer = serializer.Release();
-  std::string byte_string(reinterpret_cast<char*>(buffer.first), buffer.second);
-  return byte_string;
-}
-
 std::string Engine::CreateRemoteUri(const std::shared_ptr<Config>& config) {
   std::string host = config->GetDebug()->GetHost();
   std::string bundle_name = config->GetDebug()->GetBundleName();
@@ -121,7 +105,7 @@ bool Engine::RunScriptFromUri(const string_view& uri) {
   return driver_->RunScriptFromUri(uri, uri_loader_, config_);
 }
 
-void Engine::LoadInstance(std::string& load_instance_message) { driver_->LoadInstance(load_instance_message); }
+void Engine::LoadInstance(uint32_t root_id) { driver_->LoadInstance(root_id); }
 
 void Engine::ReloadInstance(uint32_t new_root_id) {
   if (driver_) {
@@ -154,6 +138,19 @@ void Engine::ReloadInstance(uint32_t new_root_id) {
       self->driver_->ScopeInitializedCallBack(scope_initialized_callback);
     };
     driver_->ReloadInstance(root_node_->GetId(), callback);
+  }
+}
+
+void Engine::DestroyInstance(std::function<void()> callback) {
+  if (driver_) {
+    auto root_id = config_->GetRootId();
+    auto new_callback = [callback, root_id]() {
+      // remove root node from map
+      auto& persistent_map = hippy::RootNode::PersistentMap();
+      persistent_map.Erase(root_id);
+      if (callback) callback();
+    };
+    driver_->DestroyInstance(root_id, new_callback);
   }
 }
 

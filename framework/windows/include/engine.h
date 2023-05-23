@@ -60,11 +60,11 @@ class Engine : public std::enable_shared_from_this<Engine> {
     scope_initialized_callback_ = scope_initialized_callback;
   };
   ScopeInitializedCallBack GetScopeInitializedCallBack() { return scope_initialized_callback_; }
-  void LoadInstance(std::string& load_instance_message);
+  void LoadInstance(const uint32_t root_id);
   std::shared_ptr<hippy::Config> GetConfig() { return config_; }
-  void ReloadInstance(uint32_t new_root_id);
+  void ReloadInstance(const uint32_t new_root_id);
+  void DestroyInstance(std::function<void()> callback);
 
-  static std::string CreateLoadInstanceMessage(uint32_t root_id);
   static std::string CreateRemoteUri(const std::shared_ptr<Config>& config);
 
  private:

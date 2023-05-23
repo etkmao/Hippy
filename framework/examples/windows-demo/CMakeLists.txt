@@ -54,6 +54,7 @@ include_directories(${PROJECT_NAME} PUBLIC include)
 # region source set
 set(SOURCE_SET
     src/main.cc
+    src/main_window.cc
     src/demo_window.cc)
 # endregion
 
