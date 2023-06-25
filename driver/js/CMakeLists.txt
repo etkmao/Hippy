@@ -60,6 +60,11 @@ if ("${JS_ENGINE}" STREQUAL "V8")
           set(V8_REMOTE_FILENAME "windows-x64.zip")
         endif()
       endif()
+      if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+        set(V8_REMOTE_FILENAME "debug/${V8_REMOTE_FILENAME}")
+      else()
+        set(V8_REMOTE_FILENAME "release/${V8_REMOTE_FILENAME}")
+      endif()
     elseif ("${CMAKE_SYSTEM_NAME}" STREQUAL "iOS")
       if ("${CMAKE_OSX_ARCHITECTURES}" MATCHES "arm")
         set(V8_REMOTE_FILENAME "ios-arm64.tgz")
@@ -92,7 +97,7 @@ if ("${JS_ENGINE}" STREQUAL "V8")
     endif ()
 
     InfraPackage_Add(V8
-        REMOTE "global_packages/v8/${V8_COMPONENT}/debug/${V8_REMOTE_FILENAME}"
+        REMOTE "global_packages/v8/${V8_COMPONENT}/${V8_REMOTE_FILENAME}"
         LOCAL "${V8_COMPONENT}")
 
     get_target_property(V8_AUX_DEPS v8 INTERFACE_V8_AUX_DEPS)
