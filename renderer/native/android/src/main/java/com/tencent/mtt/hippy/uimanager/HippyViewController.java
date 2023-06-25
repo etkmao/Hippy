@@ -135,6 +135,16 @@ public abstract class HippyViewController<T extends View & HippyViewBase> implem
         view.setContentDescription(accessibilityLabel);
     }
 
+    @HippyControllerProps(name = NodeProps.VISIBILITY, defaultType = HippyControllerProps.STRING, defaultString =
+            NodeProps.VISIBLE)
+    public void setVisibility(T view, String value) {
+        if (NodeProps.VISIBLE.equals(value)) {
+            view.setVisibility(View.VISIBLE);
+        } else if (NodeProps.HIDDEN.equals(value)) {
+            view.setVisibility(View.INVISIBLE);
+        }
+    }
+
     @HippyControllerProps(name = NodeProps.OPACITY, defaultType = HippyControllerProps.NUMBER, defaultNumber = 1.f)
     public void setOpacity(T view, float opacity) {
         view.setAlpha(opacity);
@@ -318,8 +328,7 @@ public abstract class HippyViewController<T extends View & HippyViewBase> implem
     }
 
     protected RenderNode createRenderNode(int rootId, int id, @Nullable Map<String, Object> props,
-            @NonNull String className, @NonNull ControllerManager controllerManager,
-            boolean isLazy) {
+            @NonNull String className, @NonNull ControllerManager controllerManager, boolean isLazy) {
         return new RenderNode(rootId, id, props, className, controllerManager, isLazy);
     }
 
@@ -366,6 +375,7 @@ public abstract class HippyViewController<T extends View & HippyViewBase> implem
     public void dispatchFunction(@NonNull T view, @NonNull String functionName,
             @NonNull HippyArray params, @NonNull Promise promise) {
         // Stub method.
+        DevtoolsUtil.dispatchDevtoolsFunction(view, functionName, params, promise);
     }
 
     @Nullable

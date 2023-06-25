@@ -33,12 +33,14 @@
 #import "NativeRenderImpl.h"
 #import "NativeRenderObjectRootView.h"
 #import "NativeRenderObjectView.h"
+#import "NativeRenderUtils.h"
 #import "NativeRenderView.h"
 #import "NativeRenderViewManager.h"
 #import "RenderVsyncManager.h"
 #import "UIView+DomEvent.h"
 #import "UIView+NativeRender.h"
 #import "UIView+Render.h"
+
 #include <mutex>
 
 #include "dom/root_node.h"
@@ -206,6 +208,8 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
     _pendingUIBlocks = [NSMutableArray new];
     _componentTransactionListeners = [NSMutableSet new];
     _componentDataByName = [NSMutableDictionary dictionaryWithCapacity:64];
+    NativeRenderScreenScale();
+    NativeRenderScreenSize();
 }
 
 - (void)invalidate {
@@ -497,7 +501,6 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
 - (UIView *)createViewRecursivelyFromRenderObject:(NativeRenderObjectView *)renderObject {
     AssertMainQueue();
     std::lock_guard<std::mutex> lock([self renderQueueLock]);
-    [renderObject dirtyDescendantPropagation];
     return [self createViewRecursiveFromRenderObjectWithNOLock:renderObject];
 }
 
@@ -514,7 +517,7 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
     [view clearSortedSubviews];
     [view didUpdateNativeRenderSubviews];
     NSMutableSet<NativeRenderApplierBlock> *applierBlocks = [NSMutableSet setWithCapacity:1];
-    [renderObject collectUpdatedProperties:applierBlocks parentProperties:@{}];
+    [renderObject amendLayoutBeforeMount:applierBlocks];
     if (applierBlocks.count) {
         NSDictionary<NSNumber *, UIView *> *viewRegistry =
             [_viewRegistry componentsForRootTag:renderObject.rootTag];
@@ -605,12 +608,10 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
     NativeRenderComponentData *componentData = [self componentDataForViewName:renderObject.viewName];
     NSDictionary *newProps = props;
     NSDictionary *virtualProps = props;
-    if (renderObject) {
-        newProps = [renderObject mergeProps:props];
-        virtualProps = renderObject.props;
-        [componentData setProps:newProps forRenderObjectView:renderObject];
-        [renderObject dirtyPropagation];
-    }
+    newProps = [renderObject mergeProps:props];
+    virtualProps = renderObject.props;
+    [componentData setProps:newProps forRenderObjectView:renderObject];
+    [renderObject dirtyPropagation];
     [self addUIBlock:^(__unused NativeRenderImpl *renderContext, NSDictionary<NSNumber *, UIView *> *viewRegistry) {
         UIView *view = viewRegistry[componentTag];
         [componentData setProps:newProps forView:view];
@@ -827,6 +828,7 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
     for (auto dom_node : nodes) {
         int32_t tag = dom_node->GetRenderInfo().id;
         NativeRenderObjectView *renderObject = [_renderObjectRegistry componentForTag:@(tag) onRootTag:rootTag];
+        [renderObject dirtyPropagation];
         if (renderObject) {
             [renderObject removeFromNativeRenderSuperview];
             [self purgeChildren:@[renderObject] onRootTag:rootTag fromRegistry:_renderObjectRegistry];
@@ -883,6 +885,8 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
         [view removeFromNativeRenderSuperview];
         [toObjectView insertNativeRenderSubview:view atIndex:index];
     }
+    [fromObjectView dirtyPropagation];
+    [toObjectView dirtyPropagation];
     [fromObjectView didUpdateNativeRenderSubviews];
     [toObjectView didUpdateNativeRenderSubviews];
     auto strongTags = std::move(ids);
@@ -918,6 +922,7 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
         int32_t index = node->GetRenderInfo().index;
         int32_t componentTag = node->GetId();
         NativeRenderObjectView *objectView = [_renderObjectRegistry componentForTag:@(componentTag) onRootTag:@(rootTag)];
+        [objectView dirtyPropagation];
         HPAssert(!parentObjectView || parentObjectView == [objectView parentComponent], @"try to move object view on different parent object view");
         if (!parentObjectView) {
             parentObjectView = [objectView parentComponent];
@@ -961,7 +966,9 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
         CGRect frame = CGRectMakeFromLayoutResult(layoutResult);
         NativeRenderObjectView *renderObject = [_renderObjectRegistry componentForTag:componentTag onRootTag:rootTag];
         if (renderObject) {
+            [renderObject dirtyPropagation];
             renderObject.frame = frame;
+            renderObject.nodeLayoutResult = layoutResult;
             [self addUIBlock:^(NativeRenderImpl *renderContext, NSDictionary<NSNumber *,__kindof UIView *> *viewRegistry) {
                 UIView *view = viewRegistry[componentTag];
                 /* do not use frame directly, because shadow view's frame possibly changed manually in
@@ -1119,7 +1126,7 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
                         };
                         domManager->PostTask(hippy::Scene({func}));
                     }
-                } rate:60 forKey:vsyncKey];
+                } rate:30 forKey:vsyncKey];
             }
         }];
     }
@@ -1427,16 +1434,15 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
     }
     int32_t root_id = strongRootNode->GetId();
     NativeRenderObjectView *rootView = [_renderObjectRegistry rootComponentForTag:@(root_id)];
-    // Gather blocks to be executed now that all view hierarchy manipulations have
-    // been completed (note that these may still take place before layout has finished)
-    NSDictionary *renderObjectsMap = [_renderObjectRegistry componentsForRootTag:@(root_id)];
-    for (NativeRenderComponentData *componentData in _componentDataByName.allValues) {
-        NativeRenderRenderUIBlock uiBlock = [componentData uiBlockToAmendWithRenderObjectViewRegistry:renderObjectsMap];
-        [self addUIBlock:uiBlock];
+    NSMutableSet<NativeRenderApplierBlock> *uiBlocks = [NSMutableSet setWithCapacity:128];
+    [rootView amendLayoutBeforeMount:uiBlocks];
+    if (uiBlocks.count) {
+        [self addUIBlock:^(__unused NativeRenderImpl *renderContext, NSDictionary<NSNumber *, UIView *> *viewRegistry) {
+            for (NativeRenderApplierBlock block in uiBlocks) {
+                block(viewRegistry);
+            }
+        }];
     }
-    [rootView amendLayoutBeforeMount];
-    [self amendPendingUIBlocksWithStylePropagationUpdateForRenderObject:rootView];
-
     [self addUIBlock:^(NativeRenderImpl *renderContext, __unused NSDictionary<NSNumber *, UIView *> *viewRegistry) {
         NativeRenderImpl *uiManager = (NativeRenderImpl *)renderContext;
         for (id<NativeRenderComponentProtocol> node in uiManager->_componentTransactionListeners) {

@@ -40,13 +40,13 @@ inline namespace vm {
 
 class JSCVM : public VM, public std::enable_shared_from_this<JSCVM> {
 public:
-  JSCVM(): VM(nullptr) { vm_ = JSContextGroupCreate(); }
+  JSCVM(): VM() { vm_ = JSContextGroupCreate(); }
   
   ~JSCVM() {
     JSContextGroupRelease(vm_);
   }
   
-  std::unordered_map<void*, std::vector<std::unique_ptr<ConstructorData>>> constructor_data_holder_;
+  std::unordered_map<void*, std::unordered_map<JSClassRef, std::unique_ptr<ConstructorData>>> constructor_data_holder_;
   JSContextGroupRef vm_;
   
   virtual std::shared_ptr<CtxValue> ParseJson(const std::shared_ptr<Ctx>& ctx, const string_view& json) override;

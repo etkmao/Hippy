@@ -23,6 +23,7 @@
 #import <UIKit/UIKit.h>
 
 #import "NativeRenderComponentProtocol.h"
+#import "HPConvert+NativeRender.h"
 
 #include <memory>
 
@@ -105,10 +106,6 @@ extern NSString *const NativeRenderShadowViewDiffTag;
 @property(nonatomic, copy) NSString *viewName;
 @property(nonatomic, strong) UIColor *backgroundColor;  // Used to propagate to children
 @property(nonatomic, copy) NativeRenderDirectEventBlock onLayout;
-@property(nonatomic, assign) BOOL isList;
-@property(nonatomic, copy) NSString *visibility;
-@property(nonatomic, assign) BOOL visibilityChanged;
-@property(nonatomic, assign) BOOL hasNewLayout;
 @property(nonatomic, readonly) BOOL confirmedLayoutDirectionDidUpdated;
 
 /**
@@ -137,6 +134,20 @@ extern NSString *const NativeRenderShadowViewDiffTag;
  */
 //@property (nonatomic, assign) NSString *overflow;
 
+
+#pragma mark - Text Attachment Properties
+
+/// Vertical Alignment for Text / Text Attachment,
+/// Note that this property only takes effect for Text Element.
+@property (nonatomic, assign) NativeRenderTextVerticalAlignType verticalAlignType;
+
+/// Vertical Align Offset for Text / Text Attachment,
+/// Note that this property only takes effect for Text Element.
+@property (nonatomic, assign) CGFloat verticalAlignOffset;
+
+
+#pragma mark -
+
 /**
  * Indicate how we create coresponding UIView
  * NativeRenderCreationTypeInstantly : create views instantly when NativeRenderObject is created
@@ -161,6 +172,7 @@ extern NSString *const NativeRenderShadowViewDiffTag;
  * reset layout frame to mark dirty and re-layout
  */
 - (void)setLayoutFrame:(CGRect)frame;
+- (void)setLayoutFrame:(CGRect)frame dirtyPropagation:(BOOL)dirtyPropagation;
 
 /**
  * Calculate property changes that need to be propagated to the view.
@@ -175,9 +187,9 @@ extern NSString *const NativeRenderShadowViewDiffTag;
  * that add additional propagating properties should override this method.
  */
 - (NSDictionary<NSString *, id> *)processUpdatedProperties:(NSMutableSet<NativeRenderApplierBlock> *)applierBlocks
-                                          parentProperties:(NSDictionary<NSString *, id> *)parentProperties NS_REQUIRES_SUPER;
+                                          parentProperties:(NSDictionary<NSString *, id> *)parentProperties;
 
-- (void)amendLayoutBeforeMount;
+- (void)amendLayoutBeforeMount:(NSMutableSet<NativeRenderApplierBlock> *)blocks;
 
 /**
  * Return whether or not this node acts as a leaf node in the eyes of CSSLayout. For example

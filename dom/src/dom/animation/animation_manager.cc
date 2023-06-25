@@ -104,6 +104,7 @@ void AnimationManager::ParseAnimation(const std::shared_ptr<DomNode>& node) {
           auto prop = pair.second;
           if (orig_animation_prop_map[animation_id] == prop) {
             auto animation = GetAnimation(animation_id);
+            if (animation == nullptr) continue;
             node->EmplaceStyleMap(prop, HippyValue(animation->GetCurrentValue()));
           } else {
             orig_animation_prop_map[animation_id] = animation_prop_map[animation_id];
@@ -315,6 +316,7 @@ void AnimationManager::UpdateCubicBezierAnimation(double current,
     }
 
     std::shared_ptr<DomNode> dom_node;
+    std::unordered_map<std::string, std::shared_ptr<HippyValue>> diff_value;
     auto it = update_node_map.find(dom_node_id);
     if (it == update_node_map.end()) {
       dom_node = root_node->GetNode(dom_node_id);
@@ -323,12 +325,12 @@ void AnimationManager::UpdateCubicBezierAnimation(double current,
       }
     } else {
       dom_node = update_node_map[dom_node_id];
+      diff_value = *(dom_node->GetDiffStyle());
     }
     HippyValue prop_value(current);
-    std::unordered_map<std::string, std::shared_ptr<HippyValue>> diff_value;
     dom_node->EmplaceStyleMapAndGetDiff(prop_it->second, prop_value, diff_value);
     FOOTSTONE_DLOG(INFO) << "animation related_animation_id = " << related_animation_id
-                        << ", key = " << prop_it->second << ", value = " << prop_value;
+      << "node id = " << dom_node->GetId() << ", key = " << prop_it->second << ", value = " << prop_value;
 
     dom_node->SetDiffStyle(std::make_shared<
         std::unordered_map<std::string, std::shared_ptr<HippyValue>>>(std::move(diff_value)));

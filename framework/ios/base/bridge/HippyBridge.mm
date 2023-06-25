@@ -148,7 +148,7 @@ dispatch_queue_t HippyBridgeQueue() {
         HPExecuteOnMainThread(^{
             [self bindKeys];
         }, YES);
-        HPLogInfo(self, @"[Hippy_OC_Log][Life_Circle],%@ Init %p", NSStringFromClass([self class]), self);
+        HPLogInfo(@"[Hippy_OC_Log][Life_Circle],%@ Init %p", NSStringFromClass([self class]), self);
     }
     return self;
 }
@@ -158,7 +158,7 @@ dispatch_queue_t HippyBridgeQueue() {
      * This runs only on the main thread, but crashes the subclass
      * HPAssertMainQueue();
      */
-    HPLogInfo(self, @"[Hippy_OC_Log][Life_Circle],%@ dealloc %p", NSStringFromClass([self class]), self);
+    HPLogInfo(@"[Hippy_OC_Log][Life_Circle],%@ dealloc %p", NSStringFromClass([self class]), self);
     [[NSNotificationCenter defaultCenter] removeObserver:self];
     self.invalidateReason = HPInvalidateReasonDealloc;
     [self invalidate];
@@ -258,6 +258,10 @@ dispatch_queue_t HippyBridgeQueue() {
                 NSString *moduleConfig = [strongSelf moduleConfig];
                 [ctxWrapper createGlobalObject:@"__hpBatchedBridgeConfig" withJsonValue:moduleConfig];
                 [strongSelf->_performanceLogger markStopForTag:HippyPLJSExecutorSetup forKey:nil];
+#if HP_DEV
+                //default is yes when debug mode
+                [strongSelf setInspectable:YES];
+#endif //HIPPY_DEV
             }
         };
         [_javaScriptExecutor setup];
@@ -265,14 +269,16 @@ dispatch_queue_t HippyBridgeQueue() {
             _javaScriptExecutor.contextName = _contextName;
         }
         _displayLink = [[HippyDisplayLink alloc] init];
-        dispatch_async(HippyBridgeQueue(), ^{
+        //The caller may attempt to look up a module immediately after creating the HippyBridge,
+        //therefore the initialization of all modules cannot be placed in a sub-thread
+//        dispatch_async(HippyBridgeQueue(), ^{
             [self initWithModulesCompletion:^{
                 HippyBridge *strongSelf = weakSelf;
                 if (strongSelf) {
                     dispatch_semaphore_signal(strongSelf.moduleSemaphore);
                 }
             }];
-        });
+//        });
     } @catch (NSException *exception) {
         HippyBridgeHandleException(exception, self);
     }
@@ -307,7 +313,7 @@ dispatch_queue_t HippyBridgeQueue() {
                 completion:(void (^)(NSURL  * _Nullable, NSError * _Nullable))completion {
     dispatch_group_t group = dispatch_group_create();
     __weak HippyBridge *weakSelf = self;
-    __block NSString *script = nil;
+    __block NSData *script = nil;
     self.loadingCount++;
     dispatch_group_enter(group);
     HippyBundleLoadOperation *fetchOp = [[HippyBundleLoadOperation alloc] initWithBridge:self
@@ -318,7 +324,7 @@ dispatch_queue_t HippyBridgeQueue() {
             HippyBridgeFatal(error, weakSelf);
         }
         else {
-            script = [[NSString alloc] initWithData:source encoding:NSUTF8StringEncoding];
+            script = source;
         }
         dispatch_group_leave(group);
     };
@@ -379,7 +385,7 @@ dispatch_queue_t HippyBridgeQueue() {
 
 - (void)innerLoadInstanceForRootView:(NSNumber *)rootTag withProperties:(NSDictionary *)props {
     HPAssert(_moduleName, @"module name must not be null");
-    HPLogInfo(self, @"[Hippy_OC_Log][Life_Circle],Running application %@ (%@)", moduleName, props);
+    HPLogInfo(@"[Hippy_OC_Log][Life_Circle],Running application %@ (%@)", _moduleName, props);
     NSDictionary *param = @{@"name": _moduleName,
                             @"id": rootTag,
                             @"params": props ?: @{},
@@ -414,9 +420,17 @@ dispatch_queue_t HippyBridgeQueue() {
     return _uriLoader;
 }
 
-- (void)executeJSCode:(NSString *)script
+- (void)setInspectable:(BOOL)isInspectable {
+    [self.javaScriptExecutor setInspecable:isInspectable];
+}
+
+- (void)executeJSCode:(NSData *)script
             sourceURL:(NSURL *)sourceURL
          onCompletion:(HippyJavaScriptCallback)completion {
+    if (!script) {
+        completion(nil, HPErrorWithMessageAndModuleName(@"no valid data", _moduleName));
+        return;
+    }
     if (![self isValid] || !script || !sourceURL) {
         completion(nil, HPErrorWithMessageAndModuleName(@"bridge is not valid", _moduleName));
         return;
@@ -454,9 +468,11 @@ dispatch_queue_t HippyBridgeQueue() {
     }
     __weak HippyBridge *weakSelf = self;
     [self.javaScriptExecutor executeBlockOnJavaScriptQueue:^{
-        HippyBridge *strongSelf = weakSelf;
-        if (!strongSelf || ![strongSelf isValid]) {
-            [strongSelf.javaScriptExecutor invalidate];
+        @autoreleasepool {
+            HippyBridge *strongSelf = weakSelf;
+            if (!strongSelf || ![strongSelf isValid]) {
+                [strongSelf.javaScriptExecutor invalidate];
+            }
         }
     }];
     NSDictionary *userInfo = @{@"bridge": self, @"error": error, @"sourceURL": sourceURL};
@@ -542,7 +558,9 @@ dispatch_queue_t HippyBridgeQueue() {
     for (HippyModuleData *moduleData in moduleDataByID) {
         if (moduleData.hasInstance && moduleData.implementsPartialBatchDidFlush) {
             [self dispatchBlock:^{
-                [moduleData.instance partialBatchDidFlush];
+                @autoreleasepool {
+                    [moduleData.instance partialBatchDidFlush];
+                }
             } queue:moduleData.methodQueue];
         }
     }
@@ -553,7 +571,9 @@ dispatch_queue_t HippyBridgeQueue() {
     for (HippyModuleData *moduleData in moduleDataByID) {
         if (moduleData.hasInstance && moduleData.implementsBatchDidComplete) {
             [self dispatchBlock:^{
-                [moduleData.instance batchDidComplete];
+                @autoreleasepool {
+                    [moduleData.instance batchDidComplete];
+                }
             } queue:moduleData.methodQueue];
         }
     }
@@ -563,7 +583,7 @@ dispatch_queue_t HippyBridgeQueue() {
     NSArray *requestsArray = [HPConvert NSArray:buffer];
 
     if (HP_DEBUG && requestsArray.count <= HippyBridgeFieldParams) {
-        HPLogError(self, @"Buffer should contain at least %tu sub-arrays. Only found %tu", HippyBridgeFieldParams + 1, requestsArray.count);
+        HPLogError(@"Buffer should contain at least %tu sub-arrays. Only found %tu", HippyBridgeFieldParams + 1, requestsArray.count);
         return;
     }
 
@@ -578,7 +598,7 @@ dispatch_queue_t HippyBridgeQueue() {
     }
 
     if (HP_DEBUG && (moduleIDs.count != methodIDs.count || moduleIDs.count != paramsArrays.count)) {
-        HPLogError(self, @"Invalid data message - all must be length: %lu", (unsigned long)moduleIDs.count);
+        HPLogError(@"Invalid data message - all must be length: %lu", (unsigned long)moduleIDs.count);
         return;
     }
 
@@ -603,12 +623,12 @@ dispatch_queue_t HippyBridgeQueue() {
         for (dispatch_queue_t queue in buckets) {
             __weak id weakSelf = self;
             dispatch_block_t block = ^{
-                id strongSelf = weakSelf;
-                if (!strongSelf) {
-                    return;
-                }
-                NSOrderedSet *calls = [buckets objectForKey:queue];
                 @autoreleasepool {
+                    id strongSelf = weakSelf;
+                    if (!strongSelf) {
+                        return;
+                    }
+                    NSOrderedSet *calls = [buckets objectForKey:queue];
                     for (NSNumber *indexObj in calls) {
                         NSUInteger index = indexObj.unsignedIntegerValue;
                         [strongSelf callNativeModule:[moduleIDs[index] integerValue]
@@ -633,14 +653,14 @@ dispatch_queue_t HippyBridgeQueue() {
     NSArray<HippyModuleData *> *moduleDataByID = [_moduleSetup moduleDataByID];
     if (moduleID >= [moduleDataByID count]) {
         if (isValid) {
-            HPLogError(self, @"moduleID %lu exceed range of moduleDataByID %lu, bridge is valid %ld", moduleID, [moduleDataByID count], (long)isValid);
+            HPLogError(@"moduleID %lu exceed range of moduleDataByID %lu, bridge is valid %ld", moduleID, [moduleDataByID count], (long)isValid);
         }
         return nil;
     }
     HippyModuleData *moduleData = moduleDataByID[moduleID];
     if (HP_DEBUG && !moduleData) {
         if (isValid) {
-            HPLogError(self, @"No module found for id '%lu'", (unsigned long)moduleID);
+            HPLogError(@"No module found for id '%lu'", (unsigned long)moduleID);
         }
         return nil;
     }
@@ -653,14 +673,14 @@ dispatch_queue_t HippyBridgeQueue() {
     NSArray<id<HippyBridgeMethod>> *methods = [moduleData.methods copy];
     if (methodID >= [methods count]) {
         if (isValid) {
-            HPLogError(self, @"methodID %lu exceed range of moduleData.methods %lu, bridge is valid %ld", moduleID, [methods count], (long)isValid);
+            HPLogError(@"methodID %lu exceed range of moduleData.methods %lu, bridge is valid %ld", moduleID, [methods count], (long)isValid);
         }
         return nil;
     }
     id<HippyBridgeMethod> method = methods[methodID];
     if (HP_DEBUG && !method) {
         if (isValid) {
-            HPLogError(self, @"Unknown methodID: %lu for module: %lu (%@)", (unsigned long)methodID, (unsigned long)moduleID, moduleData.name);
+            HPLogError(@"Unknown methodID: %lu for module: %lu (%@)", (unsigned long)methodID, (unsigned long)moduleID, moduleData.name);
         }
         return nil;
     }
@@ -764,7 +784,7 @@ dispatch_queue_t HippyBridgeQueue() {
 }
 
 - (void)invalidate {
-    HPLogInfo(self, @"[Hippy_OC_Log][Life_Circle],%@ invalide %p", NSStringFromClass([self class]), self);
+    HPLogInfo(@"[Hippy_OC_Log][Life_Circle],%@ invalide %p", NSStringFromClass([self class]), self);
     if (![self isValid]) {
         return;
     }
@@ -785,7 +805,9 @@ dispatch_queue_t HippyBridgeQueue() {
         if ([instance respondsToSelector:@selector(invalidate)]) {
             dispatch_group_enter(group);
             [self dispatchBlock:^{
-                [(id<HPInvalidating>)instance invalidate];
+                @autoreleasepool {
+                    [(id<HPInvalidating>)instance invalidate];
+                }
                 dispatch_group_leave(group);
             } queue:moduleData.methodQueue];
         }
@@ -800,9 +822,11 @@ dispatch_queue_t HippyBridgeQueue() {
     self.moduleSemaphore = nil;
     dispatch_group_notify(group, dispatch_get_main_queue(), ^{
         [jsExecutor executeBlockOnJavaScriptQueue:^{
-            [displayLink invalidate];
-            [jsExecutor invalidate];
-            [moduleSetup invalidate];
+            @autoreleasepool {
+                [displayLink invalidate];
+                [jsExecutor invalidate];
+                [moduleSetup invalidate];
+            }
         }];
     });
 }
@@ -889,8 +913,12 @@ dispatch_queue_t HippyBridgeQueue() {
 }
 
 - (void)immediatelyCallTimer:(NSNumber *)timer {
+    __weak HippyBridge *weakSelf = self;
     [_javaScriptExecutor executeAsyncBlockOnJavaScriptQueue:^{
-        [self actuallyInvokeAndProcessModule:@"JSTimersExecution" method:@"callTimers" arguments:@[@[timer]]];
+        HippyBridge *strongSelf = weakSelf;
+        if (strongSelf) {
+            [strongSelf actuallyInvokeAndProcessModule:@"JSTimersExecution" method:@"callTimers" arguments:@[@[timer]]];
+        }
     }];
 }
 

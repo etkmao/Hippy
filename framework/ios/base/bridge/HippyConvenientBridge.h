@@ -60,11 +60,15 @@ typedef void(^_Nullable HippyBridgeBundleLoadCompletion)(NSURL *_Nullable, NSErr
 
 - (void)setRootView:(UIView *)rootView;
 
+- (void)resetRootSize:(CGSize)size;
+
 - (void)loadInstanceForRootViewTag:(NSNumber *)tag props:(NSDictionary *)props;
 
 - (void)unloadRootViewByTag:(NSNumber *)tag;
 
 - (void)addExtraComponents:(NSArray<Class> *)components;
+
+- (void)setInspectable:(BOOL)inspectable;
 
 //Optianl properties set
 - (void)addImageProviderClass:(Class<HPImageProviderProtocol>)cls;

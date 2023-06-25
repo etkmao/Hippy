@@ -35,7 +35,7 @@
 #pragma clang diagnostic ignored "-Wimplicit-int-conversion"
 #pragma clang diagnostic ignored "-Wfloat-conversion"
 #pragma clang diagnostic ignored "-Wshadow"
-// #pragma clang diagnostic ignored "-Wdeprecated-copy"
+#pragma clang diagnostic ignored "-Wdeprecated-copy"
 #pragma clang diagnostic ignored "-Wshorten-64-to-32"
 #include "tdfui/view/text/text_view.h"
 #include "tdfui/view/text/text_input_view.h"
@@ -48,6 +48,7 @@
 #include "renderer/tdf/viewnode/node_attributes_parser.h"
 #include "renderer/tdf/viewnode/root_view_node.h"
 #include "renderer/tdf/viewnode/view_names.h"
+#include "renderer/tdf/devtools/devtools_util.h"
 #include "renderer/tdf/viewnode/image_view_node.h"
 #include "renderer/tdf/tdf_render_manager.h"
 
@@ -86,7 +87,6 @@ void ViewNode::OnCreate() {
   if(!parent) {
     return;
   }
-
   parent->AddChildAt(shared_from_this(), render_info_.index);
 }
 
@@ -107,11 +107,6 @@ void ViewNode::OnUpdate(const std::shared_ptr<hippy::dom::DomNode> &dom_node) {
 
 void ViewNode::HandleStyleUpdate(const DomStyleMap& dom_style, const DomDeleteProps& dom_delete_props) {
   FOOTSTONE_DCHECK(IsAttached());
-  // TODO(etkmao):
-  if (!attached_view_.lock()) {
-    return;
-  }
-
   auto view = GetView();
   auto const map_end = dom_style.cend();
 
@@ -371,12 +366,6 @@ void ViewNode::HandleLayoutUpdate(hippy::LayoutResult layout_result) {
 
   auto new_frame =
       tdfcore::TRect::MakeXYWH(layout_result.left, layout_result.top, layout_result.width, layout_result.height);
-
-  // TODO(etkmao):20230208 我的Tab crash
-  if (!attached_view_.lock()) {
-    return;
-  }
-
   GetView()->SetFrame(new_frame);
   FOOTSTONE_LOG(INFO) << "ViewNode::HandleLayoutUpdate: " << render_info_.id << " |" << new_frame.X() << " | "
                       << new_frame.Y() << " | " << new_frame.Width() << " | " << new_frame.Height() << " |  "
@@ -421,11 +410,6 @@ void ViewNode::OnRemoveEventListener(uint32_t id, const std::string& name) {
 }
 
 void ViewNode::HandleEventInfoUpdate() {
-  // TODO(etkmao):
-  if (!attached_view_.lock()) {
-    return;
-  }
-
   if (supported_events_.find(hippy::kClickEvent) != supported_events_.end() ||
       supported_events_.find(hippy::kPressIn) != supported_events_.end() ||
       supported_events_.find(hippy::kPressOut) != supported_events_.end()) {
@@ -706,11 +690,6 @@ void ViewNode::Attach(const std::shared_ptr<tdfcore::View>& view) {
   FOOTSTONE_DCHECK(!parent_.expired());
   FOOTSTONE_DCHECK(parent_.lock()->IsAttached());
 
-  // TODO(etkmao):
-  if (!parent_.lock()->attached_view_.lock()) {
-    return;
-  }
-
   is_attached_ = true;
   if (view) {
     view->SetId(render_info_.id);
@@ -812,6 +791,7 @@ void ViewNode::CallFunction(const std::string &name, const DomArgument &param, c
     obj["height"] = frame.Height();
     DoCallback(name, call_back_id, std::make_shared<footstone::HippyValue>(obj));
   }
+  DevtoolsUtil::CallDevtoolsFunction(root_node_, shared_from_this(), name, param, call_back_id);
 }
 
 }  // namespace tdf

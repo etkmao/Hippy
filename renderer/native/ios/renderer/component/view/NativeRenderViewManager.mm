@@ -172,10 +172,10 @@ NATIVE_RENDER_COMPONENT_EXPORT_METHOD(getScreenShot:(nonnull NSNumber *)componen
             NSData *imageData = UIImageJPEGRepresentation(resultImage, (quality > 0 ? quality : 80) / 100.f);
             NSString *base64String = [imageData base64EncodedStringWithOptions:NSDataBase64EncodingEndLineWithLineFeed];
             NSDictionary *srceenShotDict = @{
-                @"width": @(int(resultImage.size.width * resultImage.scale)),
-                @"height": @(int(resultImage.size.height * resultImage.scale)),
+                @"width": @(int(viewWidth)),
+                @"height": @(int(viewHeight)),
                 @"screenShot": base64String.length ? base64String : @"",
-                @"screenScale": @(resultImage.scale)
+                @"screenScale": @(1.0f)
             };
             callback(@[srceenShotDict]);
         } else {
@@ -184,8 +184,25 @@ NATIVE_RENDER_COMPONENT_EXPORT_METHOD(getScreenShot:(nonnull NSNumber *)componen
     }];
 }
 
-#pragma mark - RenderObject properties
-NATIVE_RENDER_EXPORT_RENDER_OBJECT_PROPERTY(visibility, NSString)
+NATIVE_RENDER_COMPONENT_EXPORT_METHOD(getLocationOnScreen:(nonnull NSNumber *)componentTag
+                                      params:(NSDictionary *__nonnull)params
+                                    callback:(RenderUIResponseSenderBlock)callback) {
+    [self.renderImpl addUIBlock:^(__unused NativeRenderImpl *renderContext, NSDictionary<NSNumber *, UIView *> *viewRegistry) {
+        UIView *view = viewRegistry[componentTag];
+        if (view == nil) {
+            callback(@[]);
+            return;
+        }
+        CGRect windowFrame = [view.window convertRect:view.frame fromView:view.superview];
+        NSDictionary *locationDict = @{
+            @"xOnScreen": @(static_cast<int>(windowFrame.origin.x)),
+            @"yOnScreen": @(static_cast<int>(windowFrame.origin.y)),
+            @"viewWidth": @(static_cast<int>(CGRectGetHeight(windowFrame))),
+            @"viewHeight": @(static_cast<int>(CGRectGetWidth(windowFrame)))
+        };
+        callback(@[locationDict]);
+    }];
+}
 
 #pragma mark - View properties
 
@@ -201,6 +218,16 @@ NATIVE_RENDER_REMAP_VIEW_PROPERTY(shadowRadius, layer.shadowRadius, CGFloat)
 
 NATIVE_RENDER_EXPORT_VIEW_PROPERTY(backgroundPositionX, CGFloat)
 NATIVE_RENDER_EXPORT_VIEW_PROPERTY(backgroundPositionY, CGFloat)
+
+NATIVE_RENDER_CUSTOM_VIEW_PROPERTY(visibility, NSString, NativeRenderView) {
+    if (json) {
+        NSString *status = [HPConvert NSString:json];
+        view.hidden = [status isEqualToString:@"hidden"];
+    }
+    else {
+        view.hidden = NO;
+    }
+}
 
 NATIVE_RENDER_CUSTOM_VIEW_PROPERTY(backgroundImage, NSString, NativeRenderView) {
     if (json) {
@@ -498,6 +525,18 @@ static inline hippy::Direction ConvertDirection(id direction) {
 NATIVE_RENDER_CUSTOM_RENDER_OBJECT_PROPERTY(direction, id, NativeRenderObjectView) {
     view.layoutDirection = ConvertDirection(json);
 }
+
+NATIVE_RENDER_CUSTOM_RENDER_OBJECT_PROPERTY(verticalAlign, HippyTextAttachmentVerticalAlign, NativeRenderObjectView) {
+    if (json && [json isKindOfClass:NSString.class]) {
+        view.verticalAlignType = [HPConvert NativeRenderTextVerticalAlignType:json];
+    } else if ([json isKindOfClass:NSNumber.class]) {
+        view.verticalAlignType = NativeRenderTextVerticalAlignMiddle;
+        view.verticalAlignOffset = [HPConvert CGFloat:json];
+    } else {
+        HPLogError(@"Unsupported value for verticalAlign of Text: %@, type: %@", json, [json classForCoder]);
+    }
+}
+
 
 @end
 

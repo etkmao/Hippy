@@ -1,3 +1,39 @@
+## 0.0.29
+
+- add debug dialog for js error
+
+## 0.0.28
+
+- update voltron_render to 0.0.19 to fix layout density error
+
+## 0.0.27
+
+- fix font weight parse function
+
+## 0.0.26
+
+- update flutter version to 3.3.8
+- update ffi to version 2.0.0
+- update device_info_plus version to 9.0.0
+- update package_info_plus version to 4.0.0
+- update connectivity_plus version to 3.0.6
+
+## 0.0.25
+
+- fix Chinese encoding error
+
+## 0.0.24
+
+- disable local cmake 
+
+## 0.0.23
+
+- fix first reload error
+
+## 0.0.22
+
+- Support multi flutter engine
+
 ## 0.0.21
 
 - fix voltron android class miss

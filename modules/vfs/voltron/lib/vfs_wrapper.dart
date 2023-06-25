@@ -54,8 +54,6 @@ class _VfsApi {
         OnInvokeDartCallbackNativeType,
         OnInvokeDartCallbackDartType>('OnInvokeDartCallback');
 
-    // 添加自定义c++ call dart方法注册器
-    FfiManager().addFuncExRegister(_kVfsRegisterHeader, 'RegisterVoltronVfsCallFunc');
     // 添加invokeDart回调
     var invokeDartRegisterFunc = FfiManager().library.lookupFunction<
             AddCallFuncNativeType<InvokeDartNativeType>,
@@ -103,7 +101,7 @@ class DefaultVfsWrapper with NativeTraversalsWrapper {
 
   @override
   int initWrapper() {
-    _id = _api._createVfsWrapper();
+    _id = _api._createVfsWrapper(FfiManager().id);
     return _id;
   }
 
@@ -155,7 +153,7 @@ class DefaultVfsWrapper with NativeTraversalsWrapper {
   }
 
   @override
-  Future doNativeTraversalsSync(ResourceDataHolder holder) {
+  Future<void> doNativeTraversalsSync(ResourceDataHolder holder) {
     var completer = Completer();
     if (!isInit) {
       holder.resultCode = FetchResultCode.ffiError;

@@ -35,7 +35,15 @@
 #include "driver/modules/contextify_module.h"
 #include "driver/modules/console_module.h"
 #include "driver/modules/event_module.h"
-#include "driver/modules/scene_builder.h"
+#include "driver/modules/performance/performance_entry_module.h"
+#include "driver/modules/performance/performance_frame_timing_module.h"
+#include "driver/modules/performance/performance_mark_module.h"
+#include "driver/modules/performance/performance_measure_module.h"
+#include "driver/modules/performance/performance_module.h"
+#include "driver/modules/performance/performance_navigation_timing_module.h"
+#include "driver/modules/performance/performance_paint_timing_module.h"
+#include "driver/modules/performance/performance_resource_timing_module.h"
+#include "driver/modules/scene_builder_module.h"
 #include "driver/modules/timer_module.h"
 #include "driver/modules/ui_manager_module.h"
 #include "driver/vm/native_source_code.h"
@@ -43,11 +51,6 @@
 #include "footstone/string_view_utils.h"
 #include "footstone/task.h"
 #include "footstone/task_runner.h"
-
-#include "driver/modules/event_module.h"
-#include "driver/modules/scene_builder.h"
-#include "driver/modules/animation_module.h"
-#include "dom/dom_event.h"
 
 #ifdef JS_V8
 #include "driver/vm/v8/memory_module.h"
@@ -73,8 +76,11 @@ using FunctionWrapper = hippy::FunctionWrapper;
 constexpr char kBootstrapJSName[] = "bootstrap.js";
 constexpr char kDeallocFuncName[] = "HippyDealloc";
 constexpr char kHippyName[] = "Hippy";
+constexpr char kEventName[] = "Event";
 constexpr char kLoadInstanceFuncName[] = "__loadInstance__";
 constexpr char kUnloadInstanceFuncName[] = "__unloadInstance__";
+constexpr char kPerformanceName[] = "performance";
+
 #ifdef ENABLE_INSPECTOR
 constexpr char kHippyModuleName[] = "name";
 #endif
@@ -114,12 +120,12 @@ static void InternalBindingCallback(hippy::napi::CallbackInfo& info, void* data)
 // REGISTER_EXTERNAL_REFERENCES(InternalBindingCallback)
 
 Scope::Scope(std::weak_ptr<Engine> engine,
-             std::string name,
-             std::unique_ptr<RegisterMap> map)
+             std::string name)
     : engine_(std::move(engine)),
       context_(nullptr),
       name_(std::move(name)),
-      map_(std::move(map)) {}
+      call_ui_function_callback_id_(0),
+      performance_(std::make_shared<Performance>()) {}
 
 Scope::~Scope() {
   FOOTSTONE_DLOG(INFO) << "~Scope";
@@ -153,7 +159,7 @@ void Scope::WillExit() {
           auto fn = context->GetProperty(global_object, func_name);
           bool is_fn = context->IsFunction(fn);
           if (is_fn) {
-            context->CallFunction(fn, 0, nullptr);
+            context->CallFunction(fn, context->GetGlobalObject(), 0, nullptr);
           }
         }
         p.set_value(rst);
@@ -169,11 +175,10 @@ void Scope::WillExit() {
   FOOTSTONE_DLOG(INFO) << "ExitCtx end";
 }
 
-void Scope::Init() {
-  CreateContext();
+void Scope::SyncInitialize() {
+  RegisterJavascriptClasses();
   BindModule();
   Bootstrap();
-  InvokeCallback();
 }
 
 void Scope::CreateContext() {
@@ -181,17 +186,8 @@ void Scope::CreateContext() {
   FOOTSTONE_CHECK(engine);
   context_ = engine->GetVM()->CreateContext();
   FOOTSTONE_CHECK(context_);
-  context_->SetExternalData(GetScopeWrapperPointer());
-  if (map_) {
-    auto it = map_->find(hippy::base::kContextCreatedCBKey);
-    if (it != map_->end()) {
-      auto f = it->second;
-      if (f) {
-        f(wrapper_.get());
-        map_->erase(it);
-      }
-    }
-  }
+  wrapper_ = std::make_unique<ScopeWrapper>(weak_from_this());
+  context_->SetExternalData(wrapper_.get());
 }
 
 
@@ -216,24 +212,10 @@ void Scope::Bootstrap() {
   auto function_wrapper = std::make_unique<FunctionWrapper>(InternalBindingCallback, nullptr);
   std::shared_ptr<CtxValue> argv[] = { context_->CreateFunction(function_wrapper) };
   SaveFunctionWrapper(std::move(function_wrapper));
-  context_->CallFunction(function, 1, argv);
+  context_->CallFunction(function, context_->GetGlobalObject(), 1, argv);
 }
 
-void Scope::InvokeCallback() {
-  if (!map_) {
-    return;
-  }
-  auto it = map_->find(hippy::base::KScopeInitializedCBKey);
-  if (it != map_->end()) {
-    auto f = it->second;
-    if (f) {
-      f(wrapper_.get());
-      map_->erase(it);
-    }
-  }
-}
-
-void Scope::RegisterJsClasses() {
+void Scope::RegisterJavascriptClasses() {
   auto weak_scope = weak_from_this();
   auto global_object = context_->GetGlobalObject();
   auto scene_builder = hippy::RegisterSceneBuilder(weak_scope);
@@ -267,12 +249,100 @@ void Scope::RegisterJsClasses() {
   auto event_class = DefineClass(event);
   key = event->name;
   SaveClassTemplate(key, std::move(event));
-  SaveEventClass(event_class);
-}
+  SetJavascriptClass(key, event_class);
 
-void* Scope::GetScopeWrapperPointer() {
-  FOOTSTONE_CHECK(wrapper_);
-  return wrapper_.get();
+  auto performance = hippy::RegisterPerformance(weak_scope);
+  auto performance_class = DefineClass(performance);
+  key = performance->name;
+  SaveClassTemplate(key, std::move(performance));
+  SetJavascriptClass(key, performance_class);
+  context_->SetProperty(global_object,
+                        context_->CreateString(key),
+                        performance_class,
+                        PropertyAttribute::ReadOnly);
+  auto performance_object = context_->NewInstance(performance_class, 0, nullptr, performance_.get());
+  context_->SetProperty(global_object, context_->CreateString(kPerformanceName), performance_object);
+
+  auto performance_entry = hippy::RegisterPerformanceEntry(weak_scope);
+  auto performance_entry_properties = hippy::RegisterPerformanceEntryPropertyDefine<PerformanceEntry>(weak_scope);
+  performance_entry->properties.insert(performance_entry->properties.end(),
+                                       performance_entry_properties.begin(),
+                                       performance_entry_properties.end());
+  auto performance_entry_class = DefineClass(performance_entry);
+  key = performance_entry->name;
+  auto performance_entry_name = key;
+  SaveClassTemplate(key, std::move(performance_entry));
+  SetJavascriptClass(key, performance_entry_class);
+  context_->SetProperty(global_object,
+                        context_->CreateString(key),
+                        performance_entry_class,
+                        PropertyAttribute::ReadOnly);
+
+  auto performance_mark = hippy::RegisterPerformanceMark(weak_scope);
+  performance_mark->parent = context_->GetClassDefinition(performance_entry_name);
+  auto performance_mark_class = DefineClass(performance_mark);
+  key = performance_mark->name;
+  SaveClassTemplate(key, std::move(performance_mark));
+  SetJavascriptClass(key, performance_mark_class);
+  context_->SetProperty(global_object,
+                        context_->CreateString(key),
+                        performance_mark_class,
+                        PropertyAttribute::ReadOnly);
+
+  auto performance_measure = hippy::RegisterPerformanceMeasure(weak_scope);
+  performance_measure->parent = context_->GetClassDefinition(performance_entry_name);
+  auto performance_measure_class = DefineClass(performance_measure);
+  key = performance_measure->name;
+  SaveClassTemplate(key, std::move(performance_measure));
+  SetJavascriptClass(key, performance_measure_class);
+  context_->SetProperty(global_object,
+                        context_->CreateString(key),
+                        performance_measure_class,
+                        PropertyAttribute::ReadOnly);
+
+  auto performance_resource_timing = hippy::RegisterPerformanceResourceTiming(weak_scope);
+  performance_resource_timing->parent = context_->GetClassDefinition(performance_entry_name);
+  auto performance_resource_timing_class = DefineClass(performance_resource_timing);
+  key = performance_resource_timing->name;
+  SaveClassTemplate(key, std::move(performance_resource_timing));
+  SetJavascriptClass(key, performance_resource_timing_class);
+  context_->SetProperty(global_object,
+                        context_->CreateString(key),
+                        performance_resource_timing_class,
+                        PropertyAttribute::ReadOnly);
+
+  auto performance_navigation_timing = hippy::RegisterPerformanceNavigationTiming(weak_scope);
+  performance_navigation_timing->parent = context_->GetClassDefinition(performance_entry_name);
+  auto performance_navigation_timing_class = DefineClass(performance_navigation_timing);
+  key = performance_navigation_timing->name;
+  SaveClassTemplate(key, std::move(performance_navigation_timing));
+  SetJavascriptClass(key, performance_navigation_timing_class);
+  context_->SetProperty(global_object,
+                        context_->CreateString(key),
+                        performance_navigation_timing_class,
+                        PropertyAttribute::ReadOnly);
+
+  auto performance_frame_timing = hippy::RegisterPerformanceFrameTiming(weak_scope);
+  performance_frame_timing->parent = context_->GetClassDefinition(performance_entry_name);
+  auto performance_frame_timing_class = DefineClass(performance_frame_timing);
+  key = performance_frame_timing->name;
+  SaveClassTemplate(key, std::move(performance_frame_timing));
+  SetJavascriptClass(key, performance_frame_timing_class);
+  context_->SetProperty(global_object,
+                        context_->CreateString(key),
+                        performance_frame_timing_class,
+                        PropertyAttribute::ReadOnly);
+
+  auto performance_paint_timing = hippy::RegisterPerformancePaintTiming(weak_scope);
+  performance_paint_timing->parent = context_->GetClassDefinition(performance_entry_name);
+  auto performance_paint_timing_class = DefineClass(performance_paint_timing);
+  key = performance_paint_timing->name;
+  SaveClassTemplate(key, std::move(performance_paint_timing));
+  SetJavascriptClass(key, performance_paint_timing_class);
+  context_->SetProperty(global_object,
+                        context_->CreateString(key),
+                        performance_paint_timing_class,
+                        PropertyAttribute::ReadOnly);
 }
 
 hippy::dom::EventListenerInfo Scope::AddListener(const EventListenerInfo& event_listener_info) {
@@ -314,7 +384,7 @@ hippy::dom::EventListenerInfo Scope::AddListener(const EventListenerInfo& event_
       FOOTSTONE_DCHECK(callback != nullptr);
       if (callback == nullptr) return;
       hippy::DomEventWrapper::Set(event);
-      auto event_class = scope->GetEventClass();
+      auto event_class = scope->GetJavascriptClass(kEventName);
       auto event_instance = context->NewInstance(event_class, 0, nullptr, nullptr);
       FOOTSTONE_DCHECK(callback) << "callback is nullptr";
       if (!callback) {
@@ -326,7 +396,7 @@ hippy::dom::EventListenerInfo Scope::AddListener(const EventListenerInfo& event_
         return;
       }
       std::shared_ptr<CtxValue> argv[] = { event_instance };
-      context->CallFunction(callback, 1, argv);
+      context->CallFunction(callback, context->GetGlobalObject(), 1, argv);
     }
   }};
 }
@@ -436,41 +506,6 @@ void Scope::RunJS(const string_view& data,
   }
 }
 
-std::shared_ptr<CtxValue> Scope::RunJSSync(const string_view& data,
-                                           const string_view& name,
-                                           bool is_copy) {
-  std::promise<std::shared_ptr<CtxValue>> promise;
-  std::future<std::shared_ptr<CtxValue>> future = promise.get_future();
-  std::weak_ptr<Ctx> weak_context = context_;
-  auto cb = hippy::base::MakeCopyable(
-      [data, name, is_copy, weak_context, p = std::move(promise)]() mutable {
-        std::shared_ptr<CtxValue> rst = nullptr;
-#ifdef JS_V8
-        auto context =
-            std::static_pointer_cast<hippy::napi::V8Ctx>(weak_context.lock());
-        if (context) {
-          rst = context->RunScript(data, name, false, nullptr, is_copy);
-        }
-#else
-        auto context = weak_context.lock();
-        if (context) {
-          rst = context->RunScript(data, name);
-        }
-#endif
-        p.set_value(rst);
-      });
-
-
-  auto runner = GetTaskRunner();
-  if (footstone::Worker::IsTaskRunning() && runner == footstone::runner::TaskRunner::GetCurrentTaskRunner()) {
-    cb();
-  } else {
-    runner->PostTask(std::move(cb));
-  }
-  std::shared_ptr<CtxValue> ret = future.get();
-  return ret;
-}
-
 void Scope::LoadInstance(const std::shared_ptr<HippyValue>& value) {
   std::weak_ptr<Ctx> weak_context = context_;
 #ifdef ENABLE_INSPECTOR
@@ -504,7 +539,7 @@ void Scope::LoadInstance(const std::shared_ptr<HippyValue>& value) {
         }
 #endif
         std::shared_ptr<CtxValue> argv[] = {param};
-        context->CallFunction(fn, 1, argv);
+        context->CallFunction(fn, context->GetGlobalObject(), 1, argv);
       } else {
         context->ThrowException("Application entry not found");
       }
@@ -521,12 +556,7 @@ void Scope::LoadInstance(const std::shared_ptr<HippyValue>& value) {
 
 void Scope::UnloadInstance(const std::shared_ptr<HippyValue>& value) {
     std::weak_ptr<Ctx> weak_context = context_;
-#ifdef ENABLE_INSPECTOR
-    std::weak_ptr<hippy::devtools::DevtoolsDataSource> weak_data_source = devtools_data_source_;
-    auto cb = [weak_context, value, weak_data_source]() mutable {
-#else
         auto cb = [weak_context, value]() mutable {
-#endif
         auto context = weak_context.lock();
         if (context) {
           auto global_object = context->GetGlobalObject();
@@ -536,23 +566,8 @@ void Scope::UnloadInstance(const std::shared_ptr<HippyValue>& value) {
           FOOTSTONE_DCHECK(is_fn);
           if (is_fn) {
               auto param = hippy::CreateCtxValue(context, value);
-#ifdef ENABLE_INSPECTOR
-              std::shared_ptr<CtxValue> module_name_value = context->GetProperty(param, kHippyModuleName);
-              auto devtools_data_source = weak_data_source.lock();
-              if (module_name_value && devtools_data_source != nullptr) {
-                  string_view module_name;
-                  bool flag = context->GetValueString(module_name_value, &module_name);
-                  if (flag) {
-                      std::string u8_module_name = StringViewUtils::ToStdString(StringViewUtils::ConvertEncoding(
-                          module_name, string_view::Encoding::Utf8).utf8_value());
-                      devtools_data_source->SetContextName(u8_module_name);
-                  } else {
-                      FOOTSTONE_DLOG(ERROR) << "module name get error. GetValueString return false";
-                  }
-              }
-#endif
               std::shared_ptr<CtxValue> argv[] = {param};
-              context->CallFunction(fn, 1, argv);
+              context->CallFunction(fn, context->GetGlobalObject(), 1, argv);
           } else {
               context->ThrowException("Application entry not found");
           }

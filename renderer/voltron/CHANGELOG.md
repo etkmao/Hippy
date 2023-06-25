@@ -1,3 +1,31 @@
+## 0.0.20
+
+- optimize js error
+
+## 0.0.19
+
+- fix layout density error
+
+## 0.0.18
+
+- fix font weight parse function
+
+## 0.0.17
+
+- update ffi to 2.0.0
+
+## 0.0.16
+
+- fix Chinese encoding error
+
+## 0.0.15
+
+- fix first reload error
+
+## 0.0.14
+
+- Support multi flutter engine
+
 ## 0.0.13
 
 - fix Dimension error

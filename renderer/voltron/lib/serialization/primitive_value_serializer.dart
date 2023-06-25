@@ -1,3 +1,24 @@
+//
+// Tencent is pleased to support the open source community by making
+// Hippy available.
+//
+// Copyright (C) 2023 THL A29 Limited, a Tencent company.
+// All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+
 import 'dart:typed_data';
 
 import 'package:flutter/cupertino.dart';
@@ -5,6 +26,8 @@ import 'package:voltron_renderer/serialization/shared_serialization.dart';
 import 'package:voltron_renderer/serialization/writer/binary_writer.dart';
 
 import 'serialization_tag.dart';
+
+
 
 abstract class PrimitiveValueSerializer extends SharedSerialization {
   @protected
@@ -29,6 +52,8 @@ abstract class PrimitiveValueSerializer extends SharedSerialization {
   /// Small string max length, used for SSO(Short / Small String Optimization).
   ///
   static const int _kSSOSmallStringMaxLength = 32;
+
+
 
   Uint8List get chunk => writer.chunk;
 
@@ -214,7 +239,7 @@ abstract class PrimitiveValueSerializer extends SharedSerialization {
 
     for (int idx = 0; idx < length; idx++) {
       var charUnit = curStringWriteBuffer[idx];
-      if (charUnit >= 0x80) {
+      if (charUnit >= kIso88591MaxChar) {
         isOneByteString = false;
         break;
       }
@@ -242,7 +267,7 @@ abstract class PrimitiveValueSerializer extends SharedSerialization {
     bool isOneByteString = true;
     var codeUnits = value.codeUnits;
     for (var element in codeUnits) {
-      if (element >= 0x80) {
+      if (element >= kIso88591MaxChar) {
         isOneByteString = false;
         break;
       }

@@ -43,25 +43,13 @@ extern "C" {
 constexpr char kDomWorkerName[] = "dom_worker";
 constexpr char kDomRunnerName[] = "dom_task_runner";
 
-EXTERN_C const char *KeepLibStr() {
+EXTERN_C const char *KeepRenderLibStr() {
   return "keep_render_lib";
 }
 
-EXTERN_C int32_t RegisterRenderCallFunc(int32_t type, void *func) {
-  FOOTSTONE_DLOG(INFO) << "start register render func, type " << type;
-  if (type == static_cast<int>(RenderFFIRegisterFuncType::kPostRenderOp)) {
-    post_render_op_func = reinterpret_cast<post_render_op>(func);
-    return true;
-  } else if (type == static_cast<int>(RenderFFIRegisterFuncType::kCalculateNodeLayout)) {
-    calculate_node_layout_func = reinterpret_cast<calculate_node_layout>(func);
-    return true;
-  }
-  FOOTSTONE_DLOG(ERROR) << "register render func error, unknown type " << type;
-  return false;
-}
-
-EXTERN_C uint32_t CreateVoltronRenderProvider() {
+EXTERN_C uint32_t CreateVoltronRenderProvider(double density) {
   auto render_manager = voltron::BridgeManager::CreateRenderManager();
+  render_manager->SetDensity((float)density);
   if (render_manager) {
     return render_manager->GetId();
   }
@@ -241,7 +229,7 @@ EXTERN_C uint32_t CreateDomInstance() {
 }
 
 EXTERN_C void DestroyDomInstance(uint32_t dom_manager_id) {
-  auto dom_manager = voltron::FindObject<std::shared_ptr<hippy::DomManager>>(dom_manager_id);
+  auto dom_manager = std::any_cast<std::shared_ptr<hippy::DomManager>>(voltron::FindObject(dom_manager_id));
   if (!dom_manager) {
     return;
   }
@@ -252,7 +240,7 @@ EXTERN_C void DestroyDomInstance(uint32_t dom_manager_id) {
 EXTERN_C void AddRoot(
     uint32_t dom_manager_id,
     uint32_t root_id) {
-  auto dom_manager = voltron::FindObject<std::shared_ptr<hippy::DomManager>>(dom_manager_id);
+  auto dom_manager = std::any_cast<std::shared_ptr<hippy::DomManager>>(voltron::FindObject(dom_manager_id));
   auto root_node = std::make_shared<hippy::RootNode>(root_id);
   root_node->SetDomManager(dom_manager);
   auto &persistent_map = hippy::RootNode::PersistentMap();

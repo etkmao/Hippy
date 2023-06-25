@@ -171,6 +171,23 @@
     [_bridge setupDomManager:domManager rootNode:_rootNode];
 }
 
+- (void)resetRootSize:(CGSize)size {
+    auto engineResource = [[HippyJSEnginesMapper defaultInstance] JSEngineResourceForKey:_engineKey];
+    std::weak_ptr<hippy::RootNode> rootNode = _rootNode;
+    auto domManager = engineResource->GetDomManager();
+    std::weak_ptr<hippy::DomManager> weakDomManager = domManager;
+    std::vector<std::function<void()>> ops = {[rootNode, weakDomManager, size](){
+        auto strongRootNode = rootNode.lock();
+        auto strongDomManager = weakDomManager.lock();
+        if (strongRootNode && strongDomManager) {
+            strongRootNode->SetRootSize(size.width, size.height);
+            strongRootNode->DoLayout();
+            strongDomManager->EndBatch(strongRootNode);
+        }
+    }};
+    domManager->PostTask(hippy::dom::Scene(std::move(ops)));
+}
+
 - (void)addExtraComponents:(NSArray<Class> *)components {
     _nativeRenderManager->RegisterExtraComponent(components);
 }
@@ -191,6 +208,10 @@
 - (void)addImageProviderClass:(Class<HPImageProviderProtocol>)cls {
     [_bridge addImageProviderClass:cls];
     _nativeRenderManager->AddImageProviderClass([HPDefaultImageProvider class]);
+}
+
+- (void)setInspectable:(BOOL)inspectable {
+    [_bridge setInspectable:inspectable];
 }
 
 #pragma mark HippyBridge Delegate
@@ -242,6 +263,9 @@ static BOOL SelectorBelongsToProtocol(SEL selector, Protocol *protocol) {
 }
 
 - (void)dealloc {
+    if (_demoLoader) {
+        _demoLoader->Terminate();
+    }
     if (_rootNode) {
         _rootNode->ReleaseResources();
     }

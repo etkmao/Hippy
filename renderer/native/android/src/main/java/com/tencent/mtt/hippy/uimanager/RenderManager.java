@@ -24,6 +24,7 @@ import static com.tencent.renderer.node.RenderNode.FLAG_UPDATE_TOTAL_PROPS;
 
 import android.content.Context;
 import android.view.View;
+
 import androidx.annotation.NonNull;
 
 import com.openhippy.pool.BasePool.PoolType;
@@ -31,27 +32,33 @@ import com.tencent.renderer.NativeRenderContext;
 import com.tencent.renderer.NativeRendererManager;
 import com.tencent.renderer.Renderer;
 import com.tencent.renderer.node.ListItemRenderNode;
-import com.tencent.renderer.node.ListViewRenderNode;
 import com.tencent.renderer.node.RootRenderNode;
+import com.tencent.renderer.node.ScrollViewRenderNode;
 import com.tencent.renderer.node.VirtualNode;
 import com.tencent.renderer.node.TextRenderNode;
 import com.tencent.renderer.node.RenderNode;
+
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 
 import android.text.TextUtils;
 
 import androidx.annotation.Nullable;
+
 import com.tencent.mtt.hippy.dom.node.NodeProps;
 import com.tencent.mtt.hippy.modules.Promise;
 import com.tencent.mtt.hippy.utils.LogUtils;
+
 import java.util.Map;
 import java.util.Objects;
 
 public class RenderManager {
 
     private static final String TAG = "RenderManager";
+    private boolean isBatching = false;
     @NonNull
     private final ControllerManager mControllerManager;
     @NonNull
@@ -68,11 +75,6 @@ public class RenderManager {
 
     public void addRootView(View rootView) {
         mControllerManager.addRootView(rootView);
-    }
-
-    @Nullable
-    public View getRootView(int rootId) {
-        return mControllerManager.getRootView(rootId);
     }
 
     public void createRootNode(int id, int rendererId) {
@@ -179,6 +181,11 @@ public class RenderManager {
         if (node != null) {
             node.updateLayout(left, top, width, height);
             addUpdateNodeIfNeeded(rootId, node);
+            if (node.getParent() instanceof ScrollViewRenderNode) {
+                // ScrollView doesn't receive updateLayout when its content changes,
+                // so we specifically call addUpdateNodeIfNeeded()
+                addUpdateNodeIfNeeded(rootId, node.getParent());
+            }
         }
     }
 
@@ -195,7 +202,21 @@ public class RenderManager {
         RenderNode node = getRenderNode(rootId, nodeId);
         if (node != null) {
             node.checkPropsToUpdate(diffProps, delProps);
+            if (node.getParent() != null) {
+                addUpdateNodeIfNeeded(rootId, node.getParent());
+            }
             addUpdateNodeIfNeeded(rootId, node);
+        }
+    }
+
+    private static class MoveNodeInfo {
+
+        public final int id;
+        public final int index;
+
+        public MoveNodeInfo(int id, int index) {
+            this.id = id;
+            this.index = index;
         }
     }
 
@@ -206,12 +227,28 @@ public class RenderManager {
             return;
         }
         List<RenderNode> moveNodes = null;
+        List<MoveNodeInfo> infoList = new ArrayList<>();
         for (int i = 0; i < list.size(); i++) {
             try {
                 final Map node = (Map) list.get(i);
-                int nodeId = ((Number) Objects.requireNonNull(node.get(NODE_ID))).intValue();
-                int index = ((Number) Objects.requireNonNull(node.get(NODE_INDEX))).intValue();
-                RenderNode child = getRenderNode(rootId, nodeId);
+                final int id = ((Number) Objects.requireNonNull(node.get(NODE_ID))).intValue();
+                final int index = ((Number) Objects.requireNonNull(
+                        node.get(NODE_INDEX))).intValue();
+                infoList.add(new MoveNodeInfo(id, index));
+            } catch (Exception e) {
+                LogUtils.w(TAG, "moveNode: " + e.getMessage());
+            }
+        }
+        Collections.sort(infoList, new Comparator<MoveNodeInfo>() {
+            @Override
+            public int compare(MoveNodeInfo n1, MoveNodeInfo n2) {
+                return n1.index < n2.index ? -1 : 0;
+            }
+        });
+        for (int i = 0; i < infoList.size(); i++) {
+            try {
+                MoveNodeInfo info = infoList.get(i);
+                RenderNode child = getRenderNode(rootId, info.id);
                 if (child == null) {
                     continue;
                 }
@@ -226,7 +263,7 @@ public class RenderManager {
                     }
                     moveNodes.add(child);
                 }
-                parent.resetChildIndex(child, index);
+                parent.resetChildIndex(child, info.index);
             } catch (Exception e) {
                 LogUtils.w(TAG, "moveNode: " + e.getMessage());
             }
@@ -261,6 +298,11 @@ public class RenderManager {
         RenderNode node = getRenderNode(rootId, nodeId);
         if (node != null) {
             node.updateExtra(object);
+            // The gesture set by the child nodes of the flattened text node will recreate
+            // the host view, so the parent text node must be added to the update list.
+            if (node.getGestureEnable() && node.getHostView() == null && node.getParent() != null) {
+                addUpdateNodeIfNeeded(rootId, node.getParent());
+            }
             addUpdateNodeIfNeeded(rootId, node);
         }
     }
@@ -270,7 +312,7 @@ public class RenderManager {
         if (node == null) {
             return;
         }
-        if (node.getParent() != null && mControllerManager.hasView(rootId, id)) {
+        if (node.getParent() != null) {
             node.getParent().addDeleteChild(node);
             addUpdateNodeIfNeeded(rootId, node.getParent());
         } else if (TextUtils.equals(NodeProps.ROOT_NODE, node.getClassName())) {
@@ -289,11 +331,16 @@ public class RenderManager {
         }
     }
 
+    public boolean isBatching() {
+        return isBatching;
+    }
+
     public void batch(int rootId) {
         List<RenderNode> updateNodes = mUIUpdateNodes.get(rootId);
         if (updateNodes == null) {
             return;
         }
+        isBatching = true;
         // Should create all views at first
         for (RenderNode node : updateNodes) {
             node.batchStart();
@@ -309,6 +356,7 @@ public class RenderManager {
         }
         mControllerManager.onBatchEnd(rootId);
         updateNodes.clear();
+        isBatching = false;
     }
 
     private void deleteSelfFromParent(int rootId, @Nullable RenderNode node) {

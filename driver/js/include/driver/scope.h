@@ -41,11 +41,14 @@
 #include "footstone/task.h"
 #include "footstone/string_view.h"
 #include "vfs/uri_loader.h"
+#include "performance/performance.h"
 
 namespace hippy {
+
 namespace devtools {
 class DevtoolsDataSource;
 }
+
 inline namespace driver {
 
 inline namespace module {
@@ -56,43 +59,50 @@ class Scope;
 
 class ScopeWrapper {
  public:
-  explicit ScopeWrapper(std::shared_ptr<Scope> scope) : scope(scope) {}
+  explicit ScopeWrapper(std::weak_ptr<Scope> scope) : scope(scope) {}
 
  public:
   std::weak_ptr<Scope> scope;
 };
 
 template<typename T>
-using GetterCallback = std::function<std::shared_ptr<CtxValue>(T* thiz)>;
+using GetterCallback = std::function<std::shared_ptr<CtxValue>(T* thiz, std::shared_ptr<CtxValue>& exception)>;
 
 template<typename T>
-using SetterCallback = std::function<void(T* thiz, const std::shared_ptr<CtxValue>& value)>;
+using SetterCallback = std::function<void(T* thiz,
+    const std::shared_ptr<CtxValue>& value,
+    std::shared_ptr<CtxValue>& exception)>;
 
 template<typename T>
 using FunctionCallback = std::function<std::shared_ptr<CtxValue>(
     T* thiz,
     size_t argument_count,
-    const std::shared_ptr<CtxValue> arguments[])>;
+    const std::shared_ptr<CtxValue> arguments[],
+    std::shared_ptr<CtxValue>& exception)>;
 
 
 template<typename T>
-using Constructor = std::function<std::shared_ptr<T>(size_t argument_count,
-                                                     const std::shared_ptr<CtxValue> arguments[])>;
+using Constructor = std::function<std::shared_ptr<T>(
+    const std::shared_ptr<CtxValue>& receiver,
+    size_t argument_count,
+    const std::shared_ptr<CtxValue> arguments[],
+    void* external,
+    std::shared_ptr<CtxValue>& exception)>;
 
 template<typename T>
 struct PropertyDefine {
   using string_view = footstone::stringview::string_view;
 
+  string_view name;
   GetterCallback<T> getter;
   SetterCallback<T> setter;
-  string_view name;
 };
 
 template<typename T>
 struct FunctionDefine {
   using string_view = footstone::stringview::string_view;
 
-  FunctionCallback<T> cb;
+  FunctionCallback<T> callback;
   string_view name;
 };
 
@@ -100,6 +110,7 @@ template<typename T>
 struct ClassTemplate {
   using string_view = footstone::stringview::string_view;
 
+  std::shared_ptr<ClassDefinition> parent = nullptr;
   Constructor<T> constructor;
   std::vector<PropertyDefine<T>> properties{};
   std::vector<FunctionDefine<T>> functions{};
@@ -126,6 +137,14 @@ class Scope : public std::enable_shared_from_this<Scope> {
   using TaskRunner = footstone::runner::TaskRunner;
   using Task = footstone::Task;
 
+#ifdef ENABLE_INSPECTOR
+  using DevtoolsDataSource = hippy::devtools::DevtoolsDataSource;
+#endif
+
+#if defined(ENABLE_INSPECTOR) && defined(JS_V8) && !defined(V8_WITHOUT_INSPECTOR)
+  using V8InspectorContext = hippy::inspector::V8InspectorContext;
+#endif
+
   struct EventListenerInfo {
     uint32_t dom_id;
     std::string event_name;
@@ -134,13 +153,16 @@ class Scope : public std::enable_shared_from_this<Scope> {
   };
 
   Scope(std::weak_ptr<Engine> engine,
-        std::string name,
-        std::unique_ptr<RegisterMap> map);
+        std::string name);
   ~Scope();
 
-  void WillExit();
   inline std::shared_ptr<Ctx> GetContext() { return context_; }
-  inline std::unique_ptr<RegisterMap>& GetRegisterMap() { return map_; }
+  inline std::shared_ptr<CtxValue> GetBridgeObject() { return bridge_object_; }
+  inline void SetBridgeObject(std::shared_ptr<CtxValue> bridge_object) { bridge_object_ = bridge_object; }
+  inline std::any GetBridge() { return bridge_; }
+  inline void SetBridge(std::any bridge) { bridge_ = bridge; }
+  inline std::any GetTurbo() { return turbo_; }
+  inline void SetTurbo(std::any turbo) { turbo_ = turbo; }
   inline std::weak_ptr<Engine> GetEngine() { return engine_; }
 
   inline std::any GetClassTemplate(const string_view& name) {
@@ -201,15 +223,17 @@ class Scope : public std::enable_shared_from_this<Scope> {
     turbo_host_object_map_[name] = host_object;
   }
 
-  inline std::shared_ptr<CtxValue> GetEventClass() {
-    return event_class_;
+  inline std::shared_ptr<CtxValue> GetJavascriptClass(const string_view& name) {
+    return javascript_class_map_[name];
   }
 
-  inline void SaveEventClass(std::shared_ptr<CtxValue> event_class) {
-    event_class_ = event_class;
+  inline void SetJavascriptClass(const string_view& name, std::shared_ptr<CtxValue> clazz) {
+    javascript_class_map_[name] = clazz;
   }
 
-  void* GetScopeWrapperPointer();
+  inline bool HasJavaScriptClass(const string_view& name) {
+    return javascript_class_map_.find(name) != javascript_class_map_.end();
+  }
 
   hippy::dom::EventListenerInfo AddListener(const EventListenerInfo& event_listener_info);
   hippy::dom::EventListenerInfo RemoveListener(const EventListenerInfo& event_listener_info);
@@ -220,12 +244,22 @@ class Scope : public std::enable_shared_from_this<Scope> {
              const string_view& name,
              bool is_copy = true);
 
-  std::shared_ptr<CtxValue> RunJSSync(const string_view& data,
-                                      const string_view& name,
-                                      bool is_copy = true);
-
   void LoadInstance(const std::shared_ptr<HippyValue>& value);
   void UnloadInstance(const std::shared_ptr<HippyValue>& value);
+
+  inline uint32_t AddCallUIFunctionCallback(const std::shared_ptr<CtxValue>& callback) {
+    call_ui_function_callback_id_ += 1;
+    call_ui_function_callback_holder_[call_ui_function_callback_id_] = callback;
+    return call_ui_function_callback_id_;
+  }
+
+  inline void removeCallUIFunctionCallback(uint32_t id) {
+    auto it = call_ui_function_callback_holder_.find(id);
+    FOOTSTONE_DCHECK(it != call_ui_function_callback_holder_.end());
+    if (it != call_ui_function_callback_holder_.end()) {
+      call_ui_function_callback_holder_.erase(it);
+    }
+  }
 
   inline void AddTask(std::unique_ptr<Task> task) {
     auto runner = GetTaskRunner();
@@ -266,6 +300,10 @@ class Scope : public std::enable_shared_from_this<Scope> {
     will_exit_cbs_.push_back(cb);
   }
 
+  inline std::shared_ptr<Performance> GetPerformance() {
+    return performance_;
+  }
+
 #ifdef ENABLE_INSPECTOR
   inline void SetDevtoolsDataSource(std::shared_ptr<hippy::devtools::DevtoolsDataSource> devtools_data_source) {
     devtools_data_source_ = devtools_data_source;
@@ -275,11 +313,26 @@ class Scope : public std::enable_shared_from_this<Scope> {
   }
 #endif
 
-  void RegisterJsClasses();
+#if defined(ENABLE_INSPECTOR) && defined(JS_V8) && !defined(V8_WITHOUT_INSPECTOR)
+  inline void SetInspectorContext(std::shared_ptr<V8InspectorContext> inspector_context) {
+    inspector_context_ = inspector_context;
+  }
+  inline std::shared_ptr<V8InspectorContext> GetInspectorContext() { return inspector_context_; }
+#endif
+
+  void WillExit();
+  void SyncInitialize();
+  void CreateContext();
+  void RegisterJavascriptClasses();
 
   template<typename T>
   std::shared_ptr<CtxValue> DefineClass(const std::shared_ptr<ClassTemplate<T>>& class_template) {
     class_template->constructor_wrapper = std::make_unique<FunctionWrapper>([](CallbackInfo& info, void* data) {
+      auto scope_wrapper = reinterpret_cast<ScopeWrapper*>(std::any_cast<void*>(info.GetSlot()));
+      auto scope = scope_wrapper->scope.lock();
+      FOOTSTONE_CHECK(scope);
+      auto context = scope->GetContext();
+
       auto class_template = reinterpret_cast<ClassTemplate<T>*>(data);
       auto len = info.Length();
       std::shared_ptr<CtxValue> argv[len];
@@ -287,14 +340,15 @@ class Scope : public std::enable_shared_from_this<Scope> {
         argv[i] = info[i];
       }
       auto receiver = info.GetReceiver();
-      auto ret = class_template->constructor(static_cast<size_t>(len), argv);
+      auto external = info.GetData();
+      std::shared_ptr<CtxValue> exception = nullptr;
+      auto ret = class_template->constructor(receiver, static_cast<size_t>(len), argv, external, exception);
+      if (exception) {
+        info.GetExceptionValue()->Set(exception);
+        return;
+      }
       info.SetData(ret.get());
       class_template->holder_map.insert({ret.get(), ret});
-
-      auto scope_wrapper = reinterpret_cast<ScopeWrapper*>(std::any_cast<void*>(info.GetSlot()));
-      auto scope = scope_wrapper->scope.lock();
-      FOOTSTONE_CHECK(scope);
-      auto context = scope->GetContext();
       FOOTSTONE_CHECK(context);
       auto weak_callback_wrapper = std::make_unique<WeakCallbackWrapper>([](void* callback_data, void* internal_data) {
         auto class_template = reinterpret_cast<ClassTemplate<T>*>(callback_data);
@@ -315,7 +369,17 @@ class Scope : public std::enable_shared_from_this<Scope> {
         auto property_getter_pointer = &class_template->properties[i].getter;
         getter = std::make_unique<FunctionWrapper>([](CallbackInfo& info, void* data) {
           auto getter_callback = reinterpret_cast<GetterCallback<T>*>(data);
-          info.GetReturnValue()->Set((*getter_callback)(reinterpret_cast<T*>(info.GetData())));
+          std::shared_ptr<CtxValue> exception = nullptr;
+          auto info_data = info.GetData();
+          if (!info_data) {
+            return;
+          }
+          auto result = (*getter_callback)(reinterpret_cast<T*>(info_data), exception);
+          if (exception) {
+            info.GetExceptionValue()->Set(exception);
+            return;
+          }
+          info.GetReturnValue()->Set(result);
         }, property_getter_pointer);
       }
       std::unique_ptr<FunctionWrapper> setter = nullptr;
@@ -323,8 +387,15 @@ class Scope : public std::enable_shared_from_this<Scope> {
         auto property_setter_pointer = &class_template->properties[i].setter;
         setter = std::make_unique<FunctionWrapper>([](CallbackInfo& info, void* data) {
           auto setter_callback = reinterpret_cast<SetterCallback<T>*>(data);
-          //TODO info[0]
-          (*setter_callback)(reinterpret_cast<T*>(info.GetData()), info[0]);
+          auto info_data = info.GetData();
+          if (!info_data) {
+            return;
+          }
+          std::shared_ptr<CtxValue> exception = nullptr;
+          (*setter_callback)(reinterpret_cast<T*>(info_data), info[0], exception);
+          if (exception) {
+            info.GetExceptionValue()->Set(exception);
+          }
         }, property_setter_pointer);
       }
       properties.push_back(std::make_shared<PropertyDescriptor>(context_->CreateString(class_template->properties[i].name),
@@ -345,8 +416,17 @@ class Scope : public std::enable_shared_from_this<Scope> {
         for (size_t i = 0; i < len; i++) {
           param[i] = info[i];
         }
-        auto t = reinterpret_cast<T*>(info.GetData());
-        auto ret = (function_define->cb)(t, static_cast<size_t>(len), param);
+        auto info_data = info.GetData();
+        if (!info_data) {
+          return;
+        }
+        auto t = reinterpret_cast<T*>(info_data);
+        std::shared_ptr<CtxValue> exception = nullptr;
+        auto ret = (function_define->callback)(t, static_cast<size_t>(len), param, exception);
+        if (exception) {
+          info.GetReturnValue()->Set(exception);
+          return;
+        }
         info.GetReturnValue()->Set(ret);
       }, function_define_pointer);
       properties.push_back(std::make_shared<PropertyDescriptor>(context_->CreateString(function_define_pointer->name),
@@ -358,23 +438,27 @@ class Scope : public std::enable_shared_from_this<Scope> {
                                                                 nullptr));
     }
     class_template->descriptor_holder = properties;
-    return context_->DefineClass(class_template->name,class_template->constructor_wrapper,
-                                 properties.size(), properties.data());
+    return context_->DefineClass(class_template->name,
+                                 class_template->parent,
+                                 class_template->constructor_wrapper,
+                                 properties.size(),
+                                 properties.data());
   }
 
  private:
   friend class Engine;
-  void Init();
-  void CreateContext();
   void BindModule();
   void Bootstrap();
-  void InvokeCallback();
 
  private:
   std::weak_ptr<Engine> engine_;
   std::shared_ptr<Ctx> context_;
+  std::shared_ptr<CtxValue> bridge_object_;
+  std::any bridge_;
+  std::any turbo_;
   std::string name_;
-  std::unique_ptr<RegisterMap> map_;
+  uint32_t call_ui_function_callback_id_;
+  std::unordered_map<uint32_t, std::shared_ptr<CtxValue>> call_ui_function_callback_holder_;
   std::unordered_map<uint32_t, std::unordered_map<std::string, std::unordered_map<uint64_t, std::shared_ptr<CtxValue>>>>
       bind_listener_map_; // bind js function and dom event listener id
   std::unique_ptr<ScopeWrapper> wrapper_;
@@ -383,13 +467,17 @@ class Scope : public std::enable_shared_from_this<Scope> {
   std::weak_ptr<RenderManager> render_manager_;
   std::weak_ptr<RootNode> root_node_;
   std::unordered_map<std::string, std::shared_ptr<ModuleBase>> module_object_map_;
-  std::shared_ptr<CtxValue> event_class_;
+  std::unordered_map<string_view , std::shared_ptr<CtxValue>> javascript_class_map_;
   std::unordered_map<std::string, std::shared_ptr<CtxValue>> turbo_instance_map_;
   std::unordered_map<std::string, std::any> turbo_host_object_map_;
   std::vector<std::function<void()>> will_exit_cbs_;
 #ifdef ENABLE_INSPECTOR
-  std::shared_ptr<hippy::devtools::DevtoolsDataSource> devtools_data_source_;
+  std::shared_ptr<DevtoolsDataSource> devtools_data_source_;
 #endif
+#if defined(ENABLE_INSPECTOR) && defined(JS_V8) && !defined(V8_WITHOUT_INSPECTOR)
+  std::shared_ptr<V8InspectorContext> inspector_context_;
+#endif
+  std::shared_ptr<Performance> performance_;
 };
 
 }
