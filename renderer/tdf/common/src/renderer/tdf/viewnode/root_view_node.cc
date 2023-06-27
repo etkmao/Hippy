@@ -21,6 +21,7 @@
 #include "renderer/tdf/viewnode/root_view_node.h"
 #include "renderer/tdf/viewnode/base64_image_loader.h"
 #include "renderer/tdf/viewnode/net_image_loader.h"
+#include "tdfui/view/window_manager.h"
 
 namespace hippy {
 inline namespace render {
@@ -36,10 +37,9 @@ void RootViewNode::Init() {
   RegisterViewNode(render_info_.id, shared_from_this());
   shell_.lock()->GetUITaskRunner()->PostTask([WEAK_THIS] {
     DEFINE_AND_CHECK_SELF(RootViewNode)
-    self->view_context_ = TDF_MAKE_SHARED(tdfcore::ViewContext, self->shell_.lock());
-    self->view_context_->SetCurrent();
-    self->view_context_->SetupDefaultBuildFunction();
-    self->AttachView(self->view_context_->GetRootView());
+    auto on_create_content_view = []() { return TDF_MAKE_SHARED(tdfcore::View); };
+    self->view_context_ = tdfcore::ViewContext::Make(self->shell_.lock(), on_create_content_view);
+    self->AttachView(self->view_context_->GetWindowManager()->GetMainWindow()->GetContentView());
     if (auto shell = self->shell_.lock()) {
       shell->GetEventCenter()->AddListener(tdfcore::PostRunLoopEvent::ClassType(),
                                            [weak_this](const std::shared_ptr<tdfcore::Event>& event, uint64_t id) {
@@ -51,7 +51,7 @@ void RootViewNode::Init() {
                                              return tdfcore::EventDispatchBehavior::kContinue;
                                            });
     }
-    self->UpdateDomeRootNodeSize(self->shell_.lock()->GetViewportMetrics());
+    self->UpdateDomeRootNodeSize(self->shell_.lock()->GetPlatformView()->GetViewportMetrics());
     self->GetShell()->GetEventCenter()->AddListener(
         tdfcore::ViewportEvent::ClassType(), [weak_this](const std::shared_ptr<tdfcore::Event>& event, uint64_t id) {
           auto self = std::static_pointer_cast<RootViewNode>(weak_this.lock());

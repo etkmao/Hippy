@@ -81,7 +81,7 @@ void DevtoolsUtil::CallDevtoolsFunction(const std::weak_ptr<RootViewNode> &root_
     }
   } else if (name == kGetLocationOnScreen) {
     DomValueObjectType obj;
-    auto ratio = shell->GetViewportMetrics().device_pixel_ratio;
+    auto ratio = shell->GetPlatformView()->GetViewportMetrics().device_pixel_ratio;
     int32_t x_onScreen = 0, y_onScreen = 0, view_width = 0, view_height = 0;
     if (view_node->IsAttached()) {
       auto frame = view_node->GetView()->GetFrame();
@@ -115,8 +115,8 @@ void DevtoolsUtil::GetScreenshot(const std::weak_ptr<RootViewNode> &root_node,
   auto maxWidth = dom_value.find(kMaxWidth)->second.ToInt32Checked();
   auto maxHeight = dom_value.find(kMaxHeight)->second.ToInt32Checked();
   auto shell = root_node.lock()->GetShell();
-  auto scaleX = static_cast<float>(maxWidth) / static_cast<float>(shell->GetViewportMetrics().width);
-  auto scaleY = static_cast<float>(maxHeight) / static_cast<float>(shell->GetViewportMetrics().height);
+  auto scaleX = static_cast<float>(maxWidth) / static_cast<float>(shell->GetPlatformView()->GetViewportMetrics().width);
+  auto scaleY = static_cast<float>(maxHeight) / static_cast<float>(shell->GetPlatformView()->GetViewportMetrics().height);
   auto scale = std::min(scaleX, scaleY);
   screen_scale_ = scale;
   std::weak_ptr<ViewNode> weak_view_node = view_node;

@@ -50,7 +50,7 @@ void TextViewNode::RegisterMeasureFunction(uint32_t root_id, const std::shared_p
   dom_node->GetLayoutNode()->SetMeasureFunction([view_node](float width, LayoutMeasureMode width_measure_mode,
                                                             float height, LayoutMeasureMode height_measure_mode,
                                                             void* layoutContext) {
-    auto size = view_node->layout_view_->MeasureText(static_cast<uint64_t>(width));
+    auto size = view_node->layout_view_->MeasureText(width);
     hippy::LayoutSize layout_result{static_cast<float>(size.width), static_cast<float>(size.height)};
     return layout_result;
   });
@@ -204,7 +204,9 @@ void TextViewNode::SetLetterSpacing(const DomStyleMap& dom_style, TextStyle& tex
 
 void TextViewNode::SetFontFamily(const DomStyleMap& dom_style, TextStyle& text_style) {
   if (auto it = dom_style.find(text::kFontFamily); it != dom_style.end() && it->second != nullptr) {
-    text_style.font_family = it->second->ToStringChecked();
+    std::vector<std::string> families;
+    families.push_back(it->second->ToStringChecked());
+    text_style.font_families = families;
   }
 }
 

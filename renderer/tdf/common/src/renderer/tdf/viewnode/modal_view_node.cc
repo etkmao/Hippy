@@ -20,6 +20,7 @@
 
 #include "renderer/tdf/viewnode/modal_view_node.h"
 #include "renderer/tdf/viewnode/root_view_node.h"
+#include "tdfui/view/window_manager.h"
 
 namespace hippy {
 inline namespace render {
@@ -50,7 +51,7 @@ void ModalViewNode::OnCreate() {
 
 void ModalViewNode::HandleLayoutUpdate(hippy::LayoutResult layout_result) {
   ViewNode::HandleLayoutUpdate(layout_result);
-  auto root_view_frame = tdfcore::ViewContext::GetCurrent()->GetRootView()->GetFrame();
+  auto root_view_frame = tdfcore::ViewContext::GetCurrent()->GetWindowManager()->GetMainWindow()->GetContentView()->GetFrame();
   GetView()->SetFrame(TRect::MakeXYWH(0, 0, root_view_frame.Width(), root_view_frame.Height()));
 }
 
