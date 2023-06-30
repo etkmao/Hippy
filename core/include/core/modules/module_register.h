@@ -42,12 +42,12 @@
   }();
 
 
-#define REGISTER_GLOBAL_MODULE(Module, Function)                          \
-  auto __##Module##Function##__ = [] {                                    \
-    ModuleRegister::instance()->RegisterGlobalModule(&Module::Function,   \
-                                                     #Module, #Function); \
-    return 0;                                                             \
-  }();
+//#define REGISTER_GLOBAL_MODULE(Module, Function)                          \
+//  auto __##Module##Function##__ = [] {                                    \
+//    ModuleRegister::instance()->RegisterGlobalModule(&Module::Function,   \
+//                                                     #Module, #Function); \
+//    return 0;                                                             \
+//  }();
 
 class ModuleRegister {
  public:
@@ -66,20 +66,20 @@ class ModuleRegister {
         GenerateCallback(member_fn, module_name);
   }
 
-  template <typename Module, typename Function>
-  void RegisterGlobalModule(Function Module::*member_fn,
-                            const unicode_string_view& module_name,
-                            const unicode_string_view& function_name) {
-    global_modules_[module_name][function_name] =
-        GenerateCallback(member_fn, module_name);
-  }
+//  template <typename Module, typename Function>
+//  void RegisterGlobalModule(Function Module::*member_fn,
+//                            const unicode_string_view& module_name,
+//                            const unicode_string_view& function_name) {
+//    global_modules_[module_name][function_name] =
+//        GenerateCallback(member_fn, module_name);
+//  }
 
   const hippy::napi::ModuleClassMap& GetInternalList() const {
     return internal_modules_;
   }
-  const hippy::napi::ModuleClassMap& GetGlobalList() const {
-    return global_modules_;
-  }
+//  const hippy::napi::ModuleClassMap& GetGlobalList() const {
+//    return global_modules_;
+//  }
 
  private:
   ModuleRegister() = default;
@@ -109,5 +109,5 @@ class ModuleRegister {
   }
 
   hippy::napi::ModuleClassMap internal_modules_;
-  hippy::napi::ModuleClassMap global_modules_;
+//  hippy::napi::ModuleClassMap global_modules_;
 };

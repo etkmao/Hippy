@@ -226,8 +226,8 @@ class Ctx {
   virtual void SetExternalData(void* data) = 0;
   
   // TODO:added
-  virtual void RegisterGlobalModule(const std::shared_ptr<Scope>& scope,
-                                    const ModuleClassMap& modules) = 0;
+//  virtual void RegisterGlobalModule(const std::shared_ptr<Scope>& scope,
+//                                    const ModuleClassMap& modules) = 0;
   virtual void RegisterNativeBinding(const unicode_string_view& name,
                                      hippy::base::RegisterFunction fn,
                                      void* data) = 0;

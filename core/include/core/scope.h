@@ -77,9 +77,9 @@ class Scope {
   std::shared_ptr<CtxValue> GetModuleValue( const unicode_string_view& moduleName);
   void AddModuleValue(const unicode_string_view& name, const std::shared_ptr<CtxValue>& value);
   void SaveFunctionData(std::unique_ptr<FunctionData> data);
-  inline void SaveBindingData(std::unique_ptr<BindingData> data) { binding_data_ = std::move(data);}
+//  inline void SaveBindingData(std::unique_ptr<BindingData> data) { binding_data_ = std::move(data);}
   inline const std::unique_ptr<BindingData>& GetBindingData() {
-    return binding_data_;
+    return nullptr;// binding_data_;
   }
     
     
@@ -156,7 +156,7 @@ class Scope {
   std::unordered_map<unicode_string_view, std::shared_ptr<CtxValue>> module_value_map_;
   std::unordered_map<unicode_string_view, std::unique_ptr<ModuleBase>> module_class_map_;
   std::vector<std::unique_ptr<FunctionData>> function_data_;
-  std::unique_ptr<BindingData> binding_data_;
+//  std::unique_ptr<BindingData> binding_data_;
 
   
   std::unordered_map<std::string, std::shared_ptr<ModuleBase>> module_object_map_;

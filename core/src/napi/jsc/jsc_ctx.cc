@@ -56,7 +56,8 @@ JSValueRef InvokeJsCallback(JSContextRef ctx,
   auto func_wrapper = reinterpret_cast<FuncWrapper*>(func_data->func_wrapper);
   auto js_cb = func_wrapper->cb;
   void* external_data = func_wrapper->data;
-  CallbackInfo cb_info(nullptr);
+  ScopeWrapper* wr = (ScopeWrapper*)func_data->global_external_data;
+  CallbackInfo cb_info(wr->scope.lock());
 //  cb_info.SetSlot(func_data->global_external_data);
   auto context = const_cast<JSGlobalContextRef>(ctx);
 //  cb_info.SetReceiver(std::make_shared<JSCCtxValue>(context, object));
@@ -1005,15 +1006,15 @@ JSObjectRef RegisterModule(std::shared_ptr<Scope> scope,
   return module_obj;
 }
 
-void JSCCtx::RegisterGlobalModule(const std::shared_ptr<Scope>& scope,
-                                  const ModuleClassMap& module_cls_map) {
-  std::shared_ptr<JSCCtx> ctx =
-      std::static_pointer_cast<JSCCtx>(scope->GetContext());
-  JSGlobalContextRef ctx_ref = ctx->GetCtxRef();
-  for (const auto& module : module_cls_map) {
-    RegisterModule(scope, ctx_ref, module.first, module.second);
-  }
-}
+//void JSCCtx::RegisterGlobalModule(const std::shared_ptr<Scope>& scope,
+//                                  const ModuleClassMap& module_cls_map) {
+//  std::shared_ptr<JSCCtx> ctx =
+//      std::static_pointer_cast<JSCCtx>(scope->GetContext());
+//  JSGlobalContextRef ctx_ref = ctx->GetCtxRef();
+//  for (const auto& module : module_cls_map) {
+//    RegisterModule(scope, ctx_ref, module.first, module.second);
+//  }
+//}
 
 void JSCCtx::RegisterNativeBinding(const unicode_string_view& name,
                                    hippy::base::RegisterFunction fn,

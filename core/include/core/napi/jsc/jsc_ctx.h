@@ -206,8 +206,8 @@ class JSCCtx : public Ctx {
   
   
   // TODO:added
-  virtual void RegisterGlobalModule(const std::shared_ptr<Scope>& scope,
-                                    const ModuleClassMap& modules) override;
+//  virtual void RegisterGlobalModule(const std::shared_ptr<Scope>& scope,
+//                                    const ModuleClassMap& modules) override;
   virtual void RegisterNativeBinding(const unicode_string_view& name,
                                      hippy::base::RegisterFunction fn,
                                      void* data) override;

@@ -64,9 +64,16 @@ using CallbackInfo = hippy::napi::CallbackInfo;
 constexpr char kDeallocFuncName[] = "HippyDealloc";
 constexpr char kHippyBootstrapJSName[] = "bootstrap.js";
 
+std::unique_ptr<BindingData> binding_data_;
+
+JSObjectRef RegisterModule2(std::shared_ptr<Scope> scope,
+                           JSContextRef ctx,
+                           const unicode_string_view& module_name,
+                            ModuleClass module);
+
 static void InternalBindingCallback(const hippy::napi::CallbackInfo& info, void* data) {
-  auto scope_wrapper = reinterpret_cast<ScopeWrapper*>(0);
-  auto scope = scope_wrapper->scope.lock();
+//  auto scope_wrapper = reinterpret_cast<ScopeWrapper*>(0);
+  auto scope = info.GetScope(); //scope_wrapper->scope.lock();
   TDF_BASE_CHECK(scope);
   auto context = scope->GetContext();
   unicode_string_view module_name;
@@ -84,8 +91,19 @@ static void InternalBindingCallback(const hippy::napi::CallbackInfo& info, void*
   for (size_t i = 0; i < argc; ++i) {
     rest_args[i] = info[i + 1];
   }
+  
+  // TODO:changed
+  module_name = unicode_string_view(u8_module_name);  // content is latin
+  ModuleClassMap module_class_map = binding_data_->map_;
+  auto it = module_class_map.find(module_name);
+  if (it == module_class_map.end()) {
+    return;
+  }
+  auto jscctx = std::static_pointer_cast<JSCCtx>(context);
+  auto js_object = RegisterModule2(scope, jscctx->context_, module_name, it->second);
+  
 //  auto js_object = module_object->BindFunction(scope, rest_args);
-//  info.GetReturnValue()->Set(js_object);
+  info.GetReturnValue()->Set(std::make_shared<JSCCtxValue>(jscctx->context_, js_object));
 }
 
 Scope::Scope(std::weak_ptr<Engine> engine,
@@ -431,60 +449,66 @@ std::shared_ptr<CtxValue> GetInternalBindingFn(const std::shared_ptr<Scope>& sco
 
 void Scope::Initialized() {
   TDF_BASE_DLOG(INFO) << "Scope Initialized";
-  context_ = engine_.lock()->GetVM()->CreateContext();
-  if (context_ == nullptr) {
-    TDF_BASE_DLOG(ERROR) << "CreateContext return nullptr";
-    return;
-  }
+  CreateContext();
+//  context_ = engine_.lock()->GetVM()->CreateContext();
+//  if (context_ == nullptr) {
+//    TDF_BASE_DLOG(ERROR) << "CreateContext return nullptr";
+//    return;
+//  }
   std::shared_ptr<Scope> self = wrapper_->scope.lock();
   if (!self) {
     TDF_BASE_DLOG(ERROR) << "Scope wrapper_ error_";
     return;
   }
-  RegisterMap::const_iterator it =
-      map_->find(hippy::base::kContextCreatedCBKey);
-  if (it != map_->end()) {
-    RegisterFunction f = it->second;
-    if (f) {
-      TDF_BASE_DLOG(INFO) << "run ContextCreatedCB begin";
-      f(wrapper_.get());
-      TDF_BASE_DLOG(INFO) << "run ContextCreatedCB end";
-      map_->erase(it);
-    }
-  }
-  TDF_BASE_DLOG(INFO) << "Scope RegisterGlobalInJs";
-  context_->RegisterGlobalModule(self,
-                                 ModuleRegister::instance()->GetGlobalList());
+//  RegisterMap::const_iterator it =
+//      map_->find(hippy::base::kContextCreatedCBKey);
+//  if (it != map_->end()) {
+//    RegisterFunction f = it->second;
+//    if (f) {
+//      TDF_BASE_DLOG(INFO) << "run ContextCreatedCB begin";
+//      f(wrapper_.get());
+//      TDF_BASE_DLOG(INFO) << "run ContextCreatedCB end";
+//      map_->erase(it);
+//    }
+//  }
+  
+  BindModule();
+  
+  
   ModuleClassMap map(ModuleRegister::instance()->GetInternalList());
   binding_data_ = std::make_unique<BindingData>(self, map);
 
-  auto source_code = hippy::GetNativeSourceCode(kHippyBootstrapJSName);
-  TDF_BASE_DCHECK(source_code.data_ && source_code.length_);
-  unicode_string_view str_view(reinterpret_cast<const unicode_string_view::char8_t_ *>(source_code.data_),
-                               source_code.length_);
-  std::shared_ptr<CtxValue> function = context_->RunScript(
-      str_view, kHippyBootstrapJSName);
+  
+  Bootstrap();
+  
+//  auto source_code = hippy::GetNativeSourceCode(kHippyBootstrapJSName);
+//  TDF_BASE_DCHECK(source_code.data_ && source_code.length_);
+//  unicode_string_view str_view(reinterpret_cast<const unicode_string_view::char8_t_ *>(source_code.data_),
+//                               source_code.length_);
+//  std::shared_ptr<CtxValue> function = context_->RunScript(
+//      str_view, kHippyBootstrapJSName);
+//
+//  bool is_func = context_->IsFunction(function);
+//  TDF_BASE_CHECK(is_func) << "bootstrap return not function, len = " << source_code.length_;
+//  // TODO(super): The following statement will be removed when TDF_BASE_CHECK will be cause abort
+//  if (!is_func) {
+//    return;
+//  }
+//
+//  std::shared_ptr<CtxValue> internal_binding_fn =
+//      GetInternalBindingFn(self);
+//  std::shared_ptr<CtxValue> argv[] = {internal_binding_fn};
+//  context_->CallFunction(function, 1, argv);
 
-  bool is_func = context_->IsFunction(function);
-  TDF_BASE_CHECK(is_func) << "bootstrap return not function, len = " << source_code.length_;
-  // TODO(super): The following statement will be removed when TDF_BASE_CHECK will be cause abort
-  if (!is_func) {
-    return;
-  }
-
-  std::shared_ptr<CtxValue> internal_binding_fn =
-      GetInternalBindingFn(self);
-  std::shared_ptr<CtxValue> argv[] = {internal_binding_fn};
-  context_->CallFunction(function, 1, argv);
-
-  it = map_->find(hippy::base::KScopeInitializedCBKey);
-  if (it != map_->end()) {
-    RegisterFunction f = it->second;
-    if (f) {
-      TDF_BASE_DLOG(INFO) << "run SCOPE_INITIALIZED begin";
-      f(wrapper_.get());
-      TDF_BASE_DLOG(INFO) << "run SCOPE_INITIALIZED end";
-      map_->erase(it);
-    }
-  }
+  InvokeCallback();
+//  auto it = map_->find(hippy::base::KScopeInitializedCBKey);
+//  if (it != map_->end()) {
+//    RegisterFunction f = it->second;
+//    if (f) {
+//      TDF_BASE_DLOG(INFO) << "run SCOPE_INITIALIZED begin";
+//      f(wrapper_.get());
+//      TDF_BASE_DLOG(INFO) << "run SCOPE_INITIALIZED end";
+//      map_->erase(it);
+//    }
+//  }
 }
