@@ -93,17 +93,21 @@ static void InternalBindingCallback(const hippy::napi::CallbackInfo& info, void*
   }
   
   // TODO:changed
-  module_name = unicode_string_view(u8_module_name);  // content is latin
-  ModuleClassMap module_class_map = binding_data_->map_;
-  auto it = module_class_map.find(module_name);
-  if (it == module_class_map.end()) {
-    return;
-  }
-  auto jscctx = std::static_pointer_cast<JSCCtx>(context);
-  auto js_object = RegisterModule2(scope, jscctx->context_, module_name, it->second);
+//  module_name = unicode_string_view(u8_module_name);  // content is latin
+//  ModuleClassMap module_class_map = binding_data_->map_;
+//  auto it = module_class_map.find(module_name);
+//  if (it == module_class_map.end()) {
+//    return;
+//  }
+//  auto jscctx = std::static_pointer_cast<JSCCtx>(context);
+//  auto js_object = RegisterModule2(scope, jscctx->context_, module_name, it->second);
+
+//  info.GetReturnValue()->Set(std::make_shared<JSCCtxValue>(jscctx->context_, js_object));
   
-//  auto js_object = module_object->BindFunction(scope, rest_args);
-  info.GetReturnValue()->Set(std::make_shared<JSCCtxValue>(jscctx->context_, js_object));
+  
+  auto js_object = module_object->BindFunction(scope, rest_args);
+  info.GetReturnValue()->Set(js_object);
+
 }
 
 Scope::Scope(std::weak_ptr<Engine> engine,

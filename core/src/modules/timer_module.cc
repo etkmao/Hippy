@@ -34,6 +34,10 @@ REGISTER_MODULE(TimerModule, SetTimeout) // NOLINT(cert-err58-cpp)
 REGISTER_MODULE(TimerModule, ClearTimeout) // NOLINT(cert-err58-cpp)
 REGISTER_MODULE(TimerModule, SetInterval) // NOLINT(cert-err58-cpp)
 REGISTER_MODULE(TimerModule, ClearInterval) // NOLINT(cert-err58-cpp)
+GEN_INVOKE_CB(TimerModule, SetTimeout) // NOLINT(cert-err58-cpp)
+GEN_INVOKE_CB(TimerModule, ClearTimeout) // NOLINT(cert-err58-cpp)
+GEN_INVOKE_CB(TimerModule, SetInterval) // NOLINT(cert-err58-cpp)
+GEN_INVOKE_CB(TimerModule, ClearInterval) // NOLINT(cert-err58-cpp)
 
 namespace napi = ::hippy::napi;
 
@@ -170,3 +174,34 @@ void TimerModule::Cancel(TaskId task_id, const std::shared_ptr<Scope>& scope) {
 }
 
 
+std::shared_ptr<CtxValue> TimerModule::BindFunction(std::shared_ptr<Scope> scope,
+                                                    std::shared_ptr<CtxValue>* rest_args) {
+  auto context = scope->GetContext();
+  auto object = context->CreateObject();
+
+  auto key = context->CreateString("SetTimeout");
+  auto wrapper = std::make_shared<hippy::napi::FuncWrapper>(InvokeTimerModuleSetTimeout,nullptr);
+  auto value = context->CreateFunction(wrapper);
+  scope->SaveFuncWrapper(std::move(wrapper));
+  context->SetProperty(object, key, value);
+
+  key = context->CreateString("ClearTimeout");
+  wrapper = std::make_shared<hippy::napi::FuncWrapper>(InvokeTimerModuleClearTimeout,nullptr);
+  value = context->CreateFunction(wrapper);
+  scope->SaveFuncWrapper(std::move(wrapper));
+  context->SetProperty(object, key, value);
+
+  key = context->CreateString("SetInterval");
+  wrapper = std::make_shared<hippy::napi::FuncWrapper>(InvokeTimerModuleSetInterval,nullptr);
+  value = context->CreateFunction(wrapper);
+  scope->SaveFuncWrapper(std::move(wrapper));
+  context->SetProperty(object, key, value);
+
+  key = context->CreateString("ClearInterval");
+  wrapper = std::make_shared<hippy::napi::FuncWrapper>(InvokeTimerModuleClearInterval,nullptr);
+  value = context->CreateFunction(wrapper);
+  scope->SaveFuncWrapper(std::move(wrapper));
+  context->SetProperty(object, key, value);
+
+  return object;
+}

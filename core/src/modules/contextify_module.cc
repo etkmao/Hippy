@@ -41,6 +41,8 @@
 
 REGISTER_MODULE(ContextifyModule, RunInThisContext) // NOLINT(cert-err58-cpp)
 REGISTER_MODULE(ContextifyModule, LoadUntrustedContent) // NOLINT(cert-err58-cpp)
+GEN_INVOKE_CB(ContextifyModule, RunInThisContext) // NOLINT(cert-err58-cpp)
+GEN_INVOKE_CB(ContextifyModule, LoadUntrustedContent) // NOLINT(cert-err58-cpp)
 
 using unicode_string_view = tdf::base::unicode_string_view;
 using u8string = unicode_string_view::u8string;
@@ -211,23 +213,24 @@ void ContextifyModule::LoadUntrustedContent(const hippy::napi::CallbackInfo& inf
   loader->RequestUntrustedContent(uri, cb);
   info.GetReturnValue()->SetUndefined();
 }
-//
-//std::shared_ptr<CtxValue> ContextifyModule::BindFunction(std::shared_ptr<Scope> scope,
-//                                                         std::shared_ptr<CtxValue> rest_args[]) {
-//  auto context = scope->GetContext();
-//  auto object = context->CreateObject();
-//
-//  auto key = context->CreateString("RunInThisContext");
-//  auto wrapper = std::make_shared<hippy::napi::FuncWrapper>(InvokeContextifyModuleRunInThisContext, nullptr);
-//  auto value = context->CreateFunction(wrapper);
-//  scope->SaveFuncWrapper(wrapper);
-//  context->SetProperty(object, key, value);
-//
-//  key = context->CreateString("LoadUntrustedContent");
-//  wrapper = std::make_shared<hippy::napi::FuncWrapper>(InvokeContextifyModuleLoadUntrustedContent, nullptr);
-//  value = context->CreateFunction(wrapper);
-//  scope->SaveFuncWrapper(wrapper);
-//  context->SetProperty(object, key, value);
-//
-//  return object;
-//}
+
+std::shared_ptr<CtxValue> ContextifyModule::BindFunction(std::shared_ptr<Scope> scope,
+                                                         std::shared_ptr<CtxValue> rest_args[]) {
+  auto context = scope->GetContext();
+  auto object = context->CreateObject();
+
+  auto key = context->CreateString("RunInThisContext");
+  auto wrapper = std::make_shared<hippy::napi::FuncWrapper>(InvokeContextifyModuleRunInThisContext, nullptr);
+  auto value = context->CreateFunction(wrapper);
+  scope->SaveFuncWrapper(wrapper);
+  context->SetProperty(object, key, value);
+
+  key = context->CreateString("LoadUntrustedContent");
+  wrapper = std::make_shared<hippy::napi::FuncWrapper>(InvokeContextifyModuleLoadUntrustedContent, nullptr);
+  value = context->CreateFunction(wrapper);
+  scope->SaveFuncWrapper(wrapper);
+  context->SetProperty(object, key, value);
+
+  return object;
+}
+

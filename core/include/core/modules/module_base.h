@@ -25,17 +25,16 @@
 #include "base/unicode_string_view.h"
 #include "core/napi/callback_info.h"
 
-//#define GEN_INVOKE_CB_INTERNAL(Module, Function, Name)                                          \
-//  static void Name(const hippy::napi::CallbackInfo& info, void* data) {                         \
-//    auto scope_wrapper = reinterpret_cast<ScopeWrapper*>(std::any_cast<void*>(info.GetSlot())); \
-//    auto scope = scope_wrapper->scope.lock();                                                   \
-//    TDF_BASE_CHECK(scope);                                                                      \
-//    auto target = std::static_pointer_cast<Module>(scope->GetModuleObject(#Module));            \
-//    target->Function(info, data);                                                               \
-//  }
-//
-//#define GEN_INVOKE_CB(Module, Function) \
-//  GEN_INVOKE_CB_INTERNAL(Module, Function, Invoke##Module##Function)
+#define GEN_INVOKE_CB_INTERNAL(Module, Function, Name)                                          \
+  static void Name(const hippy::napi::CallbackInfo& info, void* data) {                         \
+    auto scope = info.GetScope();                                                   \
+    TDF_BASE_CHECK(scope);                                                                      \
+    auto target = std::static_pointer_cast<Module>(scope->GetModuleObject(#Module));            \
+    target->Function(info, data);                                                               \
+  }
+
+#define GEN_INVOKE_CB(Module, Function) \
+  GEN_INVOKE_CB_INTERNAL(Module, Function, Invoke##Module##Function)
 
 class ModuleBase {
  public:
@@ -46,5 +45,5 @@ class ModuleBase {
   ModuleBase() = default;
   virtual ~ModuleBase() = default;
 
-//  virtual std::shared_ptr<CtxValue> BindFunction(std::shared_ptr<Scope> scope, std::shared_ptr<CtxValue> rest_args[]) = 0;
+  virtual std::shared_ptr<CtxValue> BindFunction(std::shared_ptr<Scope> scope, std::shared_ptr<CtxValue> rest_args[]) = 0;
 };

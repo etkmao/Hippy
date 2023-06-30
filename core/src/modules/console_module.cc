@@ -37,6 +37,7 @@ using CtxValue = hippy::napi::CtxValue;
 using StringViewUtils = hippy::base::StringViewUtils;
 
 REGISTER_MODULE(ConsoleModule, Log) // NOLINT(cert-err58-cpp)
+GEN_INVOKE_CB(ConsoleModule, Log) // NOLINT(cert-err58-cpp)
 
 
 namespace {
@@ -100,17 +101,17 @@ void ConsoleModule::Log(const hippy::napi::CallbackInfo& info, void* data) { // 
   info.GetReturnValue()->SetUndefined();
 }
 
-//std::shared_ptr<CtxValue> ConsoleModule::BindFunction(std::shared_ptr<Scope> scope,
-//                                                      std::shared_ptr<CtxValue>* rest_args) {
-//  auto context = scope->GetContext();
-//  auto object = context->CreateObject();
-//
-//  auto key = context->CreateString("Log");
-//  auto wrapper = std::make_shared<hippy::napi::FuncWrapper>(
-//      InvokeConsoleModuleLog,nullptr);
-//  auto value = context->CreateFunction(wrapper);
-//  scope->SaveFuncWrapper(wrapper);
-//  context->SetProperty(object, key, value);
-//
-//  return object;
-//}
+std::shared_ptr<CtxValue> ConsoleModule::BindFunction(std::shared_ptr<Scope> scope,
+                                                      std::shared_ptr<CtxValue>* rest_args) {
+  auto context = scope->GetContext();
+  auto object = context->CreateObject();
+
+  auto key = context->CreateString("Log");
+  auto wrapper = std::make_shared<hippy::napi::FuncWrapper>(
+      InvokeConsoleModuleLog,nullptr);
+  auto value = context->CreateFunction(wrapper);
+  scope->SaveFuncWrapper(wrapper);
+  context->SetProperty(object, key, value);
+
+  return object;
+}
