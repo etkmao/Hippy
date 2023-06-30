@@ -56,6 +56,8 @@ class Scope {
   using UriLoader = hippy::base::UriLoader;
   using Encoding = hippy::napi::Encoding;
   using FuncWrapper = hippy::napi::FuncWrapper;
+  using FunctionData = hippy::napi::FunctionData;
+  using BindingData = hippy::napi::BindingData;
 
   Scope(std::weak_ptr<Engine> engine,
         std::string name,
@@ -66,8 +68,24 @@ class Scope {
   inline std::shared_ptr<Ctx> GetContext() { return context_; }
   inline std::unique_ptr<RegisterMap>& GetRegisterMap() { return map_; }
 
-  inline void SaveFuncWrapper(std::unique_ptr<hippy::napi::FuncWrapper> wrapper) {
-    func_wrapper_holder_.push_back(std::move(wrapper));
+  // TODO:added
+  
+  void Initialized();
+
+  ModuleBase* GetModuleClass(const unicode_string_view& moduleName);
+  void AddModuleClass(const unicode_string_view& name, std::unique_ptr<ModuleBase> module);
+  std::shared_ptr<CtxValue> GetModuleValue( const unicode_string_view& moduleName);
+  void AddModuleValue(const unicode_string_view& name, const std::shared_ptr<CtxValue>& value);
+  void SaveFunctionData(std::unique_ptr<FunctionData> data);
+  inline void SaveBindingData(std::unique_ptr<BindingData> data) { binding_data_ = std::move(data);}
+  inline const std::unique_ptr<BindingData>& GetBindingData() {
+    return binding_data_;
+  }
+    
+    
+    
+  inline void SaveFuncWrapper(std::shared_ptr<hippy::napi::FuncWrapper> wrapper) {
+    func_wrapper_holder_.push_back(wrapper);
   }
 
   inline std::shared_ptr<ModuleBase> GetModuleObject(const std::string& module_name) {
@@ -133,11 +151,19 @@ class Scope {
   std::shared_ptr<Ctx> context_;
   std::string name_;
   std::unique_ptr<RegisterMap> map_;
+  
+  // TODO:added
+  std::unordered_map<unicode_string_view, std::shared_ptr<CtxValue>> module_value_map_;
+  std::unordered_map<unicode_string_view, std::unique_ptr<ModuleBase>> module_class_map_;
+  std::vector<std::unique_ptr<FunctionData>> function_data_;
+  std::unique_ptr<BindingData> binding_data_;
+
+  
   std::unordered_map<std::string, std::shared_ptr<ModuleBase>> module_object_map_;
   std::vector<std::shared_ptr<CtxValue>> js_module_array;
   std::shared_ptr<UriLoader> loader_;
   std::unique_ptr<ScopeWrapper> wrapper_;
-  std::vector<std::unique_ptr<hippy::napi::FuncWrapper>> func_wrapper_holder_;
+  std::vector<std::shared_ptr<hippy::napi::FuncWrapper>> func_wrapper_holder_;
   std::unordered_map<std::string, std::shared_ptr<CtxValue>> turbo_instance_map_;
   std::unordered_map<std::string, std::any> turbo_host_object_map_;
 };

@@ -95,7 +95,7 @@ class JSCCtx : public Ctx {
     func_data_holder_.push_back(std::move(func_data));
   }
   
-  virtual std::shared_ptr<CtxValue> DefineProxy(const std::unique_ptr<FuncWrapper>& wrapper) override;
+  virtual std::shared_ptr<CtxValue> DefineProxy(const std::shared_ptr<FuncWrapper>& wrapper) override;
 
   virtual std::shared_ptr<CtxValue> DefineClass(unicode_string_view name,
                                                 const std::unique_ptr<FuncWrapper>& constructor_wrapper,
@@ -151,7 +151,7 @@ class JSCCtx : public Ctx {
       size_t argument_count = 0,
       const std::shared_ptr<CtxValue> argumets[] = nullptr) override;
   
-  virtual std::shared_ptr<CtxValue> CreateFunction(std::unique_ptr<FuncWrapper>& wrapper) override;
+  virtual std::shared_ptr<CtxValue> CreateFunction(std::shared_ptr<FuncWrapper>& wrapper) override;
 
   virtual bool GetValueNumber(const std::shared_ptr<CtxValue>& value, double* result) override;
   virtual bool GetValueNumber(const std::shared_ptr<CtxValue>& value, int32_t* result) override;
@@ -203,6 +203,15 @@ class JSCCtx : public Ctx {
   virtual void SetExternalData(void* data) override;
 
   unicode_string_view GetExceptionMsg(const std::shared_ptr<CtxValue>& exception);
+  
+  
+  // TODO:added
+  virtual void RegisterGlobalModule(const std::shared_ptr<Scope>& scope,
+                                    const ModuleClassMap& modules) override;
+  virtual void RegisterNativeBinding(const unicode_string_view& name,
+                                     hippy::base::RegisterFunction fn,
+                                     void* data) override;
+  
 
   JSGlobalContextRef context_;
   std::shared_ptr<JSCCtxValue> exception_;

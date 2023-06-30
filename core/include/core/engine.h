@@ -47,6 +47,12 @@ class Engine: public std::enable_shared_from_this<Engine> {
 
   Engine();
   virtual ~Engine();
+  
+  // TODO:added
+  std::shared_ptr<Scope> CreateScope(
+      const std::string& name = "",
+      std::unique_ptr<RegisterMap> map = std::unique_ptr<RegisterMap>());
+  
 
   void AsyncInit(const std::shared_ptr<VMInitParam>& param = nullptr,
                  std::unique_ptr<RegisterMap> map = std::make_unique<RegisterMap>());

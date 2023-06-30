@@ -25,14 +25,15 @@
 #include "base/logging.h"
 #include "core/base/common.h"
 #include "core/base/string_view_utils.h"
+#include "core/modules/module_register.h"
 #include "core/task/javascript_task.h"
 #include "core/task/javascript_task_runner.h"
 
 
-GEN_INVOKE_CB(TimerModule, SetTimeout) // NOLINT(cert-err58-cpp)
-GEN_INVOKE_CB(TimerModule, ClearTimeout) // NOLINT(cert-err58-cpp)
-GEN_INVOKE_CB(TimerModule, SetInterval) // NOLINT(cert-err58-cpp)
-GEN_INVOKE_CB(TimerModule, ClearInterval) // NOLINT(cert-err58-cpp)
+REGISTER_MODULE(TimerModule, SetTimeout) // NOLINT(cert-err58-cpp)
+REGISTER_MODULE(TimerModule, ClearTimeout) // NOLINT(cert-err58-cpp)
+REGISTER_MODULE(TimerModule, SetInterval) // NOLINT(cert-err58-cpp)
+REGISTER_MODULE(TimerModule, ClearInterval) // NOLINT(cert-err58-cpp)
 
 namespace napi = ::hippy::napi;
 
@@ -59,8 +60,8 @@ void TimerModule::SetInterval(const napi::CallbackInfo& info, void* data) {
 }
 
 void TimerModule::ClearInterval(const napi::CallbackInfo& info, void* data) {
-  auto scope_wrapper = reinterpret_cast<ScopeWrapper*>(std::any_cast<void*>(info.GetSlot()));
-  auto scope = scope_wrapper->scope.lock();
+//  auto scope_wrapper = reinterpret_cast<ScopeWrapper*>(std::any_cast<void*>(info.GetSlot()));
+  auto scope = info.GetScope();// scope_wrapper->scope.lock();
   TDF_BASE_CHECK(scope);
   auto context = scope->GetContext();
 
@@ -78,8 +79,8 @@ void TimerModule::ClearInterval(const napi::CallbackInfo& info, void* data) {
 std::shared_ptr<hippy::napi::CtxValue> TimerModule::Start(
     const napi::CallbackInfo& info,
     bool repeat) {
-  auto scope_wrapper = reinterpret_cast<ScopeWrapper*>(std::any_cast<void*>(info.GetSlot()));
-  auto scope = scope_wrapper->scope.lock();
+//  auto scope_wrapper = reinterpret_cast<ScopeWrapper*>(std::any_cast<void*>(info.GetSlot()));
+  auto scope = info.GetScope();// scope_wrapper->scope.lock();
   TDF_BASE_CHECK(scope);
   auto context = scope->GetContext();
 
@@ -168,35 +169,4 @@ void TimerModule::Cancel(TaskId task_id, const std::shared_ptr<Scope>& scope) {
   }
 }
 
-std::shared_ptr<CtxValue> TimerModule::BindFunction(std::shared_ptr<Scope> scope,
-                                                    std::shared_ptr<CtxValue>* rest_args) {
-  auto context = scope->GetContext();
-  auto object = context->CreateObject();
-
-  auto key = context->CreateString("SetTimeout");
-  auto wrapper = std::make_unique<hippy::napi::FuncWrapper>(InvokeTimerModuleSetTimeout,nullptr);
-  auto value = context->CreateFunction(wrapper);
-  scope->SaveFuncWrapper(std::move(wrapper));
-  context->SetProperty(object, key, value);
-
-  key = context->CreateString("ClearTimeout");
-  wrapper = std::make_unique<hippy::napi::FuncWrapper>(InvokeTimerModuleClearTimeout,nullptr);
-  value = context->CreateFunction(wrapper);
-  scope->SaveFuncWrapper(std::move(wrapper));
-  context->SetProperty(object, key, value);
-
-  key = context->CreateString("SetInterval");
-  wrapper = std::make_unique<hippy::napi::FuncWrapper>(InvokeTimerModuleSetInterval,nullptr);
-  value = context->CreateFunction(wrapper);
-  scope->SaveFuncWrapper(std::move(wrapper));
-  context->SetProperty(object, key, value);
-
-  key = context->CreateString("ClearInterval");
-  wrapper = std::make_unique<hippy::napi::FuncWrapper>(InvokeTimerModuleClearInterval,nullptr);
-  value = context->CreateFunction(wrapper);
-  scope->SaveFuncWrapper(std::move(wrapper));
-  context->SetProperty(object, key, value);
-
-  return object;
-}
 

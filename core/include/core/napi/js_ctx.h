@@ -34,6 +34,8 @@
 #include "core/napi/callback_info.h"
 #include "core/napi/js_ctx_value.h"
 
+class Scope;
+
 namespace hippy {
 namespace napi {
 
@@ -122,7 +124,7 @@ class Ctx {
   Ctx() {}
   virtual ~Ctx() { TDF_BASE_DLOG(INFO) << "~Ctx"; }
 
-  virtual std::shared_ptr<CtxValue> DefineProxy(const std::unique_ptr<FuncWrapper>& constructor_wrapper) = 0;
+  virtual std::shared_ptr<CtxValue> DefineProxy(const std::shared_ptr<FuncWrapper>& constructor_wrapper) = 0;
 
   virtual std::shared_ptr<CtxValue> DefineClass(unicode_string_view name,
                                                 const std::unique_ptr<FuncWrapper>& constructor_wrapper,
@@ -152,7 +154,7 @@ class Ctx {
       const unicode_string_view& string) = 0;
   virtual std::shared_ptr<CtxValue> CreateUndefined() = 0;
   virtual std::shared_ptr<CtxValue> CreateNull() = 0;
-  virtual std::shared_ptr<CtxValue> CreateFunction(std::unique_ptr<hippy::napi::FuncWrapper>& wrapper) = 0;
+  virtual std::shared_ptr<CtxValue> CreateFunction(std::shared_ptr<hippy::napi::FuncWrapper>& wrapper) = 0;
   virtual std::shared_ptr<CtxValue> CreateObject(const std::unordered_map<
   unicode_string_view,
   std::shared_ptr<CtxValue>>& object) = 0;
@@ -222,6 +224,31 @@ class Ctx {
       const std::shared_ptr<JSValueWrapper>& wrapper) = 0;
 
   virtual void SetExternalData(void* data) = 0;
+  
+  // TODO:added
+  virtual void RegisterGlobalModule(const std::shared_ptr<Scope>& scope,
+                                    const ModuleClassMap& modules) = 0;
+  virtual void RegisterNativeBinding(const unicode_string_view& name,
+                                     hippy::base::RegisterFunction fn,
+                                     void* data) = 0;
+};
+
+class BindingData {
+ public:
+  std::weak_ptr<Scope> scope_;
+  ModuleClassMap map_;
+
+  BindingData(std::weak_ptr<Scope> scope, ModuleClassMap map)
+      : scope_(scope), map_(map) {}
+};
+
+class FunctionData {
+ public:
+  std::weak_ptr<Scope> scope_;
+  JsCallback callback_;
+
+  FunctionData(std::weak_ptr<Scope> scope, JsCallback callback)
+      : scope_(scope), callback_(callback) {}
 };
 
 }

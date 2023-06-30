@@ -25,6 +25,7 @@
 #include "core/base/string_view_utils.h"
 #include "core/modules/module_base.h"
 #include "core/napi/callback_info.h"
+//#include "core/napi/js_ctx.h"
 #include "core/napi/js_ctx_value.h"
 
 class Scope;
@@ -33,13 +34,15 @@ class ContextifyModule : public ModuleBase {
  public:
   using unicode_string_view = tdf::base::unicode_string_view;
   using CtxValue = hippy::napi::CtxValue;
+//  using Ctx = hippy::napi::Ctx;
 
   ContextifyModule() {}
+//  ~ContextifyModule() {}
   void RunInThisContext(const hippy::napi::CallbackInfo& info, void* data);
   void LoadUntrustedContent(const hippy::napi::CallbackInfo& info, void* data);
   void RemoveCBFunc(const unicode_string_view& uri);
 
-  virtual std::shared_ptr<CtxValue> BindFunction(std::shared_ptr<Scope> scope, std::shared_ptr<CtxValue> rest_args[]) override;
+//  virtual std::shared_ptr<CtxValue> BindFunction(std::shared_ptr<Scope> scope, std::shared_ptr<CtxValue> rest_args[]) override;
  private:
   std::unordered_map<unicode_string_view, std::shared_ptr<CtxValue>> cb_func_map_;
 };

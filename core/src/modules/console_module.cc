@@ -27,6 +27,8 @@
 #include "base/logging.h"
 #include "core/base/string_view_utils.h"
 #include "core/scope.h"
+#include "core/napi/callback_info.h"
+#include "core/modules/module_register.h"
 
 
 using unicode_string_view = tdf::base::unicode_string_view;
@@ -34,7 +36,8 @@ using Ctx = hippy::napi::Ctx;
 using CtxValue = hippy::napi::CtxValue;
 using StringViewUtils = hippy::base::StringViewUtils;
 
-GEN_INVOKE_CB(ConsoleModule, Log) // NOLINT(cert-err58-cpp)
+REGISTER_MODULE(ConsoleModule, Log) // NOLINT(cert-err58-cpp)
+
 
 namespace {
 
@@ -56,8 +59,8 @@ unicode_string_view EscapeMessage(const unicode_string_view& str_view) {
 }  // namespace
 
 void ConsoleModule::Log(const hippy::napi::CallbackInfo& info, void* data) { // NOLINT(readability-convert-member-functions-to-static)
-  auto scope_wrapper = reinterpret_cast<ScopeWrapper*>(std::any_cast<void*>(info.GetSlot()));
-  auto scope = scope_wrapper->scope.lock();
+//  auto scope_wrapper = reinterpret_cast<ScopeWrapper*>(std::any_cast<void*>(info.GetSlot()));
+  auto scope = info.GetScope();// scope_wrapper->scope.lock();
   TDF_BASE_CHECK(scope);
   auto context = scope->GetContext();
   TDF_BASE_CHECK(context);
@@ -97,17 +100,17 @@ void ConsoleModule::Log(const hippy::napi::CallbackInfo& info, void* data) { // 
   info.GetReturnValue()->SetUndefined();
 }
 
-std::shared_ptr<CtxValue> ConsoleModule::BindFunction(std::shared_ptr<Scope> scope,
-                                                      std::shared_ptr<CtxValue>* rest_args) {
-  auto context = scope->GetContext();
-  auto object = context->CreateObject();
-
-  auto key = context->CreateString("Log");
-  auto wrapper = std::make_unique<hippy::napi::FuncWrapper>(
-      InvokeConsoleModuleLog,nullptr);
-  auto value = context->CreateFunction(wrapper);
-  scope->SaveFuncWrapper(std::move(wrapper));
-  context->SetProperty(object, key, value);
-
-  return object;
-}
+//std::shared_ptr<CtxValue> ConsoleModule::BindFunction(std::shared_ptr<Scope> scope,
+//                                                      std::shared_ptr<CtxValue>* rest_args) {
+//  auto context = scope->GetContext();
+//  auto object = context->CreateObject();
+//
+//  auto key = context->CreateString("Log");
+//  auto wrapper = std::make_shared<hippy::napi::FuncWrapper>(
+//      InvokeConsoleModuleLog,nullptr);
+//  auto value = context->CreateFunction(wrapper);
+//  scope->SaveFuncWrapper(wrapper);
+//  context->SetProperty(object, key, value);
+//
+//  return object;
+//}

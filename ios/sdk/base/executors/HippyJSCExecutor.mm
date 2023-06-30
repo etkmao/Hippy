@@ -172,10 +172,15 @@ HIPPY_EXPORT_MODULE()
         std::shared_ptr<Engine> engine = [[HippyJSEnginesMapper defaultInstance] createJSEngineForKey:self.executorkey];
         std::unique_ptr<Engine::RegisterMap> map = [self registerMap];
         const char *pName = [execurotkey UTF8String] ?: "";
-        std::shared_ptr<Scope> scope = engine->AsyncCreateScope(pName, {}, std::move(map));
+      
+      // TOOD:added
+      std::shared_ptr<Scope> scope = engine->CreateScope(pName, std::move(map));
+      
+//        std::shared_ptr<Scope> scope = engine->AsyncCreateScope(pName, {}, std::move(map));
         self.pScope = scope;
         [self initURILoader];
         HippyLogInfo(@"[Hippy_OC_Log][Life_Circle],HippyJSCExecutor Init %p, execurotkey:%@", self, execurotkey);
+      
     }
 
     return self;
@@ -349,19 +354,19 @@ static unicode_string_view NSStringToU8(NSString* str) {
       auto jsc_instance = std::static_pointer_cast<hippy::napi::JSCCtxValue>(instance);
       return jsc_instance->value_;
     }
-    auto wrapper = std::make_unique<FuncWrapper>([](const CallbackInfo& info, void* data) {
+    auto wrapper = std::make_shared<FuncWrapper>([](const CallbackInfo& info, void* data) {
       auto name = info[0];
       if (!name) {
         return;
       }
       HippyOCTurboModule *turbo = (__bridge HippyOCTurboModule*) data;
       auto turbo_wrapper = std::make_unique<TurboWrapper>(turbo, info[0]);
-      auto func_wrapper = std::make_unique<FuncWrapper>([](const CallbackInfo& info, void* data) {
+      auto func_wrapper = std::make_shared<FuncWrapper>([](const CallbackInfo& info, void* data) {
         std::vector<std::shared_ptr<CtxValue>> argv;
         for (size_t i = 0; i < info.Length(); ++i) {
           argv.push_back(info[i]);
         }
-        auto scope_wrapper = reinterpret_cast<ScopeWrapper*>(std::any_cast<void*>(info.GetSlot()));
+        auto scope_wrapper = reinterpret_cast<ScopeWrapper*>(0);
         auto scope = scope_wrapper->scope.lock();
         TDF_BASE_CHECK(scope);
         auto turbo_wrapper = reinterpret_cast<TurboWrapper*>(data);
@@ -371,15 +376,15 @@ static unicode_string_view NSStringToU8(NSString* str) {
         info.GetReturnValue()->Set(result);
       }, turbo_wrapper.get());
       [turbo saveTurboWrapper:name turbo:std::move(turbo_wrapper)];
-      auto scope_wrapper = reinterpret_cast<ScopeWrapper*>(std::any_cast<void*>(info.GetSlot()));
+      auto scope_wrapper = reinterpret_cast<ScopeWrapper*>(0);
       auto scope = scope_wrapper->scope.lock();
       TDF_BASE_CHECK(scope);
       auto func = scope->GetContext()->CreateFunction(func_wrapper);
-      scope->SaveFuncWrapper(std::move(func_wrapper));
+      scope->SaveFuncWrapper(func_wrapper);
       info.GetReturnValue()->Set(func);
     }, (__bridge void*)turboModule);
     auto obj = scope->GetContext()->DefineProxy(wrapper);
-    scope->SaveFuncWrapper(std::move(wrapper));
+    scope->SaveFuncWrapper(wrapper);
     scope->SetTurboInstance(turbo_name, obj);
     auto jsc_obj = std::static_pointer_cast<hippy::napi::JSCCtxValue>(obj);
     return jsc_obj->value_;

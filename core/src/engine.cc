@@ -112,3 +112,23 @@ int32_t Engine::SyncInit(const std::shared_ptr<VM>& vm) {
   vm_ = vm;
   return 0;
 }
+
+// TODO:added
+std::shared_ptr<Scope> Engine::CreateScope(const std::string& name,
+                                           std::unique_ptr<RegisterMap> map) {
+  TDF_BASE_DLOG(INFO) << "Engine CreateScope";
+  std::shared_ptr<Scope> scope =
+      std::make_shared<Scope>(weak_from_this(), name, std::move(map));
+  scope->wrapper_ = std::make_unique<ScopeWrapper>(scope);
+
+  if (js_runner_->IsJsThread()) {
+    scope->Initialized();
+  } else {
+    auto task = std::make_shared<JavaScriptTask>();
+    task->callback = [scope_ = scope] { scope_->Initialized(); };
+    js_runner_->PostTask(std::move(task));
+  }
+
+  return scope;
+}
+

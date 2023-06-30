@@ -29,6 +29,8 @@
 #include "core/vm/native_source_code.h"
 #include "core/vm/jsc/jsc_vm.h"
 
+#include "core/scope.h"
+
 namespace hippy {
 namespace napi {
 
@@ -36,6 +38,7 @@ using unicode_string_view = tdf::base::unicode_string_view;
 using StringViewUtils = hippy::base::StringViewUtils;
 using JSValueWrapper = hippy::base::JSValueWrapper;
 using JSCVM = hippy::vm::JSCVM;
+using ModuleClass = hippy::napi::ModuleClass;
 
 const char kFunctionName[] = "Function";
 
@@ -53,10 +56,10 @@ JSValueRef InvokeJsCallback(JSContextRef ctx,
   auto func_wrapper = reinterpret_cast<FuncWrapper*>(func_data->func_wrapper);
   auto js_cb = func_wrapper->cb;
   void* external_data = func_wrapper->data;
-  CallbackInfo cb_info;
-  cb_info.SetSlot(func_data->global_external_data);
+  CallbackInfo cb_info(nullptr);
+//  cb_info.SetSlot(func_data->global_external_data);
   auto context = const_cast<JSGlobalContextRef>(ctx);
-  cb_info.SetReceiver(std::make_shared<JSCCtxValue>(context, object));
+//  cb_info.SetReceiver(std::make_shared<JSCCtxValue>(context, object));
   for (size_t i = 0; i < argumentCount; i++) {
     cb_info.AddValue(std::make_shared<JSCCtxValue>(context, arguments[i]));
   }
@@ -76,21 +79,21 @@ JSValueRef InvokeJsCallback(JSContextRef ctx,
   return valueRef;
 }
 
-std::shared_ptr<CtxValue> JSCCtx::CreateFunction(std::unique_ptr<FuncWrapper>& wrapper) {
+std::shared_ptr<CtxValue> JSCCtx::CreateFunction(std::shared_ptr<FuncWrapper>& wrapper) {
   auto func_data = std::make_unique<FuncData>(external_data_, reinterpret_cast<void*>(wrapper.get()));
   JSClassDefinition fn_def = kJSClassDefinitionEmpty;
   fn_def.callAsFunction = InvokeJsCallback;
-  fn_def.attributes = kJSClassAttributeNoAutomaticPrototype;
-  fn_def.initialize = [](JSContextRef ctx, JSObjectRef object) {
-    JSObjectRef global = JSContextGetGlobalObject(ctx);
-    JSValueRef value = JSObjectGetProperty(ctx, global, JSStringCreateWithUTF8CString(kFunctionName), nullptr);
-    JSObjectRef base_func = JSValueToObject(ctx, value, nullptr);
-    if (!base_func) {
-      return;
-    }
-    JSValueRef proto = JSObjectGetPrototype(ctx, base_func);
-    JSObjectSetPrototype(ctx, object, proto);
-  };
+//  fn_def.attributes = kJSClassAttributeNoAutomaticPrototype;
+//  fn_def.initialize = [](JSContextRef ctx, JSObjectRef object) {
+//    JSObjectRef global = JSContextGetGlobalObject(ctx);
+//    JSValueRef value = JSObjectGetProperty(ctx, global, JSStringCreateWithUTF8CString(kFunctionName), nullptr);
+//    JSObjectRef base_func = JSValueToObject(ctx, value, nullptr);
+//    if (!base_func) {
+//      return;
+//    }
+//    JSValueRef proto = JSObjectGetPrototype(ctx, base_func);
+//    JSObjectSetPrototype(ctx, object, proto);
+//  };
   JSClassRef cls_ref = JSClassCreate(&fn_def);
   JSObjectRef fn_obj = JSObjectMake(context_, cls_ref, func_data.get());
   JSClassRelease(cls_ref);
@@ -109,9 +112,9 @@ static JSValueRef JSObjectGetPropertyCallback(
   auto func_wrapper = reinterpret_cast<FuncWrapper*>(func_data->func_wrapper);
   auto js_cb = func_wrapper->cb;
   void* external_data = func_wrapper->data;
-  CallbackInfo cb_info;
-  cb_info.SetSlot(func_data->global_external_data);
-  cb_info.SetReceiver(std::make_shared<JSCCtxValue>(context, object));
+  CallbackInfo cb_info(nullptr);
+//  cb_info.SetSlot(func_data->global_external_data);
+//  cb_info.SetReceiver(std::make_shared<JSCCtxValue>(context, object));
 
   JSValueRef name_ref = JSValueMakeString(context, name);
   cb_info.AddValue(std::make_shared<JSCCtxValue>(context, name_ref));
@@ -131,7 +134,7 @@ static JSValueRef JSObjectGetPropertyCallback(
   return valueRef;
 }
 
-std::shared_ptr<CtxValue>  JSCCtx::DefineProxy(const std::unique_ptr<FuncWrapper>& wrapper) {
+std::shared_ptr<CtxValue>  JSCCtx::DefineProxy(const std::shared_ptr<FuncWrapper>& wrapper) {
   JSClassDefinition cls_def = kJSClassDefinitionEmpty;
   cls_def.getProperty = JSObjectGetPropertyCallback;
   auto cls_ref = JSClassCreate(&cls_def);
@@ -918,6 +921,107 @@ bool JSCCtx::IsNullOrUndefined(const std::shared_ptr<CtxValue>& value) {
   JSValueRef value_ref = ctx_value->value_;
   return (JSValueIsNull(context_, value_ref) || JSValueIsUndefined(context_, value_ref));
 }
+
+// TODO:added
+JSValueRef JsCallbackFunc(JSContextRef ctx,
+                          JSObjectRef function,
+                          JSObjectRef thisObject,
+                          size_t argumentCount,
+                          const JSValueRef arguments[],
+                          JSValueRef* exception_ref) {
+  void* data = JSObjectGetPrivate(function);
+  if (!data) {
+    return JSValueMakeUndefined(ctx);
+  }
+  FunctionData* fn_data = reinterpret_cast<FunctionData*>(data);
+  std::shared_ptr<Scope> scope = fn_data->scope_.lock();
+  if (!scope) {
+    return JSValueMakeUndefined(ctx);
+  }
+  JsCallback cb = fn_data->callback_;
+  std::shared_ptr<JSCCtx> context =
+      std::static_pointer_cast<JSCCtx>(scope->GetContext());
+  CallbackInfo info{scope};
+
+  
+  for (size_t i = 0; i < argumentCount; i++) {
+    info.AddValue(
+        std::make_shared<JSCCtxValue>(context->GetCtxRef(), arguments[i]));
+  }
+  cb(info, 0);
+
+  std::shared_ptr<JSCCtxValue> exception =
+      std::static_pointer_cast<JSCCtxValue>(info.GetExceptionValue()->Get());
+  if (exception) {
+    *exception_ref = exception->value_;
+    return JSValueMakeUndefined(ctx);
+  }
+
+  std::shared_ptr<JSCCtxValue> ret_value =
+      std::static_pointer_cast<JSCCtxValue>(info.GetReturnValue()->Get());
+  if (!ret_value) {
+    return JSValueMakeUndefined(ctx);
+  }
+
+  JSValueRef valueRef = ret_value->value_;
+  return valueRef;
+}
+
+JSObjectRef RegisterModule(std::shared_ptr<Scope> scope,
+                           JSContextRef ctx,
+                           const unicode_string_view& module_name,
+                           ModuleClass module) {
+  JSClassDefinition cls_def = kJSClassDefinitionEmpty;
+  TDF_BASE_DCHECK(module_name.encoding() ==
+                  unicode_string_view::Encoding::Latin1);
+  cls_def.className = module_name.latin1_value().c_str();
+  JSClassRef cls_ref = JSClassCreate(&cls_def);
+  JSObjectRef module_obj = JSObjectMake(ctx, cls_ref, nullptr);
+  JSClassRelease(cls_ref);
+  for (auto fn : module) {
+    JSClassDefinition fn_def = kJSClassDefinitionEmpty;
+    TDF_BASE_DCHECK(fn.first.encoding() ==
+                    unicode_string_view::Encoding::Latin1);
+    fn_def.className = fn.first.latin1_value().c_str();
+    fn_def.callAsFunction = JsCallbackFunc;
+    std::unique_ptr<FunctionData> fn_data =
+        std::make_unique<FunctionData>(scope, fn.second);
+    JSClassRef fn_ref = JSClassCreate(&fn_def);
+    JSObjectRef fn_obj =
+        JSObjectMake(ctx, fn_ref, reinterpret_cast<void*>(fn_data.get()));
+    JSStringRef fn_str_ref = JSStringCreateWithUTF8CString(fn_def.className);
+    JSObjectSetProperty(ctx, module_obj, fn_str_ref, fn_obj,
+                        kJSPropertyAttributeReadOnly, nullptr);
+    JSStringRelease(fn_str_ref);
+    JSClassRelease(fn_ref);
+    scope->SaveFunctionData(std::move(fn_data));
+  }
+
+  std::shared_ptr<JSCCtx> context =
+      std::static_pointer_cast<JSCCtx>(scope->GetContext());
+  std::shared_ptr<JSCCtxValue> module_value =
+      std::make_shared<JSCCtxValue>(context->GetCtxRef(), module_obj);
+  scope->AddModuleValue(module_name, module_value);
+  return module_obj;
+}
+
+void JSCCtx::RegisterGlobalModule(const std::shared_ptr<Scope>& scope,
+                                  const ModuleClassMap& module_cls_map) {
+  std::shared_ptr<JSCCtx> ctx =
+      std::static_pointer_cast<JSCCtx>(scope->GetContext());
+  JSGlobalContextRef ctx_ref = ctx->GetCtxRef();
+  for (const auto& module : module_cls_map) {
+    RegisterModule(scope, ctx_ref, module.first, module.second);
+  }
+}
+
+void JSCCtx::RegisterNativeBinding(const unicode_string_view& name,
+                                   hippy::base::RegisterFunction fn,
+                                   void* data) {
+  TDF_BASE_UNIMPLEMENTED();
+}
+
+
 
 }  // namespace napi
 }  // namespace hippy

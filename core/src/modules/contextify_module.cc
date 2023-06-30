@@ -30,14 +30,17 @@
 #include "core/base/uri_loader.h"
 #include "core/napi/js_try_catch.h"
 #include "core/task/common_task.h"
+#include "core/modules/module_register.h"
 #include "core/task/javascript_task.h"
 #include "core/vm/native_source_code.h"
 #if JS_V8
 #include "core/napi/v8/v8_ctx.h"
 #endif
 
-GEN_INVOKE_CB(ContextifyModule, RunInThisContext) // NOLINT(cert-err58-cpp)
-GEN_INVOKE_CB(ContextifyModule, LoadUntrustedContent) // NOLINT(cert-err58-cpp)
+
+
+REGISTER_MODULE(ContextifyModule, RunInThisContext) // NOLINT(cert-err58-cpp)
+REGISTER_MODULE(ContextifyModule, LoadUntrustedContent) // NOLINT(cert-err58-cpp)
 
 using unicode_string_view = tdf::base::unicode_string_view;
 using u8string = unicode_string_view::u8string;
@@ -51,8 +54,8 @@ using StringViewUtils = hippy::base::StringViewUtils;
 constexpr char kCurDir[] = "__HIPPYCURDIR__";
 
 void ContextifyModule::RunInThisContext(const hippy::napi::CallbackInfo& info, void* data) { // NOLINT(readability-convert-member-functions-to-static)
-  auto scope_wrapper = reinterpret_cast<ScopeWrapper*>(std::any_cast<void*>(info.GetSlot()));
-  auto scope = scope_wrapper->scope.lock();
+//  auto scope_wrapper = reinterpret_cast<ScopeWrapper*>(std::any_cast<void*>(info.GetSlot()));
+  auto scope = info.GetScope();// scope_wrapper->scope.lock();
   TDF_BASE_CHECK(scope);
   auto context = scope->GetContext();
 #ifdef JS_V8
@@ -93,9 +96,9 @@ void ContextifyModule::RemoveCBFunc(const unicode_string_view& uri) {
   cb_func_map_.erase(uri);
 }
 
-void ContextifyModule::LoadUntrustedContent(const CallbackInfo& info, void* data) {
-  auto scope_wrapper = reinterpret_cast<ScopeWrapper*>(std::any_cast<void*>(info.GetSlot()));
-  auto scope = scope_wrapper->scope.lock();
+void ContextifyModule::LoadUntrustedContent(const hippy::napi::CallbackInfo& info, void* data) {
+//  auto scope_wrapper = reinterpret_cast<ScopeWrapper*>(std::any_cast<void*>(info.GetSlot()));
+  auto scope = info.GetScope();// scope_wrapper->scope.lock();
   TDF_BASE_CHECK(scope);
   auto context = scope->GetContext();
   unicode_string_view uri;
@@ -208,23 +211,23 @@ void ContextifyModule::LoadUntrustedContent(const CallbackInfo& info, void* data
   loader->RequestUntrustedContent(uri, cb);
   info.GetReturnValue()->SetUndefined();
 }
-
-std::shared_ptr<CtxValue> ContextifyModule::BindFunction(std::shared_ptr<Scope> scope,
-                                                         std::shared_ptr<CtxValue> rest_args[]) {
-  auto context = scope->GetContext();
-  auto object = context->CreateObject();
-
-  auto key = context->CreateString("RunInThisContext");
-  auto wrapper = std::make_unique<hippy::napi::FuncWrapper>(InvokeContextifyModuleRunInThisContext, nullptr);
-  auto value = context->CreateFunction(wrapper);
-  scope->SaveFuncWrapper(std::move(wrapper));
-  context->SetProperty(object, key, value);
-
-  key = context->CreateString("LoadUntrustedContent");
-  wrapper = std::make_unique<hippy::napi::FuncWrapper>(InvokeContextifyModuleLoadUntrustedContent, nullptr);
-  value = context->CreateFunction(wrapper);
-  scope->SaveFuncWrapper(std::move(wrapper));
-  context->SetProperty(object, key, value);
-
-  return object;
-}
+//
+//std::shared_ptr<CtxValue> ContextifyModule::BindFunction(std::shared_ptr<Scope> scope,
+//                                                         std::shared_ptr<CtxValue> rest_args[]) {
+//  auto context = scope->GetContext();
+//  auto object = context->CreateObject();
+//
+//  auto key = context->CreateString("RunInThisContext");
+//  auto wrapper = std::make_shared<hippy::napi::FuncWrapper>(InvokeContextifyModuleRunInThisContext, nullptr);
+//  auto value = context->CreateFunction(wrapper);
+//  scope->SaveFuncWrapper(wrapper);
+//  context->SetProperty(object, key, value);
+//
+//  key = context->CreateString("LoadUntrustedContent");
+//  wrapper = std::make_shared<hippy::napi::FuncWrapper>(InvokeContextifyModuleLoadUntrustedContent, nullptr);
+//  value = context->CreateFunction(wrapper);
+//  scope->SaveFuncWrapper(wrapper);
+//  context->SetProperty(object, key, value);
+//
+//  return object;
+//}
