@@ -108,12 +108,15 @@ JSValueRef InvokeJsCallback2(JSContextRef ctx,
       std::static_pointer_cast<JSCCtx>(scope->GetContext());
   
   auto context2 = const_cast<JSGlobalContextRef>(ctx);
+  context2 = JSContextGetGlobalContext(ctx);
+
+  printf("xxxx, context:%p, %p", context->GetCtxRef(), context2);
   
   CallbackInfo info{scope};
   for (size_t i = 0; i < argumentCount; i++) {
     info.AddValue(
-        std::make_shared<JSCCtxValue>(context->GetCtxRef(),
-                                      //context2,
+        std::make_shared<JSCCtxValue>(//context->GetCtxRef(),
+                                      context2,
                                       arguments[i]));
   }
   cb(info, 0);
