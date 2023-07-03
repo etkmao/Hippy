@@ -112,8 +112,8 @@ JSValueRef InvokeJsCallback2(JSContextRef ctx,
   CallbackInfo info{scope};
   for (size_t i = 0; i < argumentCount; i++) {
     info.AddValue(
-        std::make_shared<JSCCtxValue>(//context->GetCtxRef(),
-                                      context2,
+        std::make_shared<JSCCtxValue>(context->GetCtxRef(),
+                                      //context2,
                                       arguments[i]));
   }
   cb(info, 0);
