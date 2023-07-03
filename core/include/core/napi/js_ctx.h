@@ -155,6 +155,7 @@ class Ctx {
   virtual std::shared_ptr<CtxValue> CreateUndefined() = 0;
   virtual std::shared_ptr<CtxValue> CreateNull() = 0;
   virtual std::shared_ptr<CtxValue> CreateFunction(std::shared_ptr<hippy::napi::FuncWrapper>& wrapper) = 0;
+  virtual std::shared_ptr<CtxValue> CreateFunction2(std::shared_ptr<Scope> scope, hippy::napi::JsCallback jscall) = 0;
   virtual std::shared_ptr<CtxValue> CreateObject(const std::unordered_map<
   unicode_string_view,
   std::shared_ptr<CtxValue>>& object) = 0;

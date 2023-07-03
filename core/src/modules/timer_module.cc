@@ -47,6 +47,8 @@ using CtxValue = hippy::napi::CtxValue;
 using RegisterFunction = hippy::base::RegisterFunction;
 using RegisterMap = hippy::base::RegisterMap;
 
+extern std::unique_ptr<hippy::napi::BindingData> binding_data_;
+
 TimerModule::TimerModule() = default;
 
 TimerModule::~TimerModule() = default;
@@ -178,28 +180,35 @@ std::shared_ptr<CtxValue> TimerModule::BindFunction(std::shared_ptr<Scope> scope
                                                     std::shared_ptr<CtxValue>* rest_args) {
   auto context = scope->GetContext();
   auto object = context->CreateObject();
+  
+  hippy::napi::ModuleClassMap module_class_map = binding_data_->map_;
+  auto it = module_class_map.find("TimerModule");
 
   auto key = context->CreateString("SetTimeout");
   auto wrapper = std::make_shared<hippy::napi::FuncWrapper>(InvokeTimerModuleSetTimeout,nullptr);
-  auto value = context->CreateFunction(wrapper);
+//  auto value = context->CreateFunction(wrapper);
+  auto value = context->CreateFunction2(scope, it->second["SetTimeout"]);
   scope->SaveFuncWrapper(std::move(wrapper));
   context->SetProperty(object, key, value);
 
   key = context->CreateString("ClearTimeout");
   wrapper = std::make_shared<hippy::napi::FuncWrapper>(InvokeTimerModuleClearTimeout,nullptr);
-  value = context->CreateFunction(wrapper);
+//  value = context->CreateFunction(wrapper);
+  value = context->CreateFunction2(scope, it->second["ClearTimeout"]);
   scope->SaveFuncWrapper(std::move(wrapper));
   context->SetProperty(object, key, value);
 
   key = context->CreateString("SetInterval");
   wrapper = std::make_shared<hippy::napi::FuncWrapper>(InvokeTimerModuleSetInterval,nullptr);
-  value = context->CreateFunction(wrapper);
+//  value = context->CreateFunction(wrapper);
+  value = context->CreateFunction2(scope, it->second["SetInterval"]);
   scope->SaveFuncWrapper(std::move(wrapper));
   context->SetProperty(object, key, value);
 
   key = context->CreateString("ClearInterval");
   wrapper = std::make_shared<hippy::napi::FuncWrapper>(InvokeTimerModuleClearInterval,nullptr);
-  value = context->CreateFunction(wrapper);
+//  value = context->CreateFunction(wrapper);
+  value = context->CreateFunction2(scope, it->second["ClearInterval"]);
   scope->SaveFuncWrapper(std::move(wrapper));
   context->SetProperty(object, key, value);
 

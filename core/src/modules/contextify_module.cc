@@ -53,6 +53,8 @@ using TryCatch = hippy::napi::TryCatch;
 using UriLoader = hippy::base::UriLoader;
 using StringViewUtils = hippy::base::StringViewUtils;
 
+extern std::unique_ptr<hippy::napi::BindingData> binding_data_;
+
 constexpr char kCurDir[] = "__HIPPYCURDIR__";
 
 void ContextifyModule::RunInThisContext(const hippy::napi::CallbackInfo& info, void* data) { // NOLINT(readability-convert-member-functions-to-static)
@@ -218,16 +220,21 @@ std::shared_ptr<CtxValue> ContextifyModule::BindFunction(std::shared_ptr<Scope> 
                                                          std::shared_ptr<CtxValue> rest_args[]) {
   auto context = scope->GetContext();
   auto object = context->CreateObject();
+  
+  hippy::napi::ModuleClassMap module_class_map = binding_data_->map_;
+  auto it = module_class_map.find("ContextifyModule");
 
   auto key = context->CreateString("RunInThisContext");
   auto wrapper = std::make_shared<hippy::napi::FuncWrapper>(InvokeContextifyModuleRunInThisContext, nullptr);
-  auto value = context->CreateFunction(wrapper);
+//  auto value = context->CreateFunction(wrapper);
+  auto value = context->CreateFunction2(scope, it->second["RunInThisContext"]);
   scope->SaveFuncWrapper(wrapper);
   context->SetProperty(object, key, value);
 
   key = context->CreateString("LoadUntrustedContent");
   wrapper = std::make_shared<hippy::napi::FuncWrapper>(InvokeContextifyModuleLoadUntrustedContent, nullptr);
-  value = context->CreateFunction(wrapper);
+//  value = context->CreateFunction(wrapper);
+  value = context->CreateFunction2(scope, it->second["LoadUntrustedContent"]);
   scope->SaveFuncWrapper(wrapper);
   context->SetProperty(object, key, value);
 

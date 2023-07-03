@@ -152,7 +152,7 @@ class JSCCtx : public Ctx {
       const std::shared_ptr<CtxValue> argumets[] = nullptr) override;
   
   virtual std::shared_ptr<CtxValue> CreateFunction(std::shared_ptr<FuncWrapper>& wrapper) override;
-
+  virtual std::shared_ptr<CtxValue> CreateFunction2(std::shared_ptr<Scope> scope, hippy::napi::JsCallback jscall) override;
   virtual bool GetValueNumber(const std::shared_ptr<CtxValue>& value, double* result) override;
   virtual bool GetValueNumber(const std::shared_ptr<CtxValue>& value, int32_t* result) override;
   virtual bool GetValueBoolean(const std::shared_ptr<CtxValue>& value, bool* result) override;

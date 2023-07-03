@@ -39,6 +39,7 @@ using StringViewUtils = hippy::base::StringViewUtils;
 REGISTER_MODULE(ConsoleModule, Log) // NOLINT(cert-err58-cpp)
 GEN_INVOKE_CB(ConsoleModule, Log) // NOLINT(cert-err58-cpp)
 
+extern std::unique_ptr<hippy::napi::BindingData> binding_data_;
 
 namespace {
 
@@ -106,10 +107,14 @@ std::shared_ptr<CtxValue> ConsoleModule::BindFunction(std::shared_ptr<Scope> sco
   auto context = scope->GetContext();
   auto object = context->CreateObject();
 
+  hippy::napi::ModuleClassMap module_class_map = binding_data_->map_;
+  auto it = module_class_map.find("ConsoleModule");
+  
   auto key = context->CreateString("Log");
   auto wrapper = std::make_shared<hippy::napi::FuncWrapper>(
       InvokeConsoleModuleLog,nullptr);
-  auto value = context->CreateFunction(wrapper);
+//  auto value = context->CreateFunction(wrapper);
+  auto value = context->CreateFunction2(scope, it->second["Log"]);
   scope->SaveFuncWrapper(wrapper);
   context->SetProperty(object, key, value);
 

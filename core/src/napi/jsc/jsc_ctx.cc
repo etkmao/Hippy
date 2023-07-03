@@ -80,6 +80,67 @@ JSValueRef InvokeJsCallback(JSContextRef ctx,
   return valueRef;
 }
 
+JSValueRef InvokeJsCallback2(JSContextRef ctx,
+                            JSObjectRef function,
+                            JSObjectRef object,
+                            size_t argumentCount,
+                            const JSValueRef arguments[],
+                            JSValueRef* exception_ref) {
+  void* data = JSObjectGetPrivate(function);
+  if (!data) {
+    return JSValueMakeUndefined(ctx);
+  }
+  
+  FunctionData* fn_data = reinterpret_cast<FunctionData*>(data);
+  std::shared_ptr<Scope> scope = fn_data->scope_.lock();
+  if (!scope) {
+    return JSValueMakeUndefined(ctx);
+  }
+//
+//  FuncData* func_data = reinterpret_cast<FuncData*>(data);
+//  auto func_wrapper = reinterpret_cast<FuncWrapper*>(func_data->func_wrapper);
+//  auto js_cb = func_wrapper->cb;
+//  void* external_data = func_wrapper->data;
+//  ScopeWrapper* wr = (ScopeWrapper*)func_data->global_external_data;
+  
+  JsCallback cb = fn_data->callback_;
+  std::shared_ptr<JSCCtx> context =
+      std::static_pointer_cast<JSCCtx>(scope->GetContext());
+  
+  auto context2 = const_cast<JSGlobalContextRef>(ctx);
+  
+  CallbackInfo info{scope};
+  for (size_t i = 0; i < argumentCount; i++) {
+    info.AddValue(
+        std::make_shared<JSCCtxValue>(//context->GetCtxRef(),
+                                      context2,
+                                      arguments[i]));
+  }
+  cb(info, 0);
+  
+//  CallbackInfo cb_info(scope);
+//  cb_info.SetSlot(func_data->global_external_data);
+//  auto context = const_cast<JSGlobalContextRef>(ctx);
+//  cb_info.SetReceiver(std::make_shared<JSCCtxValue>(context, object));
+//  for (size_t i = 0; i < argumentCount; i++) {
+//    cb_info.AddValue(std::make_shared<JSCCtxValue>(context, arguments[i]));
+//  }
+//  js_cb(cb_info, external_data);
+  auto exception = std::static_pointer_cast<JSCCtxValue>(info.GetExceptionValue()->Get());
+  if (exception) {
+    *exception_ref = exception->value_;
+    return JSValueMakeUndefined(ctx);
+  }
+
+  auto ret_value = std::static_pointer_cast<JSCCtxValue>(info.GetReturnValue()->Get());
+  if (!ret_value) {
+    return JSValueMakeUndefined(ctx);
+  }
+
+  JSValueRef valueRef = ret_value->value_;
+  return valueRef;
+}
+
 std::shared_ptr<CtxValue> JSCCtx::CreateFunction(std::shared_ptr<FuncWrapper>& wrapper) {
   auto func_data = std::make_unique<FuncData>(external_data_, reinterpret_cast<void*>(wrapper.get()));
   JSClassDefinition fn_def = kJSClassDefinitionEmpty;
@@ -99,6 +160,21 @@ std::shared_ptr<CtxValue> JSCCtx::CreateFunction(std::shared_ptr<FuncWrapper>& w
   JSObjectRef fn_obj = JSObjectMake(context_, cls_ref, func_data.get());
   JSClassRelease(cls_ref);
   SaveFuncData(std::move(func_data));
+  return std::make_shared<JSCCtxValue>(context_, fn_obj);
+}
+
+std::shared_ptr<CtxValue> JSCCtx::CreateFunction2(std::shared_ptr<Scope> scope, hippy::napi::JsCallback jscall) {
+//  auto func_data = std::make_unique<FuncData>(external_data_, reinterpret_cast<void*>(wrapper.get()));
+  
+  std::unique_ptr<FunctionData> fn_data =
+      std::make_unique<FunctionData>(scope, jscall);
+  
+  JSClassDefinition fn_def = kJSClassDefinitionEmpty;
+  fn_def.callAsFunction = InvokeJsCallback2;
+  JSClassRef cls_ref = JSClassCreate(&fn_def);
+  JSObjectRef fn_obj = JSObjectMake(context_, cls_ref, reinterpret_cast<void*>(fn_data.get()));
+  JSClassRelease(cls_ref);
+  scope->SaveFunctionData(std::move(fn_data));
   return std::make_shared<JSCCtxValue>(context_, fn_obj);
 }
 
