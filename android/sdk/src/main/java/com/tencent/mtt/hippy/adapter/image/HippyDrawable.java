@@ -30,6 +30,12 @@ public class HippyDrawable implements IDrawableTarget {
 
   private String imageType;
 
+  public void clear() {
+      if (mBitmap != null) {
+          mBitmap.recycle();
+      }
+  }
+
   public void setImageType(String type) {
     imageType = type;
   }
@@ -38,7 +44,7 @@ public class HippyDrawable implements IDrawableTarget {
   public String getImageType() {
     return imageType;
   }
-  
+
   public void setDrawable(Drawable drawable) {
     mDrawable = drawable;
   }

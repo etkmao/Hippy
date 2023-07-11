@@ -18,6 +18,7 @@ package com.tencent.mtt.hippy.example;
 import static com.tencent.mtt.hippy.bridge.HippyBridge.URI_SCHEME_ASSETS;
 
 import android.app.Activity;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.view.Window;
 
@@ -28,6 +29,7 @@ import com.tencent.mtt.hippy.HippyEngine.ModuleLoadStatus;
 import com.tencent.mtt.hippy.HippyRootView;
 import com.tencent.mtt.hippy.adapter.DefaultLogAdapter;
 import com.tencent.mtt.hippy.adapter.exception.HippyExceptionHandlerAdapter;
+import com.tencent.mtt.hippy.adapter.image.HippyDrawable;
 import com.tencent.mtt.hippy.bridge.HippyBridgeImpl;
 import com.tencent.mtt.hippy.bridge.libraryloader.LibraryLoader;
 import com.tencent.mtt.hippy.common.HippyJsException;
@@ -47,6 +49,8 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 @SuppressWarnings({"unused", "deprecation"})
 public class MyActivity extends Activity
@@ -285,6 +289,18 @@ public class MyActivity extends Activity
 		mHippyEngine.destroyModule(mHippyView);
 		mHippyEngine.destroyEngine();
 		super.onDestroy();
+
+        // TODO:
+//        Timer timer = new Timer();
+//        TimerTask task = new TimerTask(){
+//            public void run(){
+//                for(HippyDrawable d : MyImageLoader.mDrawables ){
+//                    d.clear();
+//                }
+//                MyImageLoader.mDrawables.clear();
+//            }
+//        };
+//        timer.schedule(task, 5000);
 	}
 
 	@Override

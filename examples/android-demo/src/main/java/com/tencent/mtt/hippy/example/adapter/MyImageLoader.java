@@ -15,8 +15,13 @@ import com.tencent.mtt.hippy.adapter.image.HippyImageLoader;
 import com.tencent.mtt.hippy.common.HippyMap;
 import com.tencent.mtt.hippy.dom.node.NodeProps;
 
+import com.tencent.mtt.hippy.serialization.recommend.SharedValueConveyor;
 import com.tencent.mtt.hippy.utils.PixelUtil;
 import com.tencent.mtt.hippy.views.image.HippyImageView;
+
+import java.sql.Array;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -24,6 +29,8 @@ import java.util.TimerTask;
 @SuppressWarnings({"unused", "deprecation"})
 public class MyImageLoader extends HippyImageLoader
 {
+    public static List<HippyDrawable> mDrawables = new ArrayList<>();
+
 	private Timer mTimer = new Timer("MyImageLoader", true);
 	private Handler mHandler = new Handler(Looper.getMainLooper());
 	private Context myContext;
@@ -76,6 +83,8 @@ public class MyImageLoader extends HippyImageLoader
 			@Override
 			public void onResourceReady(final Object object, GlideAnimation glideAnimation) {
 				final HippyDrawable hippyTarget = new HippyDrawable();
+                mDrawables.add(hippyTarget);
+
 				if (object instanceof GifDrawable)
 				{
 					mTimer.schedule(new TimerTask()
