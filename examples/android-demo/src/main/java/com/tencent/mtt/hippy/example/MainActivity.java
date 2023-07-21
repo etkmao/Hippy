@@ -6,6 +6,8 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 
+import com.bumptech.glide.Glide;
+
 public class MainActivity extends Activity implements View.OnClickListener {
 
     @Override
@@ -23,6 +25,14 @@ public class MainActivity extends Activity implements View.OnClickListener {
         Intent intent = new Intent();
         intent.setClass(MainActivity.this, MyActivity.class);
         startActivity(intent);
+    }
+
+    public void glide(View v) {
+        Glide.get(this).clearMemory();
+    }
+
+    public void gc(View v) {
+        Runtime.getRuntime().gc();
     }
 
     @Override

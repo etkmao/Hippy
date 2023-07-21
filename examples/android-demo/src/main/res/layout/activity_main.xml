@@ -14,4 +14,26 @@
     android:text="Open Hippy Page"
     app:layout_constraintStart_toStartOf="parent"
     app:layout_constraintTop_toTopOf="parent" />
+
+  <Button
+    android:id="@+id/button"
+    android:layout_width="170dp"
+    android:layout_height="50dp"
+    android:layout_marginStart="121dp"
+    android:layout_marginTop="40dp"
+    android:onClick="gc"
+    android:text="gc"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintTop_toBottomOf="@+id/button1" />
+
+  <Button
+    android:id="@+id/button2"
+    android:layout_width="169dp"
+    android:layout_height="50dp"
+    android:layout_marginStart="121dp"
+    android:layout_marginTop="40dp"
+    android:onClick="glide"
+    android:text="glide"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintTop_toBottomOf="@+id/button" />
 </androidx.constraintlayout.widget.ConstraintLayout>
