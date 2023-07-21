@@ -29,7 +29,7 @@ import java.util.TimerTask;
 @SuppressWarnings({"unused", "deprecation"})
 public class MyImageLoader extends HippyImageLoader
 {
-    public static List<HippyDrawable> mDrawables = new ArrayList<>();
+//    public static List<HippyDrawable> mDrawables = new ArrayList<>();
 
 	private Timer mTimer = new Timer("MyImageLoader", true);
 	private Handler mHandler = new Handler(Looper.getMainLooper());
@@ -83,7 +83,7 @@ public class MyImageLoader extends HippyImageLoader
 			@Override
 			public void onResourceReady(final Object object, GlideAnimation glideAnimation) {
 				final HippyDrawable hippyTarget = new HippyDrawable();
-                mDrawables.add(hippyTarget);
+//                mDrawables.add(hippyTarget);
 
 				if (object instanceof GifDrawable)
 				{
