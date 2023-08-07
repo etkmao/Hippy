@@ -164,14 +164,32 @@ export default {
     // 所以需要加一个锁，当未加载完成时不进行二次加载
     this.isLoading = false;
     this.dataSource = mockDataArray;
+    this.firstRequestFrame = true
+    this.updateFrameCount = 0
   },
   methods: {
     changeDirection() {
       this.horizontal = this.horizontal === undefined ? true : undefined;
     },
+    doRequestFrame() {
+      global.requestAnimationFrame(() => {
+        console.log('xxx update frame - count:', this.updateFrameCount);
+        this.updateFrameCount += 1;
+        if (this.updateFrameCount < 2000) {
+          this.doRequestFrame();
+        } else {
+          global.cancelAnimationFrame();
+        }
+      });
+    },
     // item完全曝光
     onAppear(index) {
       console.log('onAppear', index);
+
+      if (this.firstRequestFrame) {
+        this.firstRequestFrame = false
+        this.doRequestFrame();
+      }
     },
     // item完全隐藏
     onDisappear(index) {
