@@ -99,6 +99,9 @@ void RootViewNode::RegisterViewNode(uint32_t id, const std::shared_ptr<ViewNode>
 }
 
 void RootViewNode::UnregisterViewNode(uint32_t id) {
+  if (id == hippy::dom::kInvalidId) {
+    return;
+  }
   FOOTSTONE_DCHECK(nodes_query_table_.find(id) != nodes_query_table_.end());
   nodes_query_table_.erase(id);
 }

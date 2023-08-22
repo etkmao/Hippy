@@ -180,7 +180,7 @@ void ViewNode::SetBackgroundImage(const std::string &img_url) {
     auto style = std::make_shared<DomStyleMap>();
     style->emplace(std::string(hippy::kImageSrc), std::make_shared<footstone::HippyValue>(img_url));
     auto ext = std::make_shared<DomStyleMap>();
-    auto dom_node = std::make_shared<hippy::dom::DomNode>(0,
+    auto dom_node = std::make_shared<hippy::dom::DomNode>(hippy::dom::kInvalidId,
                                                           id_,
                                                           0,
                                                           "BackgroundImage",
