@@ -756,7 +756,7 @@ public abstract class HippyEngineManagerImpl extends HippyEngineManager implemen
                     getBridgeType(), enableV8Serialization, mDebugMode,
                     mServerHost, mGroupId, mThirdPartyAdapter, v8InitParams, mJsDriver);
             mDomManager = (domManager != null) ? domManager : new DomManager();
-            mRenderer = createRenderer(RenderConnector.NATIVE_RENDERER);
+            mRenderer = createRenderer(RenderConnector.TDF_RENDERER);
             mDomManager.attachToRenderer(mRenderer);
             mRenderer.attachToDom(mDomManager);
             mRenderer.setFrameworkProxy(HippyEngineManagerImpl.this);

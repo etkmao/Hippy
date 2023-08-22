@@ -42,6 +42,7 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        maven { url "https://mirrors.tencent.com/repository/maven/tdfcore" }
     }
     configurations.all {
         resolutionStrategy.cacheChangingModulesFor 1, 'seconds'
