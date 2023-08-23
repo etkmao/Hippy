@@ -21,5 +21,4 @@
  */
 
 include 'renderer-tdf'
-project(':renderer-tdf').projectDir = new File('renderer/tdf/android')
-
+project(':renderer-tdf').projectDir = new File('/Users/etuoke/hippy_git/Hippy0309_qq2/renderer/tdf/android')

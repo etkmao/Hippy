@@ -38,7 +38,8 @@ android {
 }
 
 dependencies {
-    implementation project(path: ':renderer-native')
+    // implementation project(path: ':renderer-native')
+    compileOnly project(path: ':renderer-native')
 
     compileOnly project(path: ':connector-support')
     compileOnly project(path: ':hippy-support')

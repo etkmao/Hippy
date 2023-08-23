@@ -1,3 +1,2 @@
 include 'renderer-native'
-project(':renderer-native').projectDir = new File('renderer/native/android')
-
+project(':renderer-native').projectDir = new File('/Users/etuoke/hippy_git/Hippy0309_qq2/renderer/native/android')

@@ -48,5 +48,5 @@ set(SOURCE_SET_STANDALONE
 #
 # The `SOURCE_SET_STANDALONE` including static initializers,
 # so its visibility must be PUBLIC.
-target_sources(${PROJECT_NAME} PRIVATE ${SOURCE_SET_STANDALONE})
+target_sources(${PROJECT_NAME} PUBLIC ${SOURCE_SET_STANDALONE})
 # endregion

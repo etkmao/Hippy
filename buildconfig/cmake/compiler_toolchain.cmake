@@ -20,7 +20,7 @@
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang") # based on LLVM 12
   set(COMPILE_OPTIONS
-      -fomit-frame-pointer
+#      -fomit-frame-pointer
       -fno-threadsafe-statics
       -fno-strict-aliasing
       -fno-short-enums
@@ -44,7 +44,8 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang") # based on LLVM 12
       -Wno-trigraphs
       --param=ssp-buffer-size=4
       -pipe
-      -Os)
+#      -Os
+      )
 
   if (ANDROID_NDK)
     # Android NDK default to -fno-addrsig

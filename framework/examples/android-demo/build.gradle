@@ -85,7 +85,7 @@ dependencies {
     }
 
     api "androidx.exifinterface:exifinterface:1.3.3"
-    api "com.tencent.tdfcore:embedder:0.0.8"
+    // api "com.tencent.tdfcore:embedder:0.0.8"
 
     implementation deps.annotation
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'

@@ -97,7 +97,14 @@ android {
                     arguments (
                             "-DCMAKE_BUILD_TYPE=Release",
                             "-DMODULES=${getAllModules().join(';')}",
-                            *mergeCppDefinitions()
+                            *mergeCppDefinitions(),
+                            "-DTDF_USE_NATIVE_IMAGE_DECODER=ON",
+                            "-DTDF_USE_NATIVE_IMAGE_ENCODER=ON",
+                            "-DTDF_USE_TGFX_IMAGE_DECODER=ON",
+                            "-DTDF_USE_TGFX_IMAGE_ENCODER=ON",
+                            "-DTDF_USE_STB_IMAGE_DECODER=ON",
+                            "-DTDF_USE_STB_IMAGE_ENCODER=ON",
+                            "-DTDF_USE_GIF_IMAGE_DECODER=ON"
                     )
 
                     if (INCLUDE_ABI_ARMEABI_V7A.toBoolean() || INCLUDE_ABI_ARMEABI.toBoolean()) {
@@ -123,7 +130,14 @@ android {
                     arguments (
                             "-DCMAKE_BUILD_TYPE=Debug",
                             "-DMODULES=${getAllModules().join(';')}",
-                            *mergeCppDefinitions()
+                            *mergeCppDefinitions(),
+                            "-DTDF_USE_NATIVE_IMAGE_DECODER=ON",
+                            "-DTDF_USE_NATIVE_IMAGE_ENCODER=ON",
+                            "-DTDF_USE_TGFX_IMAGE_DECODER=ON",
+                            "-DTDF_USE_TGFX_IMAGE_ENCODER=ON",
+                            "-DTDF_USE_STB_IMAGE_DECODER=ON",
+                            "-DTDF_USE_STB_IMAGE_ENCODER=ON",
+                            "-DTDF_USE_GIF_IMAGE_DECODER=ON"
                     )
 
                     if (INCLUDE_ABI_ARMEABI_V7A.toBoolean() || INCLUDE_ABI_ARMEABI.toBoolean()) {
@@ -181,7 +195,9 @@ dependencies {
             embed project(path: ':renderer-native', configuration: 'default')
         }
     }
-    compileOnly project(path: ':renderer-native')
+    // compileOnly project(path: ':renderer-native')
+    embed project(path: ':renderer-native', configuration: 'default')
+    embed project(path: ':renderer-tdf', configuration: 'default')
     //noinspection GradleDependency
     implementation deps.annotation
 
