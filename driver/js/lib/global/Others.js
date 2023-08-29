@@ -21,7 +21,18 @@
 global.__ISHIPPY__ = true;
 global.__GLOBAL__ = {
   globalEventHandle: {},
+  globalErrorHandle: [],
 };
+
+class ErrorEvent {
+  constructor(message, filename, lineno, colno, error) {
+    this.message = message;
+    this.filename = filename;
+    this.lineno = lineno;
+    this.colno = colno;
+    this.error = error;
+  }
+}
 
 /**
  * Register the Hippy app entry function, the native will trigger an event to execute the function
@@ -114,6 +125,115 @@ function emit(eventName, ...args) {
   }
 }
 
+/**
+ * Register a listener for a error event, and the listener will be called
+ * when the event is triggered.
+ */
+Object.defineProperty(Hippy, 'onerror', {
+  get: function() {
+    let listeners = __GLOBAL__.globalErrorHandle;
+    return listeners.length > 0 ? listeners.slice(-1) : null;
+  },
+  set: function(listener) {
+    if (typeof listener !== 'function') {
+      throw new TypeError('Hippy.onerror only accept a function as listener');
+    }
+    __GLOBAL__.globalErrorHandle = [];
+    let listeners = __GLOBAL__.globalErrorHandle;
+    listeners.push(listener);
+  }
+});
+
+/**
+ * Trigger a error event with arguments.
+ *
+ * @param  {any} args - Event callback arguments: event, source, lineno, colno, error.
+ */
+function emitError(...args) {
+  if (args.length !== 5) {
+    throw new TypeError('Hippy.emitError only accept 5 params');
+  }
+
+  let errObj = new Error();
+  errObj.message = JSON.stringify(args[4]);
+
+  const listeners = __GLOBAL__.globalErrorHandle;
+  if (listeners) {
+    try {
+      listeners.forEach(listener => listener(args[0], args[1], args[2], args[3], errObj));
+    } catch (err) {
+      /* eslint-disable-next-line no-console */
+      console.error(err);
+    }
+  } else {
+    if (args[0]) {
+      console.error(args[0].toString());
+    }
+  }
+
+  const eventName = 'error';
+  const eventListeners = __GLOBAL__.globalEventHandle[eventName];
+  if (eventListeners) {
+    try {
+      let event = new ErrorEvent(args[0], args[1], args[2], args[3], errObj);
+      eventListeners.forEach(listener => listener(event));
+    } catch (err) {
+      /* eslint-disable-next-line no-console */
+      console.error(err);
+    }
+  } else {
+    if (args[0]) {
+      console.error(args[0].toString());
+    }
+  }
+}
+
+/**
+ * Register a listener for a specific event, and the listener will be called
+ * when the event is triggered.
+ *
+ * @param {string} eventName - The event name will be registered.
+ * @param {Function} listener - Event callback.
+ * @returns {Set} - Set of event listeners
+ */
+function addEventListener(eventName, listener) {
+  if (typeof eventName !== 'string' || typeof listener !== 'function') {
+    throw new TypeError('Hippy.addEventListener() only accept a string as event name and a function as listener');
+  }
+
+  let eventListeners = __GLOBAL__.globalEventHandle[eventName];
+  if (!(eventListeners instanceof Set)) {
+    __GLOBAL__.globalEventHandle[eventName] = new Set();
+    eventListeners = __GLOBAL__.globalEventHandle[eventName];
+  }
+  eventListeners.add(listener);
+  return eventListeners;
+}
+
+/**
+ * Remove specific event listener,
+ *
+ * @param {string} eventName - The event name will be removed.
+ * @param {Function} listener - Specific event callback will be removed,
+ *                              the listeners will clean all if not specific.
+ * @returns {Set | null} - Set of event listeners, or null of empty.
+ */
+function removeEventListener(eventName, listener) {
+  if (typeof eventName !== 'string') {
+    throw new TypeError('Hippy.removeEventListener() only accept a string as event name');
+  }
+  const eventListeners = __GLOBAL__.globalEventHandle[eventName];
+  if (!(eventListeners instanceof Set)) {
+    return null;
+  }
+  if (listener) {
+    eventListeners.delete(listener);
+    return eventListeners;
+  }
+  eventListeners.clear();
+  return null;
+}
+
 Hippy.device = {};
 Hippy.bridge = {};
 Hippy.register = {
@@ -122,3 +242,6 @@ Hippy.register = {
 Hippy.on = on;
 Hippy.off = off;
 Hippy.emit = emit;
+Hippy.emitError = emitError;
+Hippy.addEventListener = addEventListener;
+Hippy.removeEventListener = removeEventListener;
