@@ -85,6 +85,12 @@ class VM {
   }
 
   static void HandleUncaughtException(const std::shared_ptr<Ctx>& ctx, const std::shared_ptr<CtxValue>& exception);
+  static void HandleError(const std::shared_ptr<Ctx>& ctx,
+                          const std::shared_ptr<CtxValue>& event,
+                          const std::shared_ptr<CtxValue>& source,
+                          const std::shared_ptr<CtxValue>& lineno,
+                          const std::shared_ptr<CtxValue>& colno,
+                          const std::shared_ptr<CtxValue>& error);
   virtual std::shared_ptr<CtxValue> ParseJson(const std::shared_ptr<Ctx>& ctx, const string_view& json) = 0;
   virtual std::shared_ptr<Ctx> CreateContext() = 0;
  private:

@@ -21,6 +21,7 @@
 global.__ISHIPPY__ = true;
 global.__GLOBAL__ = {
   globalEventHandle: {},
+  globalErrorHandle: [],
 };
 
 /**
@@ -114,6 +115,46 @@ function emit(eventName, ...args) {
   }
 }
 
+/**
+ * Register a listener for a error event, and the listener will be called
+ * when the event is triggered.
+ */
+Object.defineProperty(Hippy, 'onerror', {
+  get: function() {
+    let listeners = __GLOBAL__.globalErrorHandle;
+    return listeners.length > 0 ? listeners.slice(-1) : null;
+  },
+  set: function(listener) {
+    if (typeof listener !== 'function') {
+      throw new TypeError('Hippy.onerror only accept a function as listener');
+    }
+    __GLOBAL__.globalErrorHandle = [];
+    let listeners = __GLOBAL__.globalErrorHandle;
+    listeners.push(listener);
+  }
+});
+
+/**
+ * Trigger a error event with arguments.
+ *
+ * @param  {any} args - Event callback arguments: event, source, lineno, colno, error.
+ */
+function emitError(...args) {
+  const listeners = __GLOBAL__.globalErrorHandle;
+  if (!listeners) {
+    if (args[0]) {
+      console.error(args[0].toString());
+    }
+    return;
+  }
+  try {
+    listeners.forEach(listener => listener(...args));
+  } catch (err) {
+    /* eslint-disable-next-line no-console */
+    console.error(err);
+  }
+}
+
 Hippy.device = {};
 Hippy.bridge = {};
 Hippy.register = {
@@ -122,3 +163,4 @@ Hippy.register = {
 Hippy.on = on;
 Hippy.off = off;
 Hippy.emit = emit;
+Hippy.emitError = emitError;
