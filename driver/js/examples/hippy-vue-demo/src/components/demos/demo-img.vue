@@ -64,6 +64,31 @@ export default {
       gifLoadResult: {},
     };
   },
+  mounted() {
+    global.Hippy.onerror = (event, source, lineno, colno, error) => {
+      var message = [
+          'event: ' + event,
+          'source: ' + source,
+          'lineno: ' + lineno,
+          'colno: ' + colno,
+          'error: ' + JSON.stringify(error)
+      ].join(' - ');
+      console.log('Hippy.onerror -> ', message);
+    };
+
+    console.log('Hippy.onerror get:', global.Hippy.onerror);
+
+    global.Hippy.addEventListener("error", (event) => {
+      var message = [
+          'event: ' + event.message,
+          'source: ' + event.filename,
+          'lineno: ' + event.lineno,
+          'colno: ' + event.colno,
+          'error: ' + JSON.stringify(event.error)
+      ].join(' - ');
+      console.log('Hippy.addEventListener error -> ', message);
+    });
+  },
   methods: {
     // img touch event is supported after hippy-vue 2.6.2
     onTouchStart(evt) {
