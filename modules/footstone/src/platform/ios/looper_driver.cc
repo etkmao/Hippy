@@ -47,7 +47,8 @@ LooperDriver::LooperDriver(): loop_() {
 
 LooperDriver::~LooperDriver() {
   CFRunLoopTimerInvalidate(delayed_wake_timer_);
-  CFRunLoopRemoveTimer(loop_, delayed_wake_timer_, kCFRunLoopDefaultMode);
+  // TODO(etkmao): Temporary comments for crash in thread divide branch
+  // CFRunLoopRemoveTimer(loop_, delayed_wake_timer_, kCFRunLoopDefaultMode);
 }
 
 void LooperDriver::Notify() {
