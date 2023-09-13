@@ -71,6 +71,7 @@ EngineResource::EngineResource(const std::string name) {
 }
 
 EngineResource::~EngineResource() {
+    js_worker_->Terminate();
     dom_worker_->Terminate();
 }
 
