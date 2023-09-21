@@ -249,8 +249,8 @@ NSNumber *HippyConvertEnumValue(__unused const char *typeName, NSDictionary *map
     }
     id value = mapping[json];
     if (HIPPY_DEBUG && !value && [json description].length > 0) {
-        HippyLogError(@"Invalid %s '%@'. should be one of: %@", typeName, json,
-            [[mapping allKeys] sortedArrayUsingSelector:@selector(caseInsensitiveCompare:)]);
+        //HippyLogError(@"Invalid %s '%@'. should be one of: %@", typeName, json,
+        //   [[mapping allKeys] sortedArrayUsingSelector:@selector(caseInsensitiveCompare:)]);
     }
     return value ?: defaultValue;
 }
