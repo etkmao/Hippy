@@ -23,6 +23,7 @@
 #import "AppDelegate.h"
 #import "HomePageViewController.h"
 #import "DemoNavigationViewController.h"
+#import "NativeRenderViewController.h"
 
 @interface AppDelegate ()
 
@@ -34,7 +35,12 @@
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
     self.window = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+#if 1
     DemoNavigationViewController *navVC = [[DemoNavigationViewController alloc] initWithRootViewController:[[HomePageViewController alloc] initWithNibName:@"HomePageView" bundle:[NSBundle mainBundle]]];
+#else
+    NativeRenderViewController *vc = [[NativeRenderViewController alloc] initWithDriverType:DriverTypeReact renderType:RenderTypeNative debugURL:nil isDebugMode:NO];
+    DemoNavigationViewController *navVC = [[DemoNavigationViewController alloc] initWithRootViewController:vc];
+#endif
     [self.window setRootViewController: navVC];
     [self.window makeKeyAndVisible];
     return YES;
