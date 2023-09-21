@@ -26,7 +26,7 @@
 
 HIPPY_EXPORT_MODULE(TencentJsBridgeModule)
 
-HIPPY_EXPORT_METHOD(callJsApi:(NSDictionary *)dic resolver:(HippyPromiseResolveBlock)resolve) {
+HIPPY_EXPORT_METHOD(callJsApi:(NSDictionary *)dic resolver:(HippyPromiseResolveBlock)resolve rejector:(HippyPromiseRejectBlock)rejector) {
     NSString *funcName = dic[@"funcName"];
     if (!funcName) {
         resolve(@"funcName cannot be null");

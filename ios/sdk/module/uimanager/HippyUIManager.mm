@@ -883,7 +883,7 @@ HIPPY_EXPORT_METHOD(createView:(nonnull NSNumber *)hippyTag
     HippyComponentData *componentData = _componentDataByName[viewName];
     HippyShadowView *shadowView = [componentData createShadowViewWithTag:hippyTag];
     if (componentData == nil) {
-        HippyLogError(@"No component found for view with name \"%@\"", viewName);
+        //HippyLogError(@"No component found for view with name \"%@\"", viewName);
     }
     id isAnimated = props[@"useAnimation"];
     if (isAnimated && [isAnimated isKindOfClass: [NSNumber class]]) {
