@@ -56,7 +56,9 @@ void VM::HandleException(const std::shared_ptr<Ctx>& ctx,
   argv[1] = exception;
 
   auto try_catch = CreateTryCatchScope(true, ctx);
+    XXX_LOG_CALL_BEGIN
   auto ret_value = ctx->CallFunction(exception_handler, ctx->GetGlobalObject(), 2, argv);
+    XXX_LOG_CALL_END("VM::HandleException")
   if (try_catch->HasCaught()) {
     auto message = try_catch->GetExceptionMessage();
     FOOTSTONE_LOG(WARNING) << "hippy exceptionHandler error, description = " << message;

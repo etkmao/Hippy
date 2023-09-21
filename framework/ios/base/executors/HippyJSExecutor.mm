@@ -485,7 +485,11 @@ using WeakCtxValuePtr = std::weak_ptr<hippy::napi::CtxValue>;
                                 function_params[i] = [obj convertToCtxValue:context];
                             }
                             auto tryCatch = hippy::CreateTryCatchScope(true, context);
+                            
+                            NSString* logStr = [NSString stringWithFormat:@"HippyJSExecutor %@", method];
+                            XXX_LOG_CALL_BEGIN
                             resultValue = context->CallFunction(method_value, context->GetGlobalObject(), arguments.count, function_params);
+                            XXX_LOG_CALL_END([logStr UTF8String])
                             if (tryCatch->HasCaught()) {
                                 exception = tryCatch->GetExceptionMessage();
                             }

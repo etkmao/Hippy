@@ -302,7 +302,7 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
         NativeRenderComponentData *componentData = _componentDataByName[viewName];
         if (!componentData) {
             NativeRenderViewManager *viewManager = [self renderViewManagerForViewName:viewName];
-            NSAssert(viewManager, @"No view manager found for %@", viewName);
+//            NSAssert(viewManager, @"No view manager found for %@", viewName);
             if (viewManager) {
                 componentData = [[NativeRenderComponentData alloc] initWithViewManager:viewManager viewName:viewName];
                 _componentDataByName[viewName] = componentData;
@@ -533,7 +533,7 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
     NativeRenderComponentData *componentData = [self componentDataForViewName:viewName];
     NativeRenderObjectView *renderObject = [componentData createRenderObjectViewWithTag:componentTag];
     renderObject.rootNode = rootNode;
-    NSAssert(componentData && renderObject, @"componentData and renderObject must not be nil");
+//    NSAssert(componentData && renderObject, @"componentData and renderObject must not be nil");
     [props setValue: rootTag forKey: @"rootTag"];
     // Register shadow view
     if (renderObject) {
@@ -740,7 +740,7 @@ NSString *const NativeRenderUIManagerDidEndBatchNotification = @"NativeRenderUIM
         NativeRenderObjectView *superRenderObject = [self->_renderObjectRegistry componentForTag:@(tag) onRootTag:rootNodeTag];
         for (NSUInteger index = 0; index < subviewTags.size(); index++) {
             NativeRenderObjectView *subRenderObject = [self->_renderObjectRegistry componentForTag:@(subviewTags[index]) onRootTag:rootNodeTag];
-            [superRenderObject insertNativeRenderSubview:subRenderObject atIndex:subviewIndices[index]];
+            if(subRenderObject) [superRenderObject insertNativeRenderSubview:subRenderObject atIndex:subviewIndices[index]];
         }
         [superRenderObject didUpdateNativeRenderSubviews];
     }];

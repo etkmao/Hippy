@@ -160,7 +160,9 @@ void Scope::WillExit() {
           auto fn = context->GetProperty(global_object, func_name);
           bool is_fn = context->IsFunction(fn);
           if (is_fn) {
+              XXX_LOG_CALL_BEGIN
             context->CallFunction(fn, context->GetGlobalObject(), 0, nullptr);
+              XXX_LOG_CALL_END("Scope::WillExit HippyDealloc")
           }
         }
         p.set_value(rst);
@@ -214,7 +216,9 @@ void Scope::Bootstrap() {
   auto function_wrapper = std::make_unique<FunctionWrapper>(InternalBindingCallback, nullptr);
   std::shared_ptr<CtxValue> argv[] = { context_->CreateFunction(function_wrapper) };
   SaveFunctionWrapper(std::move(function_wrapper));
+    XXX_LOG_CALL_BEGIN
   context_->CallFunction(function, context_->GetGlobalObject(), 1, argv);
+    XXX_LOG_CALL_END("Scope::Bootstrap")
 }
 
 void Scope::RegisterJavascriptClasses() {
@@ -373,7 +377,7 @@ hippy::dom::EventListenerInfo Scope::AddListener(const EventListenerInfo& event_
 
   bind_listener_map_[dom_id][event_name][listener_id] = js_function;
   return hippy::dom::EventListenerInfo{dom_id, event_name, event_listener_info.use_capture, listener_id,
-                                       [weak_scope = weak_from_this(), event_listener_info](
+                                       [weak_scope = weak_from_this(), event_listener_info, event_name](
                                                const std::shared_ptr<hippy::dom::DomEvent>& event) {
     auto scope = weak_scope.lock();
     if (!scope) {
@@ -397,7 +401,12 @@ hippy::dom::EventListenerInfo Scope::AddListener(const EventListenerInfo& event_
         return;
       }
       std::shared_ptr<CtxValue> argv[] = { event_instance };
+        
+        std::string logStr = "Scope::AddListener ";
+        logStr += event_name;
+        XXX_LOG_CALL_BEGIN
       context->CallFunction(callback, context->GetGlobalObject(), 1, argv);
+        XXX_LOG_CALL_END(logStr.c_str())
     }
   }};
 }
@@ -554,7 +563,9 @@ void Scope::LoadInstance(const std::shared_ptr<HippyValue>& value) {
         }
 #endif
         std::shared_ptr<CtxValue> argv[] = {param};
+          XXX_LOG_CALL_BEGIN
         context->CallFunction(fn, context->GetGlobalObject(), 1, argv);
+          XXX_LOG_CALL_END("Scope::LoadInstance")
       } else {
         context->ThrowException("Application entry not found");
       }
@@ -585,7 +596,9 @@ void Scope::UnloadInstance(const std::shared_ptr<HippyValue>& value) {
           if (is_fn) {
               auto param = hippy::CreateCtxValue(context, value);
               std::shared_ptr<CtxValue> argv[] = {param};
+              XXX_LOG_CALL_BEGIN
               context->CallFunction(fn, context->GetGlobalObject(), 1, argv);
+              XXX_LOG_CALL_END("Scope::UnloadInstance")
           } else {
               context->ThrowException("Application entry not found");
           }

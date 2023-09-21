@@ -181,10 +181,10 @@ static NSString *const engineKey = @"Demo";
 - (NSURL *)vendorBundleURL {
     NSString *path = nil;
     if (DriverTypeReact == _driverType) {
-        path = [[NSBundle mainBundle] pathForResource:@"vendor.ios" ofType:@"js" inDirectory:@"res/react"];
+        path = [[NSBundle mainBundle] pathForResource:@"vendor.ios" ofType:@"jsbundle" inDirectory:@"res/react"];
     }
     else if (DriverTypeVue == _driverType) {
-        path = [[NSBundle mainBundle] pathForResource:@"vendor.ios" ofType:@"js" inDirectory:@"res/vue3"];
+        path = [[NSBundle mainBundle] pathForResource:@"vendor.ios" ofType:@"jsbundle" inDirectory:@"res/vue3"];
     }
     return [NSURL fileURLWithPath:path];
 }
@@ -192,10 +192,10 @@ static NSString *const engineKey = @"Demo";
 - (NSURL *)indexBundleURL {
     NSString *path = nil;
     if (DriverTypeReact == _driverType) {
-        path = [[NSBundle mainBundle] pathForResource:@"index.ios" ofType:@"js" inDirectory:@"res/react"];
+        path = [[NSBundle mainBundle] pathForResource:@"index.ios" ofType:@"jsbundle" inDirectory:@"res/react"];
     }
     else if (DriverTypeVue == _driverType) {
-        path = [[NSBundle mainBundle] pathForResource:@"index.ios" ofType:@"js" inDirectory:@"res/vue3"];
+        path = [[NSBundle mainBundle] pathForResource:@"index.ios" ofType:@"jsbundle" inDirectory:@"res/vue3"];
     }
     return [NSURL fileURLWithPath:path];
 }

@@ -546,7 +546,9 @@ RegisterAnimation(const std::weak_ptr<Scope>& weak_scope) {
       auto context = scope->GetContext();
       auto func = weak_func.lock();
       if (func) {
+          XXX_LOG_CALL_BEGIN
         context->CallFunction(func, context->GetGlobalObject(), 0, nullptr);
+          XXX_LOG_CALL_END("CubicBezierAnimation addEventListener callback")
       }
     };
     animation->AddEventListener(StringViewUtils::ToStdString(StringViewUtils::ConvertEncoding(
@@ -824,7 +826,9 @@ RegisterAnimationSet(const std::weak_ptr<Scope>& weak_scope) {
       auto context = scope->GetContext();
       auto func = weak_func.lock();
       if (func) {
+          XXX_LOG_CALL_BEGIN
         context->CallFunction(func, context->GetGlobalObject(), 0, nullptr);
+          XXX_LOG_CALL_END("AnimationSet addEventListener callback")
       }
     };
     animation_set->AddEventListener(StringViewUtils::ToStdString(StringViewUtils::ConvertEncoding(
