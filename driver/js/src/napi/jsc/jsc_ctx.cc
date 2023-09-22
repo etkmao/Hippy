@@ -1263,9 +1263,10 @@ void JSCCtx::SetWeak(std::shared_ptr<CtxValue> value, const std::unique_ptr<Weak
 
 
 // TODO:
+clock_t gXXXBaseTime = 0;
 static int sCnt = 0;
-void XXXLogCallFunction(const char* str, double dt) {
-    printf("--- xxx CallFunction, %4d, %-60s, dt: %4.6lf, %s, %s, %s, %s, %s\n", ++sCnt, str?str:"", dt,
+void XXXLogCallFunction(const char* str, double dt, double start) {
+    printf("--- xxx CallFunction, %4d, %-60s, dt: %4.6lf, start: %6.f, %s, %s, %s, %s, %s\n", ++sCnt, str?str:"", dt, start,
            dt>0.1f?  ">0.1ms": "      ",
            dt>1.f?   ">1ms":   "    ",
            dt>10.f?  ">10ms":  "     ",
