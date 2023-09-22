@@ -189,7 +189,9 @@ void ContextifyModule::LoadUntrustedContent(const CallbackInfo& info) {
           error = ctx->CreateNull();
         }
         std::shared_ptr<CtxValue> argv[] = {error};
+          XXX_LOG_CALL_BEGIN
         ctx->CallFunction(function, 1, argv);
+          XXX_LOG_CALL_END("ContextifyModule::LoadUntrustedContent")
         RemoveCBFunc(uri);
       }
     };

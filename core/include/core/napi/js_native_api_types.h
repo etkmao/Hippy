@@ -32,6 +32,19 @@
 #include "core/base/common.h"
 #include "core/base/js_value_wrapper.h"
 
+// TODO:
+extern clock_t gXXXBaseTime;
+//#define XXX_LOG_CALL_BEGIN
+//#define XXX_LOG_CALL_END(str)
+#define XXX_LOG_CALL_BEGIN \
+    clock_t tStart = clock(); \
+    if(gXXXBaseTime == 0) gXXXBaseTime = tStart;
+#define XXX_LOG_CALL_END(str) \
+    double tDuration = (double)(clock() - tStart)/CLOCKS_PER_SEC*1000.f; \
+    double tDStart = (double)(tStart - gXXXBaseTime)/CLOCKS_PER_SEC*1000.f; \
+    XXXLogCallFunction(str,tDuration,tDStart);
+extern void XXXLogCallFunction(const char* str, double dt, double start);
+
 class Scope;
 
 namespace hippy {

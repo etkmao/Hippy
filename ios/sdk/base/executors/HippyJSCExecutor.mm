@@ -604,8 +604,11 @@ HIPPY_EXPORT_METHOD(setContextName:(NSString *)contextName) {
                                 function_params[i] = std::make_shared<hippy::napi::JSCCtxValue>(globalContextRef, value);
                             }
                             hippy::napi::JSCTryCatch tryCatch(true, jscContext);
+                            NSString* logStr = [NSString stringWithFormat:@"HippyJSExecutor %@", method];
+                            XXX_LOG_CALL_BEGIN
                             std::shared_ptr<hippy::napi::CtxValue> resultValue
                                 = jscContext->CallFunction(method_value, arguments.count, function_params);
+                            XXX_LOG_CALL_END([logStr UTF8String])
                             if (tryCatch.HasCaught()) {
                               exception = StringViewUtils::Convert(tryCatch.GetExceptionMsg(), unicode_string_view::Encoding::Utf16).utf16_value();
                             }

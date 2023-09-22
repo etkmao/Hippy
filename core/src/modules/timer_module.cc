@@ -105,7 +105,9 @@ std::shared_ptr<hippy::napi::CtxValue> TimerModule::Start(
     std::shared_ptr<CtxValue> function = weak_function.lock();
     if (function) {
       std::shared_ptr<hippy::napi::Ctx> context = scope->GetContext();
+        XXX_LOG_CALL_BEGIN
       context->CallFunction(function, 0, nullptr);
+        XXX_LOG_CALL_END("TimerModule callback")
     }
 
     std::unique_ptr<RegisterMap>& map = scope->GetRegisterMap();

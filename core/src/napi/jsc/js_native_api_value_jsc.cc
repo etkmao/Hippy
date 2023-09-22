@@ -491,7 +491,9 @@ void JSCCtx::HandleUncaughtException(const std::shared_ptr<CtxValue>& exception)
   std::shared_ptr<CtxValue> args[2];
   args[0] = CreateString("uncaughtException");
   args[1] = exception;
+  XXX_LOG_CALL_BEGIN
   CallFunction(exception_handler, 2, args);
+  XXX_LOG_CALL_END("VM::HandleException")
 }
 
 JSStringRef JSCCtx::CreateJSCString(const unicode_string_view& str_view) {
@@ -537,3 +539,15 @@ JSStringRef JSCCtx::CreateJSCString(const unicode_string_view& str_view) {
 
 }  // namespace napi
 }  // namespace hippy
+
+// TODO:
+clock_t gXXXBaseTime = 0;
+static int sCnt = 0;
+void XXXLogCallFunction(const char* str, double dt, double start) {
+    printf("--- xxx CallFunction, %4d, %-60s, dt: %4.6lf, start: %6.f, %s, %s, %s, %s, %s\n", ++sCnt, str?str:"", dt, start,
+           dt>0.1f?  ">0.1ms": "      ",
+           dt>1.f?   ">1ms":   "    ",
+           dt>10.f?  ">10ms":  "     ",
+           dt>50.f?  ">50ms":  "     ",
+           dt>100.f? ">100ms": "      ");
+}

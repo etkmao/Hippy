@@ -38,6 +38,7 @@
 #ifdef JS_V8
 #include "core/napi/v8/js_native_api_v8.h"
 #endif
+#include "js_native_api_types.h"
 
 using unicode_string_view = tdf::base::unicode_string_view;
 
@@ -85,7 +86,9 @@ void Scope::WillExit() {
           std::shared_ptr<CtxValue> fn = context->GetJsFn(kDeallocFuncName);
           bool is_fn = context->IsFunction(fn);
           if (is_fn) {
+              XXX_LOG_CALL_BEGIN
             context->CallFunction(fn, 0, nullptr);
+              XXX_LOG_CALL_END("Scope::WillExit HippyDealloc")
           }
         }
         p.set_value(rst);
@@ -149,7 +152,9 @@ void Scope::Initialized() {
   std::shared_ptr<CtxValue> internal_binding_fn =
       hippy::napi::GetInternalBindingFn(self);
   std::shared_ptr<CtxValue> argv[] = {internal_binding_fn};
+    XXX_LOG_CALL_BEGIN
   context_->CallFunction(function, 1, argv);
+    XXX_LOG_CALL_END("Scope::Bootstrap")
 
   it = map_->find(hippy::base::KScopeInitializedCBKey);
   if (it != map_->end()) {
