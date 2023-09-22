@@ -35,7 +35,7 @@
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
     self.window = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
-#if 1
+#if 0
     DemoNavigationViewController *navVC = [[DemoNavigationViewController alloc] initWithRootViewController:[[HomePageViewController alloc] initWithNibName:@"HomePageView" bundle:[NSBundle mainBundle]]];
 #else
     NativeRenderViewController *vc = [[NativeRenderViewController alloc] initWithDriverType:DriverTypeReact renderType:RenderTypeNative debugURL:nil isDebugMode:NO];
