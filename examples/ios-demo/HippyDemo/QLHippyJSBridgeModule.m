@@ -9,6 +9,8 @@
 #import "QLHippyJSBridgeModule.h"
 #import "QLHippyJSAPIBridgeDelegate.h"
 
+extern clock_t gXXXBaseTime;
+
 @interface QLHippyJSBridgeModule ()<QLHippyJSAPIBridgeDelegate>
 
 @end
@@ -36,6 +38,16 @@ HIPPY_EXPORT_METHOD(callJsApi:(NSDictionary *)dic resolver:(HippyPromiseResolveB
     if ([funcName isEqualToString:@"writeLog"]) {
         NSString *content = dic[@"content"];
         NSLog(@"[VideoPageLog] - %@", content);
+        
+        if([content containsString:@"action:search:end"]) {
+            gXXXBaseTime = 0;
+        }
+        
+        if([content containsString:@"result took"]) {
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC)), dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+                exit(0);
+            });
+        }
     }
     
     //NSLog(@"[XXVideoPageLog] - %@", dic);
