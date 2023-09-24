@@ -72,8 +72,10 @@ std::shared_ptr<ClassTemplate<DomEvent>> MakeEventClassTemplate(
       DomEvent* event, size_t argument_count,
       const std::shared_ptr<CtxValue> arguments[],
       std::shared_ptr<CtxValue>&)-> std::shared_ptr<CtxValue> {
+          XXX_LOG_NATIVE_BEGIN
     event->StopPropagation();
     FOOTSTONE_DLOG(INFO) << "stop propagation" << std::endl;
+          XXX_LOG_NATIVE_END("DomEvent stopPropagation")
     return nullptr;
   };
   class_template.functions.emplace_back(std::move(stop_propagation));
@@ -220,6 +222,7 @@ std::shared_ptr<ClassTemplate<DomEvent>> MakeEventClassTemplate(
   PropertyDefine<DomEvent> params;
   params.name = "params";
   params.getter = [weak_scope](DomEvent* event, std::shared_ptr<CtxValue>& exception) -> std::shared_ptr<CtxValue> {
+      XXX_LOG_NATIVE_BEGIN
     auto scope = weak_scope.lock();
     if (!scope)  {
       return nullptr;
@@ -234,6 +237,7 @@ std::shared_ptr<ClassTemplate<DomEvent>> MakeEventClassTemplate(
     if (parameter) {
       ctx_value = hippy::CreateCtxValue(context, parameter);
     }
+      XXX_LOG_NATIVE_END("DomEvent params")
     return ctx_value;
   };
   params.setter = [](DomEvent* event, const std::shared_ptr<CtxValue>& value, std::shared_ptr<CtxValue>& exception) {};

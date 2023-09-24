@@ -104,7 +104,9 @@ JSValueRef InvokeJsCallback(JSContextRef ctx,
   for (size_t i = 0; i < argument_count; i++) {
     cb_info.AddValue(std::make_shared<JSCCtxValue>(context, arguments[i]));
   }
+    XXX_LOG_NATIVE_BEGIN
   js_cb(cb_info, external_data);
+    XXX_LOG_NATIVE_END("InvokeJsCallback")
   auto exception_object = std::static_pointer_cast<JSCCtxValue>(cb_info.GetExceptionValue()->Get());
   if (exception_object) {
     *exception = exception_object->value_;

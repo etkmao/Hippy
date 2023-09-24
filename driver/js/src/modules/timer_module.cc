@@ -33,6 +33,12 @@
 #include "footstone/string_view_utils.h"
 #include "footstone/idle_task.h"
 
+#include "jsc_ctx_value.h"
+
+// TODO:
+extern int gStepState;
+extern "C" void SignpostEnd();
+
 using string_view = footstone::stringview::string_view;
 using Ctx = hippy::napi::Ctx;
 using CtxValue = hippy::napi::CtxValue;
@@ -70,18 +76,25 @@ TimerModule::TimerModule() :
                                                                   std::shared_ptr<CtxValue>>>()) {}
 
 void TimerModule::SetTimeout(CallbackInfo& info, void* data) {
+    XXX_LOG_NATIVE_BEGIN
   info.GetReturnValue()->Set(Start(info, false));
+    XXX_LOG_NATIVE_END("TimerModule::SetTimeout")
 }
 
 void TimerModule::ClearTimeout(CallbackInfo& info, void* data) {
+    XXX_LOG_NATIVE_BEGIN
   ClearInterval(info, data);
+    XXX_LOG_NATIVE_END("TimerModule::ClearTimeout")
 }
 
 void TimerModule::SetInterval(CallbackInfo& info, void* data) {
+    XXX_LOG_NATIVE_BEGIN
   info.GetReturnValue()->Set(Start(info, true));
+    XXX_LOG_NATIVE_END("TimerModule::SetInterval")
 }
 
 void TimerModule::ClearInterval(CallbackInfo& info, void* data) {
+    XXX_LOG_NATIVE_BEGIN
   auto scope_wrapper = reinterpret_cast<ScopeWrapper*>(std::any_cast<void*>(info.GetSlot()));
   auto scope = scope_wrapper->scope.lock();
   FOOTSTONE_CHECK(scope);
@@ -97,9 +110,11 @@ void TimerModule::ClearInterval(CallbackInfo& info, void* data) {
   uint32_t task_id = footstone::checked_numeric_cast<int32_t, uint32_t>(argument);
   Cancel(task_id);
   info.GetReturnValue()->Set(context->CreateNumber(task_id));
+    XXX_LOG_NATIVE_END("TimerModule::ClearInterval")
 }
 
 void TimerModule::RequestIdleCallback(CallbackInfo& info, void* data) {
+    XXX_LOG_NATIVE_BEGIN
   auto scope_wrapper = reinterpret_cast<ScopeWrapper*>(std::any_cast<void*>(info.GetSlot()));
   auto scope = scope_wrapper->scope.lock();
   FOOTSTONE_CHECK(scope);
@@ -169,6 +184,7 @@ void TimerModule::RequestIdleCallback(CallbackInfo& info, void* data) {
     }
   });
   runner->PostIdleTask(std::move(task));
+    XXX_LOG_NATIVE_END("TimerModule::RequestIdleCallback")
 }
 
 void TimerModule::CancelIdleCallback(CallbackInfo& info, void* data) {
@@ -219,6 +235,11 @@ std::shared_ptr<hippy::napi::CtxValue> TimerModule::Start(
     std::shared_ptr<hippy::napi::Ctx> context = scope->GetContext();
       XXX_LOG_CALL_BEGIN
     context->CallFunction(function, context->GetGlobalObject(), 0, nullptr);
+//      if (gStepState == 2) {
+//          gStepState = 3;
+//          // step end
+//          SignpostEnd();
+//      }
       XXX_LOG_CALL_END("TimerModule callback")
     if (!repeat) {
       timer_map->erase(task_id);

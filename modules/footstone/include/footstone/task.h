@@ -24,6 +24,18 @@
 #include <cstdint>
 #include <functional>
 
+// TODO:
+extern clock_t gXXXBaseTime;
+//#define XXX_LOG_TASK_BEGIN
+//#define XXX_LOG_TASK_END(str)
+#define XXX_LOG_TASK_BEGIN \
+    clock_t ttStart = clock();
+#define XXX_LOG_TASK_END(str) \
+    double ttDuration = (double)(clock() - ttStart)/CLOCKS_PER_SEC*1000.f; \
+    double ttDStart = (double)(ttStart - gXXXBaseTime)/CLOCKS_PER_SEC*1000.f; \
+    XXXLogTaskFunction(str,ttDuration,ttDStart);
+extern void XXXLogTaskFunction(const char* str, double dt, double start);
+
 namespace footstone {
 inline namespace runner {
 
@@ -36,9 +48,11 @@ class Task {
   inline uint32_t GetId() { return id_; }
   inline void SetExecUnit(std::function<void()> unit) { unit_ = unit; }
   inline void Run() {
+      XXX_LOG_TASK_BEGIN
     if (unit_) {
       unit_();
     }
+      XXX_LOG_TASK_END("run")
   }
 
  private:

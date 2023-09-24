@@ -50,6 +50,17 @@ extern clock_t gXXXBaseTime;
     XXXLogCallFunction(str,tDuration,tDStart);
 extern void XXXLogCallFunction(const char* str, double dt, double start);
 
+// TODO:
+//#define XXX_LOG_NATIVE_BEGIN
+//#define XXX_LOG_NATIVE_END(str)
+#define XXX_LOG_NATIVE_BEGIN \
+    clock_t tnStart = clock();
+#define XXX_LOG_NATIVE_END(str) \
+    double tnDuration = (double)(clock() - tnStart)/CLOCKS_PER_SEC*1000.f; \
+    double tnDStart = (double)(tnStart - gXXXBaseTime)/CLOCKS_PER_SEC*1000.f; \
+    XXXLogNativeFunction(str,tnDuration,tnDStart);
+extern void XXXLogNativeFunction(const char* str, double dt, double start);
+
 namespace hippy {
 inline namespace driver {
 inline namespace napi {

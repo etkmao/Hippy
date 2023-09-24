@@ -419,12 +419,14 @@ std::shared_ptr<ClassTemplate<SceneBuilder>> RegisterSceneBuilder(const std::wea
       size_t argument_count,
       const std::shared_ptr<CtxValue> arguments[],
       std::shared_ptr<CtxValue>&) -> std::shared_ptr<CtxValue> {
+          XXX_LOG_NATIVE_BEGIN
     auto scope = weak_scope.lock();
     if (!scope) {
       return nullptr;
     }
     auto ret = HandleJsValue(scope->GetContext(), arguments[0], scope);
     SceneBuilder::Create(scope->GetDomManager(), scope->GetRootNode(), std::move(std::get<2>(ret)));
+          XXX_LOG_NATIVE_END("SceneBuilder create")
     return nullptr;
   };
   class_template.functions.emplace_back(std::move(create_func_def));
@@ -436,12 +438,14 @@ std::shared_ptr<ClassTemplate<SceneBuilder>> RegisterSceneBuilder(const std::wea
       size_t argument_count,
       const std::shared_ptr<CtxValue> arguments[],
       std::shared_ptr<CtxValue>&) -> std::shared_ptr<CtxValue> {
+          XXX_LOG_NATIVE_BEGIN
     auto scope = weak_scope.lock();
     if (!scope) {
       return nullptr;
     }
     auto ret = HandleJsValue(scope->GetContext(), arguments[0], scope);
     SceneBuilder::Update(scope->GetDomManager(), scope->GetRootNode(), std::move(std::get<2>(ret)));
+          XXX_LOG_NATIVE_END("SceneBuilder update")
     return nullptr;
   };
   class_template.functions.emplace_back(std::move(update_func_def));
@@ -452,6 +456,7 @@ std::shared_ptr<ClassTemplate<SceneBuilder>> RegisterSceneBuilder(const std::wea
                                         const std::shared_ptr<CtxValue> arguments[],
                                         std::shared_ptr<CtxValue>&)
       -> std::shared_ptr<CtxValue> {
+          XXX_LOG_NATIVE_BEGIN
     auto scope = weak_scope.lock();
     if (!scope) {
       return nullptr;
@@ -489,6 +494,7 @@ std::shared_ptr<ClassTemplate<SceneBuilder>> RegisterSceneBuilder(const std::wea
       }
     }
     SceneBuilder::Move(weak_dom_manager, scope->GetRootNode(), std::move(dom_infos));
+          XXX_LOG_NATIVE_END("SceneBuilder move")
     return nullptr;
   };
   class_template.functions.emplace_back(std::move(move_func_def));
@@ -500,6 +506,7 @@ std::shared_ptr<ClassTemplate<SceneBuilder>> RegisterSceneBuilder(const std::wea
       size_t argument_count,
       const std::shared_ptr<CtxValue> arguments[],
       std::shared_ptr<CtxValue>&) -> std::shared_ptr<CtxValue> {
+          XXX_LOG_NATIVE_BEGIN
     auto scope = weak_scope.lock();
     if (!scope) {
       return nullptr;
@@ -532,6 +539,7 @@ std::shared_ptr<ClassTemplate<SceneBuilder>> RegisterSceneBuilder(const std::wea
       }
     }
     SceneBuilder::Delete(scope->GetDomManager(), scope->GetRootNode(), std::move(dom_infos));
+          XXX_LOG_NATIVE_END("SceneBuilder delete")
     return nullptr;
   };
   class_template.functions.emplace_back(std::move(delete_func_def));
@@ -543,6 +551,7 @@ std::shared_ptr<ClassTemplate<SceneBuilder>> RegisterSceneBuilder(const std::wea
       size_t argument_count,
       const std::shared_ptr<CtxValue> arguments[],
       std::shared_ptr<CtxValue>&) -> std::shared_ptr<CtxValue> {
+          XXX_LOG_NATIVE_BEGIN
     auto scope = weak_scope.lock();
     if (!scope) {
       return nullptr;
@@ -551,6 +560,7 @@ std::shared_ptr<ClassTemplate<SceneBuilder>> RegisterSceneBuilder(const std::wea
     HandleEventListenerInfo(scope->GetContext(), argument_count, arguments, listener_info);
     auto dom_listener_info = scope->AddListener(listener_info);
     SceneBuilder::AddEventListener(scope->GetDomManager(), scope->GetRootNode(), dom_listener_info);
+          XXX_LOG_NATIVE_END("SceneBuilder addEventListener")
     return nullptr;
   };
   class_template.functions.emplace_back(std::move(add_event_listener_def));
@@ -562,6 +572,7 @@ std::shared_ptr<ClassTemplate<SceneBuilder>> RegisterSceneBuilder(const std::wea
       size_t argument_count,
       const std::shared_ptr<CtxValue> arguments[],
       std::shared_ptr<CtxValue>&) -> std::shared_ptr<CtxValue> {
+          XXX_LOG_NATIVE_BEGIN
     auto scope = weak_scope.lock();
     if (!scope) {
       return nullptr;
@@ -570,6 +581,7 @@ std::shared_ptr<ClassTemplate<SceneBuilder>> RegisterSceneBuilder(const std::wea
     HandleEventListenerInfo(scope->GetContext(), argument_count, arguments, listener_info);
     auto dom_listener_info = scope->RemoveListener(listener_info);
     SceneBuilder::RemoveEventListener(scope->GetDomManager(), scope->GetRootNode(), dom_listener_info);
+          XXX_LOG_NATIVE_END("SceneBuilder removeEventListener")
     return nullptr;
   };
   class_template.functions.emplace_back(std::move(remove_event_listener_def));
@@ -582,11 +594,13 @@ std::shared_ptr<ClassTemplate<SceneBuilder>> RegisterSceneBuilder(const std::wea
       size_t argument_count,
       const std::shared_ptr<CtxValue> arguments[],
       std::shared_ptr<CtxValue>&) -> std::shared_ptr<CtxValue> {
+          XXX_LOG_NATIVE_BEGIN
     auto scope = weak_scope.lock();
     if (!scope) {
       return nullptr;
     }
     SceneBuilder::Build(scope->GetDomManager(), scope->GetRootNode());
+          XXX_LOG_NATIVE_END("SceneBuilder build")
     return nullptr;
   };
   class_template.functions.emplace_back(std::move(build_func_def));

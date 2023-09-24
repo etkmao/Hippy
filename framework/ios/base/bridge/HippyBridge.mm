@@ -70,6 +70,17 @@
 #include "devtools/devtools_data_source.h"
 #endif
 
+// TODO:
+static int sCnt = 0;
+void XXXLogNativeFunction(const char* str, double dt, double start) {
+    printf("--- xxx CallNative, %4d, %-60s, dt: %4.6lf, start: %6.f, %s, %s, %s, %s, %s\n", ++sCnt, str?str:"", dt, start,
+           dt>0.1f?  ">0.1ms": "      ",
+           dt>1.f?   ">1ms":   "    ",
+           dt>10.f?  ">10ms":  "     ",
+           dt>50.f?  ">50ms":  "     ",
+           dt>100.f? ">100ms": "      ");
+}
+
 NSString *const HippyReloadNotification = @"HippyReloadNotification";
 NSString *const HippyJavaScriptDidLoadNotification = @"HippyJavaScriptDidLoadNotification";
 NSString *const HippyJavaScriptDidFailToLoadNotification = @"HippyJavaScriptDidFailToLoadNotification";
@@ -598,6 +609,7 @@ dispatch_queue_t HippyBridgeQueue() {
 }
 
 - (void)handleBuffer:(NSArray *)buffer {
+    XXX_LOG_NATIVE_BEGIN
     NSArray *requestsArray = [HPConvert NSArray:buffer];
 
     if (HP_DEBUG && requestsArray.count <= HippyBridgeFieldParams) {
@@ -658,9 +670,12 @@ dispatch_queue_t HippyBridgeQueue() {
             [self dispatchBlock:block queue:queue];
         }
     }
+    XXX_LOG_NATIVE_END("handleBuffer")
 }
 
 - (id)callNativeModule:(NSUInteger)moduleID method:(NSUInteger)methodID params:(NSArray *)params {
+    NSString* logStr = [NSString stringWithFormat:@"callNativeModule, moduleId: %lu %lu, %@", moduleID, methodID, @""];
+    XXX_LOG_NATIVE_BEGIN
     // hippy will send 'destroyInstance' event to JS.
     // JS may call actions after that.
     // so HippyBatchBridge needs to be valid
@@ -716,7 +731,9 @@ dispatch_queue_t HippyBridgeQueue() {
                                                                containCallback:containCallback];
         }
         if (shouldInvoked) {
-            return [method invokeWithBridge:self module:moduleData.instance arguments:params];
+            id r = [method invokeWithBridge:self module:moduleData.instance arguments:params];
+            XXX_LOG_NATIVE_END([logStr UTF8String])
+            return r;
         }
         else {
             return nil;

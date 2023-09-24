@@ -59,6 +59,7 @@ GEN_INVOKE_CB(ContextifyModule, RunInThisContext) // NOLINT(cert-err58-cpp)
 GEN_INVOKE_CB(ContextifyModule, LoadUntrustedContent) // NOLINT(cert-err58-cpp)
 
 void ContextifyModule::RunInThisContext(hippy::napi::CallbackInfo &info, void* data) { // NOLINT(readability-convert-member-functions-to-static)
+    XXX_LOG_NATIVE_BEGIN
   auto scope_wrapper = reinterpret_cast<ScopeWrapper*>(std::any_cast<void*>(info.GetSlot()));
   auto scope = scope_wrapper->scope.lock();
   FOOTSTONE_CHECK(scope);
@@ -90,6 +91,7 @@ void ContextifyModule::RunInThisContext(hippy::napi::CallbackInfo &info, void* d
   } else {
     info.GetReturnValue()->Set(ret);
   }
+    XXX_LOG_NATIVE_END("ContextifyModule::RunInThisContext")
 }
 
 void ContextifyModule::RemoveCBFunc(const string_view& uri) {
@@ -97,6 +99,7 @@ void ContextifyModule::RemoveCBFunc(const string_view& uri) {
 }
 
 void ContextifyModule::LoadUntrustedContent(CallbackInfo& info, void* data) {
+    XXX_LOG_NATIVE_BEGIN
   auto scope_wrapper = reinterpret_cast<ScopeWrapper*>(std::any_cast<void*>(info.GetSlot()));
   auto scope = scope_wrapper->scope.lock();
   FOOTSTONE_CHECK(scope);
@@ -210,6 +213,7 @@ void ContextifyModule::LoadUntrustedContent(CallbackInfo& info, void* data) {
   loader->RequestUntrustedContent(uri, {}, cb);
 
   info.GetReturnValue()->SetUndefined();
+    XXX_LOG_NATIVE_END("ContextifyModule::LoadUntrustedContent")
 }
 
 std::shared_ptr<CtxValue> ContextifyModule::BindFunction(std::shared_ptr<Scope> scope,

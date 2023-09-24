@@ -299,6 +299,7 @@ RegisterAnimation(const std::weak_ptr<Scope>& weak_scope) {
       void* external,
       std::shared_ptr<CtxValue>& exception)
       -> std::shared_ptr<CubicBezierAnimation> {
+          XXX_LOG_NATIVE_BEGIN
     auto scope = weak_scope.lock();
     if (!scope) {
       return nullptr;
@@ -324,6 +325,7 @@ RegisterAnimation(const std::weak_ptr<Scope>& weak_scope) {
     auto animation_manager = root_node->GetAnimationManager();
     animation->SetAnimationManager(animation_manager);
     animation_manager->AddAnimation(animation);
+          XXX_LOG_NATIVE_END("CubicBezierAnimation constructor")
     return animation;
   };
 
@@ -334,6 +336,7 @@ RegisterAnimation(const std::weak_ptr<Scope>& weak_scope) {
       size_t argument_count,
       const std::shared_ptr<CtxValue> arguments[],
       std::shared_ptr<CtxValue>&) -> std::shared_ptr<CtxValue> {
+          XXX_LOG_NATIVE_BEGIN
     if (!animation) {
       return nullptr;
     }
@@ -342,7 +345,9 @@ RegisterAnimation(const std::weak_ptr<Scope>& weak_scope) {
       return nullptr;
     }
     auto id = animation->GetId();
-    return scope->GetContext()->CreateNumber(static_cast<double>(id));
+    auto r = scope->GetContext()->CreateNumber(static_cast<double>(id));
+          XXX_LOG_NATIVE_END("CubicBezierAnimation getId")
+    return r;
   };
   class_template.functions.emplace_back(std::move(id_func_def));
 
@@ -353,6 +358,7 @@ RegisterAnimation(const std::weak_ptr<Scope>& weak_scope) {
       size_t argument_count,
       const std::shared_ptr<CtxValue> arguments[],
       std::shared_ptr<CtxValue>&) -> std::shared_ptr<CtxValue> {
+          XXX_LOG_NATIVE_BEGIN
     if (!animation) {
       return nullptr;
     }
@@ -371,6 +377,7 @@ RegisterAnimation(const std::weak_ptr<Scope>& weak_scope) {
       return nullptr;
     }
     animation->Start();
+          XXX_LOG_NATIVE_END("CubicBezierAnimation start")
     return nullptr;
   };
   class_template.functions.emplace_back(std::move(start_func_def));
@@ -382,6 +389,7 @@ RegisterAnimation(const std::weak_ptr<Scope>& weak_scope) {
       size_t argument_count,
       const std::shared_ptr<CtxValue> arguments[],
       std::shared_ptr<CtxValue>&) -> std::shared_ptr<CtxValue> {
+          XXX_LOG_NATIVE_BEGIN
     if (!animation) {
       return nullptr;
     }
@@ -400,6 +408,7 @@ RegisterAnimation(const std::weak_ptr<Scope>& weak_scope) {
       return nullptr;
     }
     animation->Destroy();
+          XXX_LOG_NATIVE_END("CubicBezierAnimation destroy")
     return nullptr;
   };
   class_template.functions.emplace_back(std::move(destroy_func_def));
@@ -411,6 +420,7 @@ RegisterAnimation(const std::weak_ptr<Scope>& weak_scope) {
       size_t argument_count,
       const std::shared_ptr<CtxValue> arguments[],
       std::shared_ptr<CtxValue>&) -> std::shared_ptr<CtxValue> {
+          XXX_LOG_NATIVE_BEGIN
     if (!animation) {
       return nullptr;
     }
@@ -429,6 +439,7 @@ RegisterAnimation(const std::weak_ptr<Scope>& weak_scope) {
       return nullptr;
     }
     animation->Pause();
+          XXX_LOG_NATIVE_END("CubicBezierAnimation pause")
     return nullptr;
   };
   class_template.functions.emplace_back(std::move(pause_func_def));
@@ -440,6 +451,7 @@ RegisterAnimation(const std::weak_ptr<Scope>& weak_scope) {
       size_t argument_count,
       const std::shared_ptr<CtxValue> arguments[],
       std::shared_ptr<CtxValue>&) -> std::shared_ptr<CtxValue> {
+          XXX_LOG_NATIVE_BEGIN
     if (!animation) {
       return nullptr;
     }
@@ -458,6 +470,7 @@ RegisterAnimation(const std::weak_ptr<Scope>& weak_scope) {
       return nullptr;
     }
     animation->Resume();
+          XXX_LOG_NATIVE_END("CubicBezierAnimation resume")
     return nullptr;
   };
   class_template.functions.emplace_back(std::move(resume_func_def));
@@ -469,6 +482,7 @@ RegisterAnimation(const std::weak_ptr<Scope>& weak_scope) {
       size_t argument_count,
       const std::shared_ptr<CtxValue> arguments[],
       std::shared_ptr<CtxValue>& exception) -> std::shared_ptr<CtxValue> {
+          XXX_LOG_NATIVE_BEGIN
     if (!animation) {
       return nullptr;
     }
@@ -493,6 +507,7 @@ RegisterAnimation(const std::weak_ptr<Scope>& weak_scope) {
     if (!root_node) {
       return nullptr;
     }
+          XXX_LOG_NATIVE_END("CubicBezierAnimation updateAnimation")
     return nullptr;
   };
   class_template.functions.emplace_back(std::move(update_func_def));
@@ -504,6 +519,7 @@ RegisterAnimation(const std::weak_ptr<Scope>& weak_scope) {
       size_t argument_count,
       const std::shared_ptr<CtxValue> arguments[],
       std::shared_ptr<CtxValue>& exception) -> std::shared_ptr<CtxValue> {
+          XXX_LOG_NATIVE_BEGIN
     if (!animation) {
       return nullptr;
     }
@@ -555,6 +571,7 @@ RegisterAnimation(const std::weak_ptr<Scope>& weak_scope) {
         event_name, string_view::Encoding::Utf8).utf8_value()), std::move(cb));
     auto class_template_ptr = std::any_cast<std::shared_ptr<ClassTemplate<CubicBezierAnimation>>>(scope->GetClassTemplate("Animation"));
     class_template_ptr->holder_ctx_values.emplace_back(func);
+          XXX_LOG_NATIVE_END("CubicBezierAnimation addEventListener")
     return nullptr;
   };
   class_template.functions.emplace_back(std::move(add_event_listener_func_def));
@@ -566,6 +583,7 @@ RegisterAnimation(const std::weak_ptr<Scope>& weak_scope) {
       size_t argument_count,
       const std::shared_ptr<CtxValue> arguments[],
       std::shared_ptr<CtxValue>& exception) -> std::shared_ptr<CtxValue> {
+          XXX_LOG_NATIVE_BEGIN
     if (!animation) {
       return nullptr;
     }
@@ -596,6 +614,7 @@ RegisterAnimation(const std::weak_ptr<Scope>& weak_scope) {
     }
     animation->RemoveEventListener(StringViewUtils::ToStdString(StringViewUtils::ConvertEncoding(
         event_name, string_view::Encoding::Utf8).utf8_value()));
+          XXX_LOG_NATIVE_END("CubicBezierAnimation removeEventListener")
     return nullptr;
   };
   class_template.functions.emplace_back(std::move(remove_listener_func_def));
@@ -614,6 +633,7 @@ RegisterAnimationSet(const std::weak_ptr<Scope>& weak_scope) {
       const std::shared_ptr<CtxValue> arguments[],
       void* external,
       std::shared_ptr<CtxValue>& exception) -> std::shared_ptr<AnimationSet> {
+          XXX_LOG_NATIVE_BEGIN
     auto scope = weak_scope.lock();
     if (!scope) {
       return nullptr;
@@ -639,6 +659,7 @@ RegisterAnimationSet(const std::weak_ptr<Scope>& weak_scope) {
     set->SetAnimationManager(root_node->GetAnimationManager());
     set->Init();
     animation_manager->AddAnimation(set);
+          XXX_LOG_NATIVE_END("AnimationSet constructor")
     return set;
   };
 
@@ -649,6 +670,7 @@ RegisterAnimationSet(const std::weak_ptr<Scope>& weak_scope) {
       size_t argument_count,
       const std::shared_ptr<CtxValue> arguments[],
       std::shared_ptr<CtxValue>&) -> std::shared_ptr<CtxValue> {
+          XXX_LOG_NATIVE_BEGIN
     if (!animation_set) {
       return nullptr;
     }
@@ -657,7 +679,9 @@ RegisterAnimationSet(const std::weak_ptr<Scope>& weak_scope) {
       return nullptr;
     }
     auto id = animation_set->GetId();
-    return scope->GetContext()->CreateNumber(static_cast<double>(id));
+    auto r = scope->GetContext()->CreateNumber(static_cast<double>(id));
+          XXX_LOG_NATIVE_END("AnimationSet getId")
+    return r;
   };
   def.functions.emplace_back(std::move(id_func_def));
 
@@ -668,6 +692,7 @@ RegisterAnimationSet(const std::weak_ptr<Scope>& weak_scope) {
       size_t argument_count,
       const std::shared_ptr<CtxValue> arguments[],
       std::shared_ptr<CtxValue>&) -> std::shared_ptr<CtxValue> {
+          XXX_LOG_NATIVE_BEGIN
     if (!animation_set) {
       return nullptr;
     }
@@ -686,6 +711,7 @@ RegisterAnimationSet(const std::weak_ptr<Scope>& weak_scope) {
       return nullptr;
     }
     animation_set->Start();
+          XXX_LOG_NATIVE_END("AnimationSet start")
     return nullptr;
   };
   def.functions.emplace_back(std::move(start_func_def));
@@ -697,6 +723,7 @@ RegisterAnimationSet(const std::weak_ptr<Scope>& weak_scope) {
       size_t argument_count,
       const std::shared_ptr<CtxValue> arguments[],
       std::shared_ptr<CtxValue>&) -> std::shared_ptr<CtxValue> {
+          XXX_LOG_NATIVE_BEGIN
     if (!animation_set) {
       return nullptr;
     }
@@ -715,6 +742,7 @@ RegisterAnimationSet(const std::weak_ptr<Scope>& weak_scope) {
       return nullptr;
     }
     animation_set->Destroy();
+          XXX_LOG_NATIVE_END("AnimationSet destroy")
     return nullptr;
   };
   def.functions.emplace_back(std::move(destroy_func_def));
@@ -726,6 +754,7 @@ RegisterAnimationSet(const std::weak_ptr<Scope>& weak_scope) {
       size_t argument_count,
       const std::shared_ptr<CtxValue> arguments[],
       std::shared_ptr<CtxValue>&) -> std::shared_ptr<CtxValue> {
+          XXX_LOG_NATIVE_BEGIN
     if (!animation_set) {
       return nullptr;
     }
@@ -744,6 +773,7 @@ RegisterAnimationSet(const std::weak_ptr<Scope>& weak_scope) {
       return nullptr;
     }
     animation_set->Pause();
+          XXX_LOG_NATIVE_END("AnimationSet pause")
     return nullptr;
   };
   def.functions.emplace_back(std::move(pause_func_def));
@@ -755,6 +785,7 @@ RegisterAnimationSet(const std::weak_ptr<Scope>& weak_scope) {
       size_t argument_count,
       const std::shared_ptr<CtxValue> arguments[],
       std::shared_ptr<CtxValue>&) -> std::shared_ptr<CtxValue> {
+          XXX_LOG_NATIVE_BEGIN
     if (!animation_set) {
       return nullptr;
     }
@@ -773,6 +804,7 @@ RegisterAnimationSet(const std::weak_ptr<Scope>& weak_scope) {
       return nullptr;
     }
     animation_set->Resume();
+          XXX_LOG_NATIVE_END("AnimationSet resume")
     return nullptr;
   };
   def.functions.emplace_back(std::move(resume_func_def));
@@ -784,6 +816,7 @@ RegisterAnimationSet(const std::weak_ptr<Scope>& weak_scope) {
       size_t argument_count,
       const std::shared_ptr<CtxValue> arguments[],
       std::shared_ptr<CtxValue>& exception) -> std::shared_ptr<CtxValue> {
+          XXX_LOG_NATIVE_BEGIN
     if (!animation_set) {
       return nullptr;
     }
@@ -835,6 +868,7 @@ RegisterAnimationSet(const std::weak_ptr<Scope>& weak_scope) {
         event_name, string_view::Encoding::Utf8).utf8_value()), std::move(cb));
     auto class_template_ptr = std::any_cast<std::shared_ptr<ClassTemplate<AnimationSet>>>(scope->GetClassTemplate("AnimationSet"));
     class_template_ptr->holder_ctx_values.emplace_back(func);
+          XXX_LOG_NATIVE_END("AnimationSet addEventListener")
     return nullptr;
   };
   def.functions.emplace_back(std::move(add_event_listener_func_def));
@@ -846,6 +880,7 @@ RegisterAnimationSet(const std::weak_ptr<Scope>& weak_scope) {
       size_t argument_count,
       const std::shared_ptr<CtxValue> arguments[],
       std::shared_ptr<CtxValue>& exception) -> std::shared_ptr<CtxValue> {
+          XXX_LOG_NATIVE_BEGIN
     if (!animation_set) {
       return nullptr;
     }
@@ -877,6 +912,7 @@ RegisterAnimationSet(const std::weak_ptr<Scope>& weak_scope) {
     }
     animation_set->RemoveEventListener(StringViewUtils::ToStdString(StringViewUtils::ConvertEncoding(
         event_name, string_view::Encoding::Utf8).utf8_value()));
+          XXX_LOG_NATIVE_END("AnimationSet removeEventListener")
     return nullptr;
   };
   def.functions.emplace_back(std::move(remove_listener_func_def));

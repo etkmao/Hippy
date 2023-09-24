@@ -37,3 +37,14 @@ Task::Task(std::function<void()> exec_unit) : unit_(std::move(exec_unit)) {
 
 } // namespace runner
 } // namespace footstone
+
+// TODO:
+static int sCnt = 0;
+void XXXLogTaskFunction(const char* str, double dt, double start) {
+    printf("--- xxx task, %4d, %-60s, dt: %4.6lf, start: %6.f, %s, %s, %s, %s, %s\n", ++sCnt, str?str:"", dt, start,
+           dt>0.1f?  ">0.1ms": "      ",
+           dt>1.f?   ">1ms":   "    ",
+           dt>10.f?  ">10ms":  "     ",
+           dt>50.f?  ">50ms":  "     ",
+           dt>100.f? ">100ms": "      ");
+}
