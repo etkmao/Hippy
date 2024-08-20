@@ -20,6 +20,7 @@ import android.view.View;
 
 import androidx.annotation.NonNull;
 import com.tencent.mtt.hippy.modules.Promise;
+import com.tencent.mtt.hippy.utils.LogUtils;
 import com.tencent.mtt.supportui.views.viewpager.ViewPager;
 import com.tencent.renderer.utils.EventUtils;
 
@@ -45,6 +46,9 @@ public class ViewPagerPageChangeListener implements ViewPager.OnPageChangeListen
             Map<String, Object> params = new HashMap<>();
             params.put(PAGE_ITEM_POSITION, position);
             params.put(PAGE_ITEM_OFFSET, positionOffset);
+
+            LogUtils.e("hippyxxx", "pager, position: " + position + ", offset: " + positionOffset);
+
             EventUtils.sendComponentEvent(mPager, EventUtils.EVENT_PAGE_SCROLL, params);
         }
     }

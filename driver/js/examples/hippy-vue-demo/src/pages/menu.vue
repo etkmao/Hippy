@@ -1,5 +1,5 @@
 <template>
-  <ul class="feature-list">
+  <ul class="feature-list" @scroll="onScroll" @endReached="onEndReached" @appear="onAppear(1)">
     <li>
       <div id="version-info">
         <p class="feature-title">
@@ -69,6 +69,23 @@ export default {
       })),
       Vue,
     };
+  },
+  mounted() {
+    ConsoleModule.log('~~~~~~~~~~~~~~~~~ ConsoleModule log - on mounted ~~~~~~~~~~~~~~~~~');
+  },
+  methods: {
+    onAppear(index) {
+      alert(1);
+      ConsoleModule.log('~~~~~~~~~~~~~~~~~ ConsoleModule log - on appear ~~~~~~~~~~~~~~~~~');
+    },
+    onScroll(event) {
+      console.log('onScroll', event.offsetY);
+      ConsoleModule.log('~~~~~~~~~~~~~~~~~ ConsoleModule log - on scroll ~~~~~~~~~~~~~~~~~');
+    },
+    async onEndReached() {
+      alert(2);
+      ConsoleModule.log('~~~~~~~~~~~~~~~~~ ConsoleModule log - onEndReached ~~~~~~~~~~~~~~~~~');
+    },
   },
   /**
    * Hippy-Vue 的特殊生命周期方法

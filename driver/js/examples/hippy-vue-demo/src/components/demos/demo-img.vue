@@ -108,7 +108,7 @@ export default {
 
 #demo-img .image {
   width: 300px;
-  height: 180px;
+
   margin: 30px;
   border-width: 1px;
   border-style: solid;
@@ -117,7 +117,7 @@ export default {
 
 #demo-img .img-result {
   width: 300px;
-  height: 150px;
+
   margin-top: -30px;
   margin-horizontal: 30px;
   border-width: 1px;
