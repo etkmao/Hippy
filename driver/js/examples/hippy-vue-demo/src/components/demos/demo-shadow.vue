@@ -25,6 +25,10 @@
           <p class="text-block">
             E
           </p>
+          <p class="text-block">
+            F
+          </p>
+
         </div>
       </div>
 
@@ -80,22 +84,23 @@ export default {
     width: 170px;
     height: 270px;
     box-shadow-opacity: 0.6;
-    box-shadow-radius: 5;
+    /* box-shadow-radius: 5; */
     box-shadow-color: #098a29;
     /* container & content should both set radius */
     /* 容器和内容都要设置border-radius */
     border-radius: 5px;
-    padding-left: 5px;
-    padding-top: 10px;
-    padding-right: 5px;
-    padding-bottom: 10px;
+    padding-left: 15px;
+    /* padding-top: 20px; */
+    padding-right: 15px;
+    padding-bottom: 20px;
+    background-color: blue;
   }
 
   .div-demo-3 {
     /* width: 150px; */
     overflow-y: scroll;
     /* margin: 10px; */
-    /* height: 320px; */
+    height: 220px;
     border-color: #0b1695;
     border-width: 1px;
     background-color: bisque;

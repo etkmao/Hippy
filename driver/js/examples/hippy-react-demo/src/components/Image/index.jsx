@@ -1,137 +1,88 @@
 import React from 'react';
 import {
-  ScrollView,
   Text,
-  Image,
+  View,
+  ScrollView,
   StyleSheet,
+  Platform,
 } from '@hippy/react';
 
-// Import the image to base64 for defaultSource props.
-import defaultSource from './defaultSource.jpg';
-import HippyLogoImg from './hippyLogoWhite.png';
+const stylesNoOffset = StyleSheet.create({
+  shadowDemo: {
+    flex: 1,
+    overflowY: 'scroll',
+  },
+  // android boxShadow style
+  shadowDemoCubeAndroid: {
+    position: 'absolute',
+    left: 50,
+    top: 50,
+    width: 170,
+    height: 270,
+    boxShadowOpacity: 0.6,
+//     boxShadowRadius: 5,
+    boxShadowColor: '#4c9afa',
+    // container & content should both set radius
+    // 容器和内容都要设置radius
+    borderRadius: 5,
+    backgroundColor: '#0055ff',
+    paddingLeft: 15,
+    paddingRight: 15,
+    paddingTop: 20,
+    paddingBottom: 20,
+  },
 
-const imageUrl = 'https://user-images.githubusercontent.com/12878546/148736102-7cd9525b-aceb-41c6-a905-d3156219ef16.png';
-
-const styles = StyleSheet.create({
-  container_style: {
-    alignItems: 'center',
-  },
-  image_style: {
-    width: 300,
-    height: 180,
-    margin: 16,
-    borderColor: '#4c9afa',
-    borderWidth: 1,
-    borderStyle: 'solid',
-    borderRadius: 4,
-  },
-  info_style: {
-    marginTop: 15,
-    marginLeft: 16,
-    fontSize: 16,
-    color: '#4c9afa',
-  },
-  img_result: {
-    width: 300,
-    marginTop: -15,
-    marginLeft: 16,
-    fontSize: 16,
-    color: '#4c9afa',
-    borderColor: '#4c9afa',
-    borderWidth: 1,
-    borderStyle: 'solid',
-    borderRadius: 4,
+  text: {
+    color: 'white',
   },
 });
 
-export default class ImageExpo extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      gifLoadResult: {},
-    };
-  }
-  render() {
-    const { width: gifWidth, height: gifHeight, url: gifUrl } = this.state.gifLoadResult;
+const styles = StyleSheet.create({
+  itemStyle: {
+    width: 100,
+    height: 100,
+    lineHeight: 100,
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: '#4c9afa',
+    fontSize: 80,
+    margin: 20,
+    color: '#4c9afa',
+    textAlign: 'center',
+  },
+  verticalScrollView: {
+//     height: 300,
+    width: 140,
+//     margin: 20,
+    borderColor: '#eee',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    backgroundColor: '#aa5500'
+  },
+});
 
-    return (
-      <ScrollView style={styles.container_style}>
-        <Text style={styles.info_style}>Contain:</Text>
-        <Image
-          style={[styles.image_style]}
-          resizeMode={Image.resizeMode.contain}
-          defaultSource={defaultSource}
-          source={{ uri: imageUrl }}
-          onProgress={(e) => {
-            console.log('onProgress', e);
-          }}
-          onLoadStart={() => {
-            console.log('image onloadStart');
-          }}
-          onLoad={() => {
-            console.log('image onLoad');
-          }}
-          onError={(e) => {
-            console.log('image onError', e);
-          }}
-          onLoadEnd={() => {
-            console.log('image onLoadEnd');
-          }}
-        />
-        <Text style={styles.info_style}>Cover:</Text>
-        <Image
-          style={[styles.image_style]}
-          defaultSource={defaultSource}
-          source={{ uri: imageUrl }}
-          resizeMode={Image.resizeMode.cover}
-        />
-        <Text style={styles.info_style}>Center:</Text>
-        <Image
-          style={[styles.image_style]}
-          defaultSource={defaultSource}
-          source={{ uri: imageUrl }}
-          resizeMode={Image.resizeMode.center}
-        />
-        <Text style={styles.info_style}>CapInsets:</Text>
-        <Image
-          style={[styles.image_style]}
-          defaultSource={defaultSource}
-          source={{ uri: imageUrl }}
-          capInsets={{
-            top: 50,
-            left: 50,
-            bottom: 50,
-            right: 50,
-          }}
-          resizeMode={Image.resizeMode.cover}
-        />
-        <Text style={styles.info_style}>TintColor:</Text>
-        <Image
-          style={[styles.image_style, { tintColor: '#4c9afa99' }]}
-          defaultSource={defaultSource}
-          source={{ uri: HippyLogoImg }}
-          resizeMode={Image.resizeMode.center}
-        />
-        <Text style={styles.info_style}>Cover GIF:</Text>
-        <Image
-          style={[styles.image_style]}
-          resizeMode={Image.resizeMode.cover}
-          defaultSource={defaultSource}
-          source={{ uri: 'https://user-images.githubusercontent.com/12878546/148736255-7193f89e-9caf-49c0-86b0-548209506bd6.gif' }}
-          onLoad={(result) => {
-            console.log(`gif onLoad result: ${result}`);
-            const { width, height, url } = result;
-            this.setState({
-              gifLoadResult: {
-                width,
-                height,
-                url,
-              },
-            });
-          }}
-        />
-        <Text style={styles.img_result}>{ `gifLoadResult: { width: ${gifWidth}, height: ${gifHeight}, url: ${gifUrl} }` }</Text>
-      </ScrollView>
-    );
-  }
+export default function BoxShadowExpo() {
+  return (
+    <View style={stylesNoOffset.shadowDemo}>
+
+        <View style={stylesNoOffset.shadowDemoCubeAndroid}>
+
+          <ScrollView
+            bounces={true}
+            horizontal={false}
+            style={styles.verticalScrollView}
+          >
+            <Text style={styles.itemStyle}>A</Text>
+            <Text style={styles.itemStyle}>B</Text>
+            <Text style={styles.itemStyle}>C</Text>
+            <Text style={styles.itemStyle}>D</Text>
+            <Text style={styles.itemStyle}>E</Text>
+            <Text style={styles.itemStyle}>F</Text>
+            <Text style={styles.itemStyle}>A</Text>
+          </ScrollView>
+
+        </View>
+
+    </View>
+  );
 }
