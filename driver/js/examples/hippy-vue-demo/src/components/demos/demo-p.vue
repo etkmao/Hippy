@@ -7,13 +7,13 @@
 
       <div class="p-demo-content">
         <p
-          :style="{ backgroundColor: '#40b883', marginBottom: 10, paddingHorizontal: 10, paddingVertical: 5 }"
+          :style="{ backgroundColor: '#40b883'}"
         >
           <span style="font-size: 19px; color: white">小肥ཽε</span>
           <span>:</span>
           <span>等到的时候散户手上的票全部跌了80%，你能涨的上去吗</span>
         </p>
-        
+
       </div>
 
     </div>
