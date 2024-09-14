@@ -1,5 +1,15 @@
 <template>
   <div id="demo-list">
+  <ul-refresh-wrapper
+        ref="header"
+        style="flex:1;"
+        @refresh="onRefresh"
+      >
+        <ul-refresh class="refresh-header">
+          <p class="refresh-text">
+            {{ refreshText }}
+          </p>
+        </ul-refresh>
     <ul
       id="list"
       ref="list"
@@ -77,6 +87,7 @@
         />
       </li>
     </ul>
+  </ul-refresh-wrapper>
     <div
       v-if="Vue.Native.Platform === 'android'"
       :style="{
@@ -152,12 +163,18 @@ const mockDataArray = [
 export default {
   data() {
     return {
+      isRefreshing: false,
       Vue,
       loadingState: 'Loading now...',
       dataSource: [],
       delText: 'Delete',
       horizontal: undefined,
     };
+  },
+  computed: {
+    refreshText() {
+      return this.isRefreshing ? '正在刷新' : '下拉刷新';
+    },
   },
   mounted() {
     // onEndReach 位于屏幕底部时会多次触发，
@@ -166,6 +183,21 @@ export default {
     this.dataSource = mockDataArray;
   },
   methods: {
+    mockFetchData() {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          return resolve([]);
+        }, 600);
+      });
+    },
+    async onRefresh() {
+     // 重新获取数据
+     this.isRefreshing = true;
+     const dataSource = await this.mockFetchData();
+     this.isRefreshing = false;
+     // this.dataSource = dataSource.reverse();
+     this.$refs.header.refreshCompleted();
+   },
     changeDirection() {
       this.horizontal = this.horizontal === undefined ? true : undefined;
     },
@@ -232,6 +264,17 @@ export default {
 </script>
 
 <style scoped>
+  #demo-list .refresh-header {
+    background-color: #40b883;
+  }
+
+  #demo-list .refresh-text {
+    height: 40px;
+    line-height: 40px;
+    text-align: center;
+    color: white;
+  }
+
   #demo-list {
     collapsable: false;
     flex: 1;

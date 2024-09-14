@@ -22,6 +22,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.AccelerateInterpolator;
 
+import com.tencent.mtt.hippy.utils.LogUtils;
 import com.tencent.mtt.hippy.utils.PixelUtil;
 import com.tencent.mtt.hippy.views.common.ClipChildrenView;
 import com.tencent.mtt.hippy.views.hippylist.HippyRecyclerViewWrapper;
@@ -211,6 +212,10 @@ public class RefreshWrapper extends HippyViewGroup implements ClipChildrenView {
             if (currTime - mLastScrollEventTimeStamp < mScrollEventThrottle) {
                 return;
             }
+
+            // debug log
+            LogUtils.i("xxx hippy", "refresh sendOnScrollEvent: " + PixelUtil.px2dp(y));
+
             EventUtils.sendComponentEvent(this, EventUtils.EVENT_REFRESH_WRAPPER_SCROLL, generateScrollEvent(y));
             mLastScrollEventTimeStamp = currTime;
         }
