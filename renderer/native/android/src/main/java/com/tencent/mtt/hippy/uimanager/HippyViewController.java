@@ -582,10 +582,19 @@ public abstract class HippyViewController<T extends View & HippyViewBase> implem
                 outputBuffer[1] -= statusBarHeight;
             }
         } catch (Exception e) {
+            LogUtils.e(TAG, "xxx call fix, measureInWindow, exception: " + e.getMessage());
+
             promise.resolve(
                     "An exception occurred when get view location on screen: " + e.getMessage());
             return;
         }
+
+        LogUtils.e(TAG, "xxx call fix, measureInWindow: x=" + outputBuffer[0]
+            + ", y=" + outputBuffer[1]
+            + ", width=" + view.getWidth()
+            + ", height=" + view.getHeight()
+            + ", statusBarHeight=" + statusBarHeight);
+
         LogUtils.d(TAG, "measureInWindow: x=" + outputBuffer[0]
                 + ", y=" + outputBuffer[1]
                 + ", width=" + view.getWidth()

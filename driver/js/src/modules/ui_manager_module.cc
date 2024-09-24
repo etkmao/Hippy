@@ -67,6 +67,8 @@ void UIManagerModule::CallUIFunction(CallbackInfo& info, void* data) {
     name = name_value->ToStringChecked();
   }
 
+  FOOTSTONE_LOG(ERROR) << "xxx call fix, UIManagerModule::CallUIFunction, name: " << name;
+
   std::unordered_map<std::string, std::shared_ptr<HippyValue>> param;
   DomArgument param_value = *(hippy::ToDomArgument(context, info[2]));
   hippy::CallFunctionCallback cb = nullptr;
@@ -96,6 +98,9 @@ void UIManagerModule::CallUIFunction(CallbackInfo& info, void* data) {
         HippyValue value;
         bool flag = argument->ToObject(value);
         if (flag) {
+
+          FOOTSTONE_LOG(ERROR) << "xxx call fix, UIManagerModule::CallUIFunction, callback to js";
+
           auto param = hippy::CreateCtxValue(
               context, std::make_shared<HippyValue>(std::move(value)));
           if (param) {
@@ -119,6 +124,8 @@ void UIManagerModule::CallUIFunction(CallbackInfo& info, void* data) {
   if (!dom_manager) {
     return;
   }
+
+  FOOTSTONE_LOG(ERROR) << "xxx call fix, UIManagerModule::CallUIFunction, to dom_manager";
   dom_manager->CallFunction(scope->GetRootNode(), static_cast<uint32_t>(id), name, param_value, cb);
 }
 
