@@ -2,11 +2,8 @@
   <div class="button-demo">
     <label class="button-label">按钮和状态绑定</label>
     <button
-      :class="{ 'is-active': isClicked, 'is-pressing': isPressing }"
+      :class="{ 'is-active': true, 'is-pressing': false }"
       class="button-demo-1"
-      @touchstart="onTouchBtnStart"
-      @touchmove="onTouchBtnMove"
-      @touchend="onTouchBtnEnd"
       @click="clickView"
     >
       <span
@@ -17,6 +14,14 @@
         v-else
         class="button-text"
       >视图尚未点击</span>
+    </button>
+    <button
+      :class="{ 'is-active': true, 'is-pressing': false }"
+      class="button-demo-2"
+    >
+      <span
+        class="button-text"
+      >这里是第2个视图</span>
     </button>
     <img
       v-show="isClicked"
@@ -38,6 +43,9 @@ export default {
   methods: {
     clickView() {
       this.isClicked = !this.isClicked;
+    },
+    clickView2() {
+      console.log('clickView2');
     },
     // button touch event is supported after hippy-vue 2.6.2
     onTouchBtnStart(evt) {
@@ -76,13 +84,26 @@ export default {
   }
 
   .button-demo-1 {
+    left: 20px;
+    top: 100px;
     height: 64px;
     width: 240px;
     border-style: solid;
     border-color: #40b883;
     border-width: 2px;
     border-radius: 10px;
-    align-items: center;
+  }
+
+  .button-demo-2 {
+    left: 150px;
+    top: 36px;
+    height: 64px;
+    width: 240px;
+    border-style: solid;
+    border-color: #103355;
+    border-width: 2px;
+    border-radius: 10px;
+    background-color: #40b883;
   }
 
   .button-demo-1 .button-text {
