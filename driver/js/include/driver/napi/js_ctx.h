@@ -221,6 +221,75 @@ class Ctx {
   virtual std::shared_ptr<ClassDefinition> GetClassDefinition(const string_view& name) = 0;
   virtual void SetWeak(std::shared_ptr<CtxValue> value,
                        const std::unique_ptr<WeakCallbackWrapper>& wrapper) = 0;
+
+  void PrintValue(std::shared_ptr<CtxValue> value) {
+    FOOTSTONE_LOG(INFO) << "CtxValue - begin ------------------------------";
+    PrintValueImpl(value, 0);
+    FOOTSTONE_LOG(INFO) << "CtxValue - end ------------------------------";
+  }
+  void PrintValueImpl(std::shared_ptr<CtxValue> value, size_t spaceCount) {
+    std::string spaceStr;
+    spaceStr.resize(spaceCount * 4, ' ');
+    if (value == nullptr) {
+      FOOTSTONE_LOG(INFO) << "CtxValue - " << spaceStr << "nullptr";
+      return;
+    }
+    if (IsObject(value)) {
+      std::unordered_map<std::shared_ptr<CtxValue>, std::shared_ptr<CtxValue>> map;
+      if (GetEntriesFromObject(value, map)) {
+        FOOTSTONE_LOG(INFO) << "CtxValue - " << spaceStr << "object(size=" << map.size() << "):";
+        for (auto it : map) {
+          FOOTSTONE_LOG(INFO) << "CtxValue - " << spaceStr << "key:";
+          PrintValueImpl(it.first, spaceCount + 1);
+          FOOTSTONE_LOG(INFO) << "CtxValue - " << spaceStr << "value:";
+          PrintValueImpl(it.second, spaceCount + 1);
+        }
+      } else {
+        FOOTSTONE_LOG(INFO) << "CtxValue - " << spaceStr << "object(size=0)";
+      }
+    } else if (IsMap(value)) {
+      std::unordered_map<std::shared_ptr<CtxValue>, std::shared_ptr<CtxValue>> map;
+      if (GetEntriesFromMap(value, map)) {
+        FOOTSTONE_LOG(INFO) << "CtxValue - " << spaceStr << "map(size=" << map.size() << "):";
+        for (auto it : map) {
+          FOOTSTONE_LOG(INFO) << "CtxValue - " << spaceStr << "key:";
+          PrintValueImpl(it.first, spaceCount + 1);
+          FOOTSTONE_LOG(INFO) << "CtxValue - " << spaceStr << "value:";
+          PrintValueImpl(it.second, spaceCount + 1);
+        }
+      } else {
+        FOOTSTONE_LOG(INFO) << "CtxValue - " << spaceStr << "map(size=0)";
+      }
+    } else if (IsArray(value)) {
+      auto len = GetArrayLength(value);
+      FOOTSTONE_LOG(INFO) << "CtxValue - " << spaceStr << "array(size=" << len << "):";
+      for (int i = 0; i < (int)len; i++) {
+        FOOTSTONE_LOG(INFO) << "CtxValue - " << spaceStr << "element:";
+        auto t = CopyArrayElement(value, (uint32_t)i);
+        PrintValueImpl(t, spaceCount + 1);
+      }
+    } else if (IsString(value)) {
+      string_view str;
+      GetValueString(value, &str);
+      FOOTSTONE_LOG(INFO) << "CtxValue - " << spaceStr << "string: " << str;
+    } else if (IsNumber(value)) {
+      double d = 0;
+      GetValueNumber(value, &d);
+      FOOTSTONE_LOG(INFO) << "CtxValue - " << spaceStr << "number: " << d;
+    } else if (IsBoolean(value)) {
+      bool b = false;
+      GetValueBoolean(value, &b);
+      FOOTSTONE_LOG(INFO) << "CtxValue - " << spaceStr << "bool: " << b;
+    } else if (IsFunction(value)) {
+      FOOTSTONE_LOG(INFO) << "CtxValue - " << spaceStr << "function";
+    } else if (IsByteBuffer(value)) {
+      FOOTSTONE_LOG(INFO) << "CtxValue - " << spaceStr << "byte buffer";
+    } else if (IsNull(value)) {
+      FOOTSTONE_LOG(INFO) << "CtxValue - " << spaceStr << "null";
+    } else if (IsUndefined(value)) {
+      FOOTSTONE_LOG(INFO) << "CtxValue - " << spaceStr << "undefined";
+    }
+  }
 };
 
 }
