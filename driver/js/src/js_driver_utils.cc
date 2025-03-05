@@ -691,6 +691,9 @@ void JsDriverUtils::CallNative(hippy::napi::CallbackInfo& info, const std::funct
       FOOTSTONE_DLOG(INFO) << "CallJava json = " << json;
       buffer_data = StringViewUtils::ToStdString(
           StringViewUtils::ConvertEncoding(json, string_view::Encoding::Utf8).utf8_value());
+        
+      // test log
+      FOOTSTONE_LOG(INFO) << "xxx hippy, JsDriverUtils::CallNative, buffer_data, len: " << buffer_data.size() << ", content: " << buffer_data.c_str();
 #ifdef JS_V8
     }
 #elif JS_JSH

@@ -112,8 +112,16 @@ export class HippyModuleManagerImpl implements HippyModuleManager {
     const moduleFunc = params.moduleFunc;
 
     // callNative 参数反序列化
+    LogUtils.e('xxx hippy', 'JsDriver callNatives buffer len: ' + buffer.byteLength);
     let moduleParam = this.bytesToArgument(buffer);
-    LogUtils.i('hippy', 'JsDriver callNatives moduleParam: ' + moduleParam);
+    LogUtils.e('xxx hippy', 'JsDriver callNatives moduleParam: ' + moduleParam + ', len: ' + moduleParam.length);
+    if (moduleParam.length > 0) {
+      let map = (moduleParam as Array<HippyAny>)[0]
+      if (map instanceof Map) {
+        LogUtils.e('xxx hippy', 'JsDriver callNatives moduleParam[0].size: ' + (map as Map<string, HippyAny>).size);
+      }
+    }
+
     let module = this.getNativeModule(moduleName, false)
     if (module) {
       const promise: HippyModulePromise = new HippyModulePromiseImpl(
