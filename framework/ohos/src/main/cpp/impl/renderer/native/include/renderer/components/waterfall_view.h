@@ -39,12 +39,12 @@ namespace hippy {
 inline namespace render {
 inline namespace native {
 
-class WaterfallView : public BaseView ,public WaterFlowNodeDelegate ,public FlowItemNodeDelegate,public ListItemNodeDelegate,public ListNodeDelegate{
+class WaterfallView : public BaseView, public WaterFlowNodeDelegate, public FlowItemNodeDelegate, public ListItemNodeDelegate, public ListNodeDelegate {
 public:
   WaterfallView(std::shared_ptr<NativeRenderContext> &ctx);
   ~WaterfallView();
 
-  //baseview override
+  // BaseView override
   ArkUINode *GetLocalRootArkUINode() override;
   void CreateArkUINodeImpl() override;
   void DestroyArkUINodeImpl() override;
@@ -57,12 +57,12 @@ public:
   void CallImpl(const std::string &method, const std::vector<HippyValue> params,
               std::function<void(const HippyValue &result)> callback) override;
 
-  //WaterFlowNodeDelegate override
+  // WaterFlowNodeDelegate override
   void OnWaterFlowScrollIndex(int32_t firstIndex, int32_t lastIndex) override;
   void OnWaterFlowDidScroll(float_t offset, ArkUI_ScrollState state) override;
   void OnWaterFlowWillScroll(float_t offset, ArkUI_ScrollState state, int32_t source) override;
 
-  //ListNodeDelegate override
+  // ListNodeDelegate override
   void OnScrollIndex(int32_t firstIndex, int32_t lastIndex, int32_t centerIndex) override;
   void OnScroll(float scrollOffsetX, float scrollOffsetY) override;
   void OnWillScroll(float offset, ArkUI_ScrollState state) override;
@@ -72,17 +72,17 @@ public:
   void OnReachStart() override;
   void OnReachEnd() override;
 
-  //ArkUINodeDelegate override
+  // ArkUINodeDelegate override
   void OnAppear() override;
   void OnDisappear() override;
 
-  //FlowItemNodeDelegate
-  void OnFlowItemVisibleAreaChange(int32_t index, bool isVisible, float currentRatio) override ;
-  void OnFlowItemClick(int32_t index) override ;
+  // FlowItemNodeDelegate
+  void OnFlowItemVisibleAreaChange(int32_t index, bool isVisible, float currentRatio) override;
 
-  //ListItemNodeDelegate
-  void OnItemVisibleAreaChange(int32_t index, bool isVisible, float currentRatio) override ;
-  //pull head
+  // ListItemNodeDelegate
+  void OnItemVisibleAreaChange(int32_t index, bool isVisible, float currentRatio) override;
+
+  // pull head
   void OnHeadRefreshFinish(int32_t delay);
   void OnHeadRefresh();
 private:
@@ -91,6 +91,7 @@ private:
   void SendOnReachedEvent();
   void UpdateFooterView();
   void CheckInitListReadyNotify();
+
   std::shared_ptr<StackNode> stackNode_;
   std::shared_ptr<ListNode> listNode_;
   std::shared_ptr<ColumnNode> colInnerNode_;
@@ -107,18 +108,20 @@ private:
   std::string columnsTemplate_ = "1fr 1fr";
 
   uint64_t end_batch_callback_id_;
-  std::shared_ptr<PullHeaderView> headerView = nullptr;
-  std::shared_ptr<DivView> bannerView = nullptr;
-  std::shared_ptr<PullFooterView> footerView = nullptr;
+  std::shared_ptr<PullHeaderView> headerView_ = nullptr;
+  std::shared_ptr<PullFooterView> footerView_ = nullptr;
+  std::shared_ptr<DivView> headBannerView_ = nullptr;
+  std::shared_ptr<DivView> footBannerView_ = nullptr;
+
   float width_ = 0;
   float height_ = 0;
   bool scrollEnable_ = false;
-  bool isDragging_;
+  bool isDragging_ = false;
   int32_t lastScrollIndex_ = 0;
-  bool headerVisible = false;
-  bool footerVisible = false;
+  bool headerVisible_ = false;
+  bool footerVisible_ = false;
   
-  bool isInitListReadyNotified = false;
+  bool isInitListReadyNotified_ = false;
 };
 
 } // namespace native
