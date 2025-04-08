@@ -88,7 +88,7 @@ void WaterfallItemView::OnChildRemovedImpl(std::shared_ptr<BaseView> const &chil
 }
 
 void WaterfallItemView::UpdateRenderViewFrameImpl(const HRRect &frame, const HRPadding &padding) {
-//  BaseView::UpdateRenderViewFrameImpl(frame,padding);
+  // not set
 }
 
 } // namespace native

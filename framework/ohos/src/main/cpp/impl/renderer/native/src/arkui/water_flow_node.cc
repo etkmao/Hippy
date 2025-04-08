@@ -55,25 +55,24 @@ void WaterFlowNode::OnNodeEvent(ArkUI_NodeEvent *event) {
     return;
   }
   auto eventType = OH_ArkUI_NodeEvent_GetEventType(event);
-//  FOOTSTONE_DLOG(INFO)<<__FUNCTION__<<" event = "<<eventType; 
   auto nodeComponentEvent = OH_ArkUI_NodeEvent_GetNodeComponentEvent(event);
+  // FOOTSTONE_DLOG(INFO) << __FUNCTION__ << " event = " << eventType;
   if (eventType == ArkUI_NodeEventType::NODE_WATER_FLOW_ON_SCROLL_INDEX) {
     int32_t firstIndex = nodeComponentEvent->data[0].i32;
     int32_t lastIndex = nodeComponentEvent->data[1].i32;
     waterFlowNodeDelegate_->OnWaterFlowScrollIndex(firstIndex, lastIndex);
-  } else if(eventType == ArkUI_NodeEventType::NODE_WATER_FLOW_ON_DID_SCROLL){
+  } else if(eventType == ArkUI_NodeEventType::NODE_WATER_FLOW_ON_DID_SCROLL) {
     float_t offset = nodeComponentEvent->data[0].f32;
     int32_t state = nodeComponentEvent->data[1].i32;  
     waterFlowNodeDelegate_->OnWaterFlowDidScroll(offset, (ArkUI_ScrollState)state);    
-  } else if(eventType == ArkUI_NodeEventType::NODE_ON_WILL_SCROLL){
+  } else if(eventType == ArkUI_NodeEventType::NODE_ON_WILL_SCROLL) {
     float_t offset = nodeComponentEvent->data[0].f32;
     int32_t state = nodeComponentEvent->data[1].i32; 
     int32_t source = nodeComponentEvent->data[2].i32; 
     waterFlowNodeDelegate_->OnWaterFlowWillScroll(offset, ArkUI_ScrollState(state), source);
-  } else{
-    FOOTSTONE_DLOG(INFO)<<__FUNCTION__<<" event = "<<eventType;    
+  } else {
+    FOOTSTONE_DLOG(INFO) << __FUNCTION__<< " event = " << eventType;
   }
-    
 }
 
 HRPoint WaterFlowNode::GetScrollOffset() {
@@ -84,13 +83,13 @@ HRPoint WaterFlowNode::GetScrollOffset() {
 }
 
 void WaterFlowNode::SetScrollEdgeEffect(ArkUI_EdgeEffect effect) {
-  ArkUI_NumberValue value[] = {{.i32 = effect},};
+  ArkUI_NumberValue value[] = {{.i32 = effect}};
   ArkUI_AttributeItem item = {value, sizeof(value) / sizeof(ArkUI_NumberValue), nullptr, nullptr};
   MaybeThrow(NativeNodeApi::GetInstance()->setAttribute(nodeHandle_, NODE_SCROLL_EDGE_EFFECT, &item));
   SetSubAttributeFlag((uint32_t)AttributeFlag::SCROLL_EDGE_EFFECT);
 }
 
-void WaterFlowNode::ScrollToIndex(int32_t index, bool animated,ArkUI_ScrollAlignment align) {
+void WaterFlowNode::ScrollToIndex(int32_t index, bool animated, ArkUI_ScrollAlignment align) {
   ArkUI_NumberValue value[] = {{.i32 = index},
                                {.i32 = animated},
                                {.i32 = align }};
@@ -99,13 +98,13 @@ void WaterFlowNode::ScrollToIndex(int32_t index, bool animated,ArkUI_ScrollAlign
   SetSubAttributeFlag((uint32_t)AttributeFlag::WATER_FLOW_SCROLL_TO_INDEX);
 }
 
-void WaterFlowNode::SetColumnsTemplate(std::string columnsTemplate) {
+void WaterFlowNode::SetColumnsTemplate(const std::string &columnsTemplate) {
   ArkUI_AttributeItem item = {.string  = columnsTemplate.c_str()};
   MaybeThrow(NativeNodeApi::GetInstance()->setAttribute(nodeHandle_, NODE_WATER_FLOW_COLUMN_TEMPLATE, &item));
   SetSubAttributeFlag((uint32_t)AttributeFlag::WATER_FLOW_COLUMN_TEMPLATE);
 }
 
-void WaterFlowNode::SetRowTemplate(std::string rowsTemplate){
+void WaterFlowNode::SetRowTemplate(const std::string &rowsTemplate){
   ArkUI_AttributeItem item = {.string  = rowsTemplate.c_str()};
   MaybeThrow(NativeNodeApi::GetInstance()->setAttribute(nodeHandle_, NODE_WATER_FLOW_ROW_TEMPLATE, &item));
   SetSubAttributeFlag((uint32_t)AttributeFlag::WATER_FLOW_ROW_TEMPLATE);
@@ -147,7 +146,7 @@ void WaterFlowNode::SetScrollEnableInteraction(bool bEnable){
 }
 
 void WaterFlowNode::SetNestedScroll(ArkUI_ScrollNestedMode forward, ArkUI_ScrollNestedMode backward){
-  ArkUI_NumberValue value[] = {{.i32 = forward},{.i32 = backward}}; 
+  ArkUI_NumberValue value[] = {{.i32 = forward}, {.i32 = backward}}; 
   ArkUI_AttributeItem item = {value, sizeof(value) / sizeof(ArkUI_NumberValue), nullptr, nullptr};
   MaybeThrow(NativeNodeApi::GetInstance()->setAttribute(nodeHandle_, NODE_SCROLL_NESTED_SCROLL, &item));
   SetSubAttributeFlag((uint32_t)AttributeFlag::SCROLL_NESTED_SCROLL);
