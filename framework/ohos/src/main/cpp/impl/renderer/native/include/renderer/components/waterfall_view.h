@@ -92,12 +92,12 @@ private:
   void UpdateFooterView();
   void CheckInitListReadyNotify();
 
-  std::shared_ptr<StackNode> stackNode_;
-  std::shared_ptr<ListNode> listNode_;
-  std::shared_ptr<ColumnNode> colInnerNode_;
-  std::shared_ptr<ListItemNode> flowListNode_;
+//  std::shared_ptr<StackNode> stackNode_;
+//  std::shared_ptr<ListNode> listNode_;
+//  std::shared_ptr<ColumnNode> colInnerNode_;
+//  std::shared_ptr<ListItemNode> flowListNode_;
   std::shared_ptr<WaterFlowNode> flowNode_;
-  std::shared_ptr<ListItemNode> bannerListNode_;
+//  std::shared_ptr<ListItemNode> bannerListNode_;
 
   ArkUI_EdgeEffect edgeEffect_ = ArkUI_EdgeEffect::ARKUI_EDGE_EFFECT_SPRING;
   HRPadding padding_ = {0, 0, 0, 0};
