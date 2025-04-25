@@ -26,6 +26,7 @@
 #include "renderer/utils/hr_value_utils.h"
 #include "renderer/native_render_provider.h"
 #include "renderer/components/waterfall_item_view.h"
+#include "renderer/arkui/native_node_api.h"
 
 namespace hippy {
 inline namespace render {
@@ -201,6 +202,22 @@ void WaterfallView::OnChildInsertedImpl(std::shared_ptr<BaseView> const &childVi
 //      if(this->headBannerView_) {
 //        bannerListNode_->AddChild(this->headBannerView_->GetLocalRootArkUINode());
 //      }
+      
+      ArkUI_WaterFlowSectionOption *option = OH_ArkUI_WaterFlowSectionOption_Create();
+      OH_ArkUI_WaterFlowSectionOption_SetSize(option, 2);
+      OH_ArkUI_WaterFlowSectionOption_SetItemCount(option, 0, 1);
+      OH_ArkUI_WaterFlowSectionOption_SetCrossCount(option, 0, 1);
+      
+      auto callback = [](int32_t itemIndex, void* userData) -> float {
+        return 100.f;
+      };
+      OH_ArkUI_WaterFlowSectionOption_RegisterGetItemMainSizeCallbackByIndexWithUserData(option, 0, nullptr, callback);
+      
+      ArkUI_NumberValue value[] = {{.i32 = 0},}; 
+      ArkUI_AttributeItem item = {value, sizeof(value) / sizeof(ArkUI_NumberValue), nullptr, option};
+      NativeNodeApi::GetInstance()->setAttribute(flowNode_->GetArkUINodeHandle(), NODE_WATER_FLOW_SECTION_OPTION, &item);
+      //OH_ArkUI_WaterFlowSectionOption_Dispose(option);
+      
     }
   } else if (childView->GetViewType() == "WaterfallItem") {
     auto flowItem = std::dynamic_pointer_cast<WaterfallItemView>(childView);
