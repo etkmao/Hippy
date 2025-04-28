@@ -346,6 +346,7 @@ class Scope : public std::enable_shared_from_this<Scope> {
   template<typename T>
   std::shared_ptr<CtxValue> DefineClass(const std::shared_ptr<ClassTemplate<T>>& class_template) {
     class_template->constructor_wrapper = std::make_unique<FunctionWrapper>([](CallbackInfo& info, void* data) {
+      FOOTSTONE_LOG(WARNING) << "xxx hippy DefineClass constructor_wrapper";
       auto scope_wrapper = reinterpret_cast<ScopeWrapper*>(std::any_cast<void*>(info.GetSlot()));
       auto scope = scope_wrapper->scope.lock();
       FOOTSTONE_CHECK(scope);
@@ -386,6 +387,7 @@ class Scope : public std::enable_shared_from_this<Scope> {
       if (class_template->properties[i].getter) {
         auto property_getter_pointer = &class_template->properties[i].getter;
         getter = std::make_unique<FunctionWrapper>([](CallbackInfo& info, void* data) {
+          FOOTSTONE_LOG(WARNING) << "xxx hippy DefineClass getter";
           auto getter_callback = reinterpret_cast<GetterCallback<T>*>(data);
           std::shared_ptr<CtxValue> exception = nullptr;
           auto info_data = info.GetData();
@@ -404,6 +406,7 @@ class Scope : public std::enable_shared_from_this<Scope> {
       if (class_template->properties[i].setter) {
         auto property_setter_pointer = &class_template->properties[i].setter;
         setter = std::make_unique<FunctionWrapper>([](CallbackInfo& info, void* data) {
+          FOOTSTONE_LOG(WARNING) << "xxx hippy DefineClass setter";
           auto setter_callback = reinterpret_cast<SetterCallback<T>*>(data);
           auto info_data = info.GetData();
           if (!info_data) {
@@ -428,6 +431,7 @@ class Scope : public std::enable_shared_from_this<Scope> {
       //todo(polly) why &
       auto function_define_pointer = &class_template->functions[i];
       auto function = std::make_unique<FunctionWrapper>([](CallbackInfo& info, void* data) {
+        FOOTSTONE_LOG(WARNING) << "xxx hippy DefineClass function";
         auto function_define = reinterpret_cast<FunctionDefine<T>*>(data);
         auto len = info.Length();
         std::vector<std::shared_ptr<CtxValue>> param(len);

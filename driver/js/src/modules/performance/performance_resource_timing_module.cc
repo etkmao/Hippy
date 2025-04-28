@@ -42,6 +42,7 @@ std::shared_ptr<ClassTemplate<PerformanceResourceTiming>> RegisterPerformanceRes
       const std::shared_ptr<CtxValue> arguments[],
       void* external,
       std::shared_ptr<CtxValue>& exception) -> std::shared_ptr<PerformanceResourceTiming> {
+    FOOTSTONE_LOG(WARNING) << "xxx hippy Module constructor";
     auto scope = weak_scope.lock();
     if (!scope) {
       return nullptr;
@@ -76,6 +77,7 @@ std::shared_ptr<ClassTemplate<PerformanceResourceTiming>> RegisterPerformanceRes
   initiator_type.name = "initiatorType";
   initiator_type.getter = [weak_scope](PerformanceResourceTiming* thiz,
       std::shared_ptr<CtxValue>& exception) -> std::shared_ptr<CtxValue> {
+    FOOTSTONE_LOG(WARNING) << "xxx hippy Module initiatorType";
     auto scope = weak_scope.lock();
     if (!scope) {
       return nullptr;
@@ -90,6 +92,7 @@ std::shared_ptr<ClassTemplate<PerformanceResourceTiming>> RegisterPerformanceRes
   prop_var.name = prop_name; \
   prop_var.getter = [weak_scope](PerformanceResourceTiming* thiz, \
       std::shared_ptr<CtxValue>& exception) -> std::shared_ptr<CtxValue> { \
+    FOOTSTONE_LOG(WARNING) << "xxx hippy Module " << prop_name; \
     auto scope = weak_scope.lock(); \
     if (!scope) { \
       return nullptr; \
