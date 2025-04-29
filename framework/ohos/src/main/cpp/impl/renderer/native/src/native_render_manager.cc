@@ -359,6 +359,7 @@ void NativeRenderManager::CreateRenderNode_C(std::weak_ptr<RootNode> root_node, 
       auto textNode = GetAncestorTextNode(node);
       auto cache = draw_text_node_manager_->GetCache(root->GetId());
       cache->draw_text_nodes_[textNode->GetId()] = textNode;
+      FOOTSTONE_LOG(INFO) << "xxx hippy, text - add1, id: " << textNode->GetId();
     }
   }
 #endif
@@ -389,10 +390,12 @@ void NativeRenderManager::CreateRenderNode_C(std::weak_ptr<RootNode> root_node, 
 #ifdef OHOS_DRAW_TEXT
         auto node = weak_node.lock();
         if (node) {
-          auto cache = self->draw_text_node_manager_->GetCache(root_node.lock()->GetId());
-          cache->draw_text_nodes_.erase(node->GetId());
+//          auto cache = self->draw_text_node_manager_->GetCache(root_node.lock()->GetId());
+//          cache->draw_text_nodes_.erase(node->GetId());
+          FOOTSTONE_LOG(INFO) << "xxx hippy, text - erase, id: " << node->GetId();
         }
 #endif
+        FOOTSTONE_LOG(INFO) << "xxx hippy, DoMeasure on create, width: " << width << ", id: " << weak_node.lock()->GetId();
         int64_t result;
         self->DoMeasureText(root_node, weak_node, self->DpToPx(width), static_cast<int32_t>(width_measure_mode),
                             self->DpToPx(height), static_cast<int32_t>(height_measure_mode), result);
@@ -788,6 +791,7 @@ void NativeRenderManager::UpdateLayout_C(std::weak_ptr<RootNode> root_node, cons
       if (it != cache->draw_text_nodes_.end()) {
         if (result.width > 0) {
           int64_t ret = 0;
+          FOOTSTONE_LOG(INFO) << "xxx hippy, DoMeasure on layout, width: " << result.width << ", id: " << m->tag_;
           DoMeasureText(root_node, node, DpToPx(result.width), static_cast<int32_t>(LayoutMeasureMode::AtMost),
                         DpToPx(result.height), static_cast<int32_t>(LayoutMeasureMode::AtMost), ret);
         }
@@ -871,6 +875,7 @@ void NativeRenderManager::EndBatch_C(std::weak_ptr<RootNode> root_node) {
           float height = 0;
           if (GetTextNodeSizeProp(textNode, width, height)) {
             int64_t result = 0;
+            FOOTSTONE_LOG(INFO) << "xxx hippy, DoMeasure on batch, width: " << width << ", id: " <<textNode->GetId();
             DoMeasureText(root_node, textNode, DpToPx(width), static_cast<int32_t>(LayoutMeasureMode::AtMost),
                           DpToPx(height), static_cast<int32_t>(LayoutMeasureMode::AtMost), result);
           }
@@ -1224,6 +1229,8 @@ void NativeRenderManager::DoMeasureText(const std::weak_ptr<RootNode> root_node,
   }
   measureResult = measureInst->EndMeasure(static_cast<int>(width), static_cast<int>(width_mode),
                                          static_cast<int>(height), static_cast<int>(height_mode), density);
+  
+  FOOTSTONE_LOG(INFO) << "xxx hippy, after EndMeasure res: " << PxToDp((float)measureResult.width) << ", " << PxToDp((float)measureResult.height) << ", id: " << node->GetId();
 
 #ifdef OHOS_DRAW_TEXT
   if (enable_ark_c_api_) {
@@ -1237,6 +1244,7 @@ void NativeRenderManager::DoMeasureText(const std::weak_ptr<RootNode> root_node,
       double y = PxToDp((float)measureResult.spanPos[i].y);
       // 把 c 测量到的imageSpan的位置，通知给ArkTS组件
       if (enable_ark_c_api_) {
+        FOOTSTONE_LOG(INFO) << "xxx hippy, imageSpan measure res: " << x << ", " << y << ", id: " << node->GetId();
         c_render_provider_->SpanPosition(root->GetId(), imageSpanNode[i]->GetId(), float(x), float(y));
       } else {
         CallRenderDelegateSpanPositionMethod(ts_env_, ts_render_provider_ref_, "spanPosition", root->GetId(), imageSpanNode[i]->GetId(), float(x), float(y));
@@ -1399,6 +1407,8 @@ void NativeRenderManager::MarkTextDirty(std::weak_ptr<RootNode> weak_root_node, 
           auto textNode = GetAncestorTextNode(node);
           auto cache = draw_text_node_manager_->GetCache(root_node->GetId());
           cache->draw_text_nodes_[textNode->GetId()] = textNode;
+          
+          FOOTSTONE_LOG(INFO) << "xxx hippy, text - add2, id: " << textNode->GetId();
         }
 #endif
       }

@@ -472,9 +472,15 @@ void RootNode::SetRootOrigin(float x, float y) { SetLayoutOrigin(x, y); }
 void RootNode::DoAndFlushLayout(const std::shared_ptr<RenderManager>& render_manager) {
   // Before Layout
   render_manager->BeforeLayout(GetWeakSelf());
+  
+  FOOTSTONE_LOG(INFO) << "xxx hippy, RootNode to DoLayout";
+  
   // 触发布局计算
   std::vector<std::shared_ptr<DomNode>> layout_changed_nodes;
   DoLayout(layout_changed_nodes);
+  
+  FOOTSTONE_LOG(INFO) << "xxx hippy, RootNode after DoLayout, node count: " << layout_changed_nodes.size();
+  
   // After Layout
   render_manager->AfterLayout(GetWeakSelf());
 
