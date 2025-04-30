@@ -34,12 +34,15 @@
 #include "renderer/components/pull_footer_view.h"
 #include "renderer/components/pull_header_view.h"
 #include "renderer/components/div_view.h"
+#include "renderer/components/waterfall_item_adapter.h"
 
 namespace hippy {
 inline namespace render {
 inline namespace native {
 
-class WaterfallView : public BaseView, public WaterFlowNodeDelegate, public FlowItemNodeDelegate, public ListItemNodeDelegate, public ListNodeDelegate {
+class WaterfallView : public BaseView, public WaterFlowNodeDelegate, public FlowItemNodeDelegate
+//, public ListItemNodeDelegate, public ListNodeDelegate 
+{
 public:
   WaterfallView(std::shared_ptr<NativeRenderContext> &ctx);
   ~WaterfallView();
@@ -51,9 +54,14 @@ public:
   void Init() override;
   bool SetPropImpl(const std::string &propKey, const HippyValue &propValue) override;
   void OnSetPropsEndImpl() override;
+
+  void OnChildInserted(std::shared_ptr<BaseView> const &childView, int index) override;
+  void OnChildRemoved(std::shared_ptr<BaseView> const &childView, int32_t index) override;
   void OnChildInsertedImpl(std::shared_ptr<BaseView> const &childView, int32_t index) override;
   void OnChildRemovedImpl(std::shared_ptr<BaseView> const &childView, int32_t index) override;
+  void OnChildReusedImpl(std::shared_ptr<BaseView> const &childView, int index) override;
   void UpdateRenderViewFrameImpl(const HRRect &frame, const HRPadding &padding) override;
+
   void CallImpl(const std::string &method, const std::vector<HippyValue> params,
               std::function<void(const HippyValue &result)> callback) override;
 
@@ -63,14 +71,14 @@ public:
   void OnWaterFlowWillScroll(float_t offset, ArkUI_ScrollState state, int32_t source) override;
 
   // ListNodeDelegate override
-  void OnScrollIndex(int32_t firstIndex, int32_t lastIndex, int32_t centerIndex) override;
-  void OnScroll(float scrollOffsetX, float scrollOffsetY) override;
-  void OnWillScroll(float offset, ArkUI_ScrollState state) override;
-  void OnTouch(int32_t actionType, const HRPosition &screenPosition) override;
-  void OnScrollStart() override;
-  void OnScrollStop() override;
-  void OnReachStart() override;
-  void OnReachEnd() override;
+//  void OnScrollIndex(int32_t firstIndex, int32_t lastIndex, int32_t centerIndex) override;
+//  void OnScroll(float scrollOffsetX, float scrollOffsetY) override;
+//  void OnWillScroll(float offset, ArkUI_ScrollState state) override;
+//  void OnTouch(int32_t actionType, const HRPosition &screenPosition) override;
+//  void OnScrollStart() override;
+//  void OnScrollStop() override;
+//  void OnReachStart() override;
+//  void OnReachEnd() override;
 
   // ArkUINodeDelegate override
   void OnAppear() override;
@@ -80,7 +88,7 @@ public:
   void OnFlowItemVisibleAreaChange(int32_t index, bool isVisible, float currentRatio) override;
 
   // ListItemNodeDelegate
-  void OnItemVisibleAreaChange(int32_t index, bool isVisible, float currentRatio) override;
+//  void OnItemVisibleAreaChange(int32_t index, bool isVisible, float currentRatio) override;
 
   // pull head
   void OnHeadRefreshFinish(int32_t delay);
@@ -98,6 +106,8 @@ private:
 //  std::shared_ptr<ListItemNode> flowListNode_;
   std::shared_ptr<WaterFlowNode> flowNode_;
 //  std::shared_ptr<ListItemNode> bannerListNode_;
+  
+  std::shared_ptr<WaterfallItemAdapter> adapter_;
 
   ArkUI_EdgeEffect edgeEffect_ = ArkUI_EdgeEffect::ARKUI_EDGE_EFFECT_SPRING;
   HRPadding padding_ = {0, 0, 0, 0};
@@ -116,10 +126,10 @@ private:
   float width_ = 0;
   float height_ = 0;
   bool scrollEnable_ = false;
-  bool isDragging_ = false;
-  int32_t lastScrollIndex_ = 0;
-  bool headerVisible_ = false;
-  bool footerVisible_ = false;
+//  bool isDragging_ = false;
+//  int32_t lastScrollIndex_ = 0;
+//  bool headerVisible_ = false;
+//  bool footerVisible_ = false;
   
   bool isInitListReadyNotified_ = false;
 };

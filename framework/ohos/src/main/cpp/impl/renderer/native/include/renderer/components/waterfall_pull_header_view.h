@@ -23,35 +23,26 @@
 #pragma once
 
 #include "renderer/components/base_view.h"
-#include "renderer/arkui/stack_node.h"
-#include "renderer/arkui/water_flow_item_node.h"
+#include "renderer/components/waterfall_item_view.h"
+#include <cstdint>
 
 namespace hippy {
 inline namespace render {
 inline namespace native {
 
-class WaterfallItemView : public BaseView {
+class WaterfallPullHeaderView : public WaterfallItemView {
 public:
-  WaterfallItemView(std::shared_ptr<NativeRenderContext> &ctx);
-  ~WaterfallItemView();
-
-  WaterFlowItemNode *GetLocalRootArkUINode() override;
-  void CreateArkUINodeImpl() override;
-  void DestroyArkUINodeImpl() override;
-  bool RecycleArkUINodeImpl(std::shared_ptr<RecycleView> &recycleView) override;
-  bool ReuseArkUINodeImpl(std::shared_ptr<RecycleView> &recycleView) override;
+  WaterfallPullHeaderView(std::shared_ptr<NativeRenderContext> &ctx);
+  ~WaterfallPullHeaderView();
+  
   bool SetPropImpl(const std::string &propKey, const HippyValue &propValue) override;
+  void CallImpl(const std::string &method, const std::vector<HippyValue> params,
+                    std::function<void(const HippyValue &result)> callback) override;
   void OnSetPropsEndImpl() override;
-  
-  void OnChildInsertedImpl(std::shared_ptr<BaseView> const &childView, int32_t index) override;
-  void OnChildRemovedImpl(std::shared_ptr<BaseView> const &childView, int32_t index) override;
-  void UpdateRenderViewFrameImpl(const HRRect &frame, const HRPadding &padding) override;
-  
-  std::string &GetType() { return type_; }
-protected:
-  std::shared_ptr<WaterFlowItemNode> itemNode_;
-  
-  std::string type_;
+
+private:
+  void OnHeadRefreshFinish(int32_t delay = 0);
+  void OnHeaderRefresh();
 };
 
 } // namespace native

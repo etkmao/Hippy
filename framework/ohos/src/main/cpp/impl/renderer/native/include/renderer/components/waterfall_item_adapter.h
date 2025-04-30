@@ -25,7 +25,7 @@
 #include <arkui/native_node.h>
 #include <map>
 #include <stack>
-#include "renderer/components/list_item_view.h"
+#include "renderer/components/waterfall_item_view.h"
 #include "renderer/recycle/recycle_view.h"
 
 namespace hippy {
@@ -100,16 +100,16 @@ private:
     auto view = itemViews_[index];
     ArkUI_NodeHandle handle = nullptr;
     
-    auto itemView = std::static_pointer_cast<ListItemView>(view);
+    auto itemView = std::static_pointer_cast<WaterfallItemView>(view);
     auto cachedIt = cachedTypeRecycleViews_.find(itemView->GetType());
     if (cachedIt != cachedTypeRecycleViews_.end() && !cachedIt->second.empty()) {
-      // FOOTSTONE_LOG(INFO) << "hippy, list OnNewItemAttached, index: " << index << ", to reuse";
+      // FOOTSTONE_LOG(INFO) << "hippy, waterfall OnNewItemAttached, index: " << index << ", to reuse";
       auto recycleView = cachedIt->second.top();
       view->ReuseArkUINode(recycleView, (int32_t)index);
       handle = view->GetLocalRootArkUINode()->GetArkUINodeHandle();
       cachedIt->second.pop();
     } else {
-      // FOOTSTONE_LOG(INFO) << "hippy, list OnNewItemAttached, index: " << index << ", to new";
+      // FOOTSTONE_LOG(INFO) << "hippy, waterfall OnNewItemAttached, index: " << index << ", to new";
       // 创建新的元素
       view->CreateArkUINode(true, (int32_t)index);
       handle = view->GetLocalRootArkUINode()->GetArkUINodeHandle();
@@ -132,11 +132,11 @@ private:
     auto view = it->second;
     attachedHandleViewMap_.erase(it);
     
-    // FOOTSTONE_LOG(INFO) << "hippy, list OnItemDetached, view: " << view.get();
+    // FOOTSTONE_LOG(INFO) << "hippy, waterfall OnItemDetached, view: " << view.get();
     
     auto recycleView = view->RecycleArkUINode();
     if (recycleView) {
-      auto itemView = std::static_pointer_cast<ListItemView>(view);
+      auto itemView = std::static_pointer_cast<WaterfallItemView>(view);
       auto cachedIt = cachedTypeRecycleViews_.find(itemView->GetType());
       if (cachedIt == cachedTypeRecycleViews_.end()) {
         std::stack<std::shared_ptr<RecycleView>> cached;

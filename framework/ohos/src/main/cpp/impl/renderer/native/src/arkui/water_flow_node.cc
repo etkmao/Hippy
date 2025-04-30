@@ -165,6 +165,20 @@ void WaterFlowNode::SetFooter(ArkUI_NodeHandle footer){
   SetSubAttributeFlag((uint32_t)AttributeFlag::WATER_FLOW_FOOTER);
 }
 
+void WaterFlowNode::SetLazyAdapter(ArkUI_NodeAdapterHandle adapterHandle) {
+  ArkUI_AttributeItem item{nullptr, 0, nullptr, adapterHandle};
+  MaybeThrow(NativeNodeApi::GetInstance()->setAttribute(nodeHandle_, NODE_WATER_FLOW_NODE_ADAPTER, &item));
+  SetSubAttributeFlag((uint32_t)AttributeFlag::WATER_FLOW_NODE_ADAPTER);
+  hasAdapter_ = true;
+}
+
+void WaterFlowNode::ResetLazyAdapter() {
+  if (hasAdapter_) {
+    NativeNodeApi::GetInstance()->resetAttribute(nodeHandle_, NODE_WATER_FLOW_NODE_ADAPTER);
+    hasAdapter_ = false;
+  }
+}
+
 void WaterFlowNode::ResetAllAttributes() {
   ArkUINode::ResetAllAttributes();
   if (!subAttributesFlagValue_) {
@@ -182,6 +196,7 @@ void WaterFlowNode::ResetAllAttributes() {
   ARK_UI_NODE_RESET_SUB_ATTRIBUTE(AttributeFlag::SCROLL_NESTED_SCROLL, NODE_SCROLL_NESTED_SCROLL);
   ARK_UI_NODE_RESET_SUB_ATTRIBUTE(AttributeFlag::SCROLL_BAR_DISPLAY_MODE, NODE_SCROLL_BAR_DISPLAY_MODE);
   ARK_UI_NODE_RESET_SUB_ATTRIBUTE(AttributeFlag::WATER_FLOW_FOOTER, NODE_WATER_FLOW_FOOTER);
+  ARK_UI_NODE_RESET_SUB_ATTRIBUTE(AttributeFlag::WATER_FLOW_NODE_ADAPTER, NODE_WATER_FLOW_NODE_ADAPTER);
   subAttributesFlagValue_ = 0;
 }
 

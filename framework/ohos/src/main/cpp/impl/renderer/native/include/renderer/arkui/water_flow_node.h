@@ -53,6 +53,7 @@ protected:
     SCROLL_NESTED_SCROLL,
     SCROLL_BAR_DISPLAY_MODE,
     WATER_FLOW_FOOTER,
+    WATER_FLOW_NODE_ADAPTER,
   };
   WaterFlowNodeDelegate *waterFlowNodeDelegate_ = nullptr;
 public:
@@ -67,16 +68,22 @@ public:
   void SetRowTemplate(const std::string &rowsTemplate);
   void SetCachedCount(int32_t count);  
   void SetLayoutDirection(ArkUI_FlexDirection direction);
-  void SetNodeDelegate(WaterFlowNodeDelegate *delegate);
-  void ScrollToIndex(int32_t index, bool animated, ArkUI_ScrollAlignment align = ArkUI_ScrollAlignment::ARKUI_SCROLL_ALIGNMENT_AUTO);    
-  void OnNodeEvent(ArkUI_NodeEvent *event) override;
+  void ScrollToIndex(int32_t index, bool animated, ArkUI_ScrollAlignment align = ArkUI_ScrollAlignment::ARKUI_SCROLL_ALIGNMENT_AUTO);
 
   void SetScrollEnableInteraction(bool bEnable);  
   void SetNestedScroll(ArkUI_ScrollNestedMode forward, ArkUI_ScrollNestedMode backward);
   void SetScrollBarDisplayMode(ArkUI_ScrollBarDisplayMode mode);
   void SetFooter(ArkUI_NodeHandle footer);
-
+  void SetLazyAdapter(ArkUI_NodeAdapterHandle adapterHandle);
+  
+  void ResetLazyAdapter();
   void ResetAllAttributes() override;
+
+  void OnNodeEvent(ArkUI_NodeEvent *event) override;
+  void SetNodeDelegate(WaterFlowNodeDelegate *delegate);
+
+private:
+  bool hasAdapter_ = false;
 };
 
 } // namespace native
