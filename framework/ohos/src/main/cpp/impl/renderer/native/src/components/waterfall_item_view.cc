@@ -69,6 +69,12 @@ bool WaterfallItemView::ReuseArkUINodeImpl(std::shared_ptr<RecycleView> &recycle
 bool WaterfallItemView::SetPropImpl(const std::string &propKey, const HippyValue &propValue) {
   if (propKey == "type") {
     return true;
+  } else if (propKey == "isHeader") {
+    type_ = HEAD_BANNER_TYPE;
+    return true;
+  } else if (propKey == "isFooter") {
+    type_ = FOOT_BANNER_TYPE;
+    return true;
   }
   return BaseView::SetPropImpl(propKey, propValue);
 }
@@ -89,6 +95,27 @@ void WaterfallItemView::OnChildRemovedImpl(std::shared_ptr<BaseView> const &chil
 
 void WaterfallItemView::UpdateRenderViewFrameImpl(const HRRect &frame, const HRPadding &padding) {
   // not set
+  
+  width_ = frame.width;
+  height_ = frame.height;
+}
+
+float WaterfallItemView::GetWidth() {
+  if (width_ > 0) {
+    return width_;
+  } else if (lazyFrame_.has_value()) {
+    return lazyFrame_.value().width;
+  }
+  return 0;
+}
+
+float WaterfallItemView::GetHeight() {
+  if (height_ > 0) {
+    return height_;
+  } else if (lazyFrame_.has_value()) {
+    return lazyFrame_.value().height;
+  }
+  return 0;
 }
 
 } // namespace native

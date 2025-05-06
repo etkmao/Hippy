@@ -117,13 +117,13 @@ std::shared_ptr<BaseView> HippyCreateRenderView(std::string &view_name, bool is_
     view->Init();
     return view;
   } else if (view_name == "PullHeaderView") {
-    //auto view = std::make_shared<PullHeaderView>(ctx);
+//    auto view = std::make_shared<PullHeaderView>(ctx);
     // TODO(hot):
     auto view = std::make_shared<WaterfallPullHeaderView>(ctx);
     view->Init();
     return view;
   } else if (view_name == "PullFooterView") {
-    //auto view = std::make_shared<PullFooterView>(ctx);
+//    auto view = std::make_shared<PullFooterView>(ctx);
     // TODO(hot):
     auto view = std::make_shared<WaterfallPullFooterView>(ctx);
     view->Init();

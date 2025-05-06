@@ -47,9 +47,18 @@ public:
   void OnChildRemovedImpl(std::shared_ptr<BaseView> const &childView, int32_t index) override;
   void UpdateRenderViewFrameImpl(const HRRect &frame, const HRPadding &padding) override;
   
+  float GetWidth();
+  float GetHeight();
   std::string &GetType() { return type_; }
+  
+  constexpr static const char *HEAD_BANNER_TYPE = "HeadBanner";
+  constexpr static const char *FOOT_BANNER_TYPE = "FootBanner";
+  
 protected:
   std::shared_ptr<WaterFlowItemNode> itemNode_;
+  
+  float width_ = 0;
+  float height_ = 0;
   
   std::string type_;
 };
