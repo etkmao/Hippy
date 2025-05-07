@@ -162,7 +162,7 @@ private:
   bool isInitListReadyNotified_ = false;
   
 //  bool isFirst__ = true;
-//  int32_t offValue_ = 0;
+  float offValue_ = 0;
 };
 
 } // namespace native

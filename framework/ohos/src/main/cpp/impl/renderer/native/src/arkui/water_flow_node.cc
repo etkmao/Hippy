@@ -58,6 +58,8 @@ void WaterFlowNode::SetNodeDelegate(WaterFlowNodeDelegate *delegate) {
 }
 
 void WaterFlowNode::OnNodeEvent(ArkUI_NodeEvent *event) {
+  ArkUINode::OnNodeEvent(event);
+  
   if (waterFlowNodeDelegate_ == nullptr) {
     return;
   }

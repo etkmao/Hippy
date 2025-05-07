@@ -430,6 +430,12 @@ void WaterfallView::CheckBeginDrag() {
   
   auto off = flowNode_->GetScrollOffset();
   FOOTSTONE_LOG(INFO) << "xxx hippy, on drag, off x: " << off.x << ", y: " << off.y;
+//  offValue_ = off.y;
+  offValue_ = offValue_ + 1;
+  
+  auto pos = children_[0]->GetLocalRootArkUINode()->GetLayoutPositionInWindow();
+  auto size = children_[0]->GetLocalRootArkUINode()->GetLayoutSize();
+  FOOTSTONE_LOG(INFO) << "xxx hippy, on drag, child pos x: " << pos.x << ", y: " << pos.y << " - size w: " << size.width << ", h: " << size.height;
 }
 
 void WaterfallView::CheckEndDrag() {
@@ -680,6 +686,7 @@ float WaterfallView::GetItemMainSizeCallback(int32_t itemIndex, void* userData) 
   }
   auto view = static_cast<WaterfallView*>(userData);
   
+//  if (itemIndex == 0) return 0;
 //  if (view->isFirst__) {
 //    view->isFirst__ = false;
 //    view->offValue_ = 0;
