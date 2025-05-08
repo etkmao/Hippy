@@ -40,7 +40,9 @@ WaterfallView::~WaterfallView() {
   if (flowNode_) {
     flowNode_->ResetLazyAdapter();
   }
-  adapter_.reset();
+  if (adapter_) {
+    adapter_.reset();
+  }
   if (!children_.empty()) {
     children_.clear();
   }
@@ -64,15 +66,7 @@ void WaterfallView::CreateArkUINodeImpl() {
   flowNode_->SetScrollBarDisplayMode(ARKUI_SCROLL_BAR_DISPLAY_MODE_OFF);
   flowNode_->SetCachedCount(4);
   flowNode_->SetNestedScroll(ARKUI_SCROLL_NESTED_MODE_SELF_FIRST, ARKUI_SCROLL_NESTED_MODE_SELF_FIRST);
-  
-  adapter_ = std::make_shared<WaterfallItemAdapter>(children_, hasPullHeader_ ? 1 : 0);
-  flowNode_->SetLazyAdapter(adapter_->GetHandle());
-  
   flowNode_->SetScrollEdgeEffect(ARKUI_EDGE_EFFECT_NONE);
-  
-  // TODO(hot):
-//  flowNode_->SetColumnGap(6);
-//  flowNode_->SetRowGap(6);
 
   refreshNode_ = std::make_shared<RefreshNode>();
   refreshNode_->SetNodeDelegate(this);
@@ -87,7 +81,10 @@ void WaterfallView::DestroyArkUINodeImpl() {
   flowNode_->SetNodeDelegate(nullptr);
   flowNode_->ResetLazyAdapter();
   flowNode_ = nullptr;
-  adapter_.reset();
+  if (adapter_) {
+    adapter_.reset();
+    adapter_ = nullptr;
+  }
   refreshNode_->SetNodeDelegate(nullptr);
   refreshNode_ = nullptr;
 }
@@ -186,7 +183,6 @@ void WaterfallView::HandleOnChildrenUpdated() {
     if (firstChild->GetViewType() == PULL_HEADER_VIEW_TYPE) {
       headerView_ = std::static_pointer_cast<WaterfallPullHeaderView>(firstChild);
       hasPullHeader_ = true;
-      adapter_->SetFirstItemIndex(1);
       
       headerView_->CreateArkUINode(true, 0);
       auto refreshOffset = headerView_->GetHeight();
@@ -222,6 +218,11 @@ void WaterfallView::HandleOnChildrenUpdated() {
   }
   
   UpdateSectionOption();
+  
+  if (!adapter_) {
+    adapter_ = std::make_shared<WaterfallItemAdapter>(children_, hasPullHeader_ ? 1 : 0);
+    flowNode_->SetLazyAdapter(adapter_->GetHandle());
+  }
 }
 
 void WaterfallView::OnChildInserted(std::shared_ptr<BaseView> const &childView, int index) {
@@ -261,9 +262,8 @@ void WaterfallView::UpdateRenderViewFrameImpl(const HRRect &frame, const HRPaddi
   BaseView::UpdateRenderViewFrameImpl(frame, padding);
   width_ = frame.width;
   height_ = frame.height;
-
-  // TODO(hot):
-//  CheckValidListSize();
+  
+  CheckValidListSize();
 }
 
 void WaterfallView::CallImpl(const std::string &method, const std::vector<HippyValue> params,
@@ -458,6 +458,26 @@ void WaterfallView::SendOnReachedEvent(){
   FOOTSTONE_DLOG(INFO) << __FUNCTION__;
   HREventUtils::SendComponentEvent(ctx_, tag_, HREventUtils::EVENT_RECYCLER_END_REACHED, nullptr);
   HREventUtils::SendComponentEvent(ctx_, tag_, HREventUtils::EVENT_RECYCLER_LOAD_MORE, nullptr);
+}
+
+void WaterfallView::CheckValidListSize() {
+  if (width_ == 0 && height_ == 0) {
+    isListZeroSize = true;
+    for (uint32_t i = 0; i < children_.size(); i++) {
+      children_[i]->DestroyArkUINode();
+    }
+    flowNode_->ResetLazyAdapter();
+    if (adapter_) {
+      adapter_.reset();
+      adapter_ = nullptr;
+    }
+  } else {
+    if (isListZeroSize) {
+      isListZeroSize = false;
+      adapter_ = std::make_shared<WaterfallItemAdapter>(children_, hasPullHeader_ ? 1 : 0);
+      flowNode_->SetLazyAdapter(adapter_->GetHandle());
+    }
+  }
 }
 
 void WaterfallView::CheckInitListReadyNotify() {

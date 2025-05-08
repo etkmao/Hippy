@@ -66,8 +66,19 @@ bool WaterfallItemView::ReuseArkUINodeImpl(std::shared_ptr<RecycleView> &recycle
   return true;
 }
 
-bool WaterfallItemView::SetPropImpl(const std::string &propKey, const HippyValue &propValue) {
-  if (propKey == "type") {
+bool WaterfallItemView::SetViewProp(const std::string &propKey, const HippyValue &propValue) {
+  if (propKey == "type" || propKey == "itemViewType") {
+    if (type_ == HEAD_BANNER_TYPE || type_ == FOOT_BANNER_TYPE) {
+      return false;
+    }
+    if (propValue.IsString()) {
+      type_ = propValue.ToStringSafe();
+    } else if (propValue.IsNumber()) {
+      int32_t value = HRValueUtils::GetInt32(propValue);
+      type_ = std::to_string(value);
+    } else {
+      type_ = "NoType" + std::to_string(tag_);
+    }
     return true;
   } else if (propKey == "isHeader") {
     type_ = HEAD_BANNER_TYPE;
@@ -76,6 +87,10 @@ bool WaterfallItemView::SetPropImpl(const std::string &propKey, const HippyValue
     type_ = FOOT_BANNER_TYPE;
     return true;
   }
+  return false;
+}
+
+bool WaterfallItemView::SetPropImpl(const std::string &propKey, const HippyValue &propValue) {
   return BaseView::SetPropImpl(propKey, propValue);
 }
 

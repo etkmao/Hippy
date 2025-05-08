@@ -98,6 +98,7 @@ private:
   
   void SendOnReachedEvent();
 
+  void CheckValidListSize();
   void CheckInitListReadyNotify();
   
   void UpdateSectionOption();
@@ -140,6 +141,7 @@ private:
 //  bool headerVisible_ = false;
 //  bool footerVisible_ = false;
   
+  bool isListZeroSize = false;
   bool isInitListReadyNotified_ = false;
 };
 

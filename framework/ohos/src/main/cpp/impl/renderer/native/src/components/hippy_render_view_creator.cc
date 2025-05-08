@@ -136,7 +136,7 @@ std::shared_ptr<BaseView> HippyCreateRenderView(std::string &view_name, bool is_
 }
 
 bool HippyIsLazyCreateView(const std::string &view_type) {
-  if (view_type == "ViewPagerItem" || view_type == "ListViewItem") {
+  if (view_type == "ViewPagerItem" || view_type == "ListViewItem" || view_type == "WaterfallItem") {
     return true;
   }
   return false;

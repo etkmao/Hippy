@@ -92,7 +92,10 @@ void WaterfallPullFooterView::Show(bool show) {
 }
 
 void WaterfallPullFooterView::UpdateRenderViewFrameImpl(const HRRect &frame, const HRPadding &padding) {
-//  BaseView::UpdateRenderViewFrameImpl(frame, padding);
+  GetLocalRootArkUINode()->SetWidthPercent(1.f);
+  
+  width_ = frame.width;
+  height_ = frame.height;
 }
 
 } // namespace native
