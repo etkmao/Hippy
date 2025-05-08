@@ -76,7 +76,7 @@ public:
   void SetCachedCount(int32_t count);  
   void SetLayoutDirection(ArkUI_FlexDirection direction);
   void ScrollTo(float offsetX, float offsetY, bool animated);
-  void ScrollToIndex(int32_t index, bool animated, ArkUI_ScrollAlignment align = ArkUI_ScrollAlignment::ARKUI_SCROLL_ALIGNMENT_AUTO);
+  void ScrollToIndex(int32_t index, bool animated, ArkUI_ScrollAlignment align);
 
   void SetEnableScrollInteraction(bool bEnable);
   void SetNestedScroll(ArkUI_ScrollNestedMode forward, ArkUI_ScrollNestedMode backward);

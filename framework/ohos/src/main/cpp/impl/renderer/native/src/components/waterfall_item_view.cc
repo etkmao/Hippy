@@ -40,7 +40,7 @@ WaterfallItemView::~WaterfallItemView() {
   }
 }
 
-WaterFlowItemNode *WaterfallItemView::GetLocalRootArkUINode() { return itemNode_.get(); }
+ArkUINode *WaterfallItemView::GetLocalRootArkUINode() { return itemNode_.get(); }
 
 void WaterfallItemView::CreateArkUINodeImpl() {
   itemNode_ = std::make_shared<WaterFlowItemNode>();
@@ -94,7 +94,10 @@ void WaterfallItemView::OnChildRemovedImpl(std::shared_ptr<BaseView> const &chil
 }
 
 void WaterfallItemView::UpdateRenderViewFrameImpl(const HRRect &frame, const HRPadding &padding) {
-  // not set
+  // 除了banner宽，其它item都不要设；宽度瀑布流组件内部会计算，高度section option会获取。
+  if (type_ == HEAD_BANNER_TYPE || type_ == FOOT_BANNER_TYPE) {
+    GetLocalRootArkUINode()->SetWidthPercent(1.f);
+  }
   
   width_ = frame.width;
   height_ = frame.height;

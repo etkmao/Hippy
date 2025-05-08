@@ -35,7 +35,7 @@ public:
   WaterfallItemView(std::shared_ptr<NativeRenderContext> &ctx);
   ~WaterfallItemView();
 
-  WaterFlowItemNode *GetLocalRootArkUINode() override;
+  ArkUINode *GetLocalRootArkUINode() override;
   void CreateArkUINodeImpl() override;
   void DestroyArkUINodeImpl() override;
   bool RecycleArkUINodeImpl(std::shared_ptr<RecycleView> &recycleView) override;

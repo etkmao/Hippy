@@ -42,9 +42,7 @@ namespace hippy {
 inline namespace render {
 inline namespace native {
 
-class WaterfallView : public BaseView, public WaterFlowNodeDelegate, public FlowItemNodeDelegate
-//, public ListItemNodeDelegate, public ListNodeDelegate 
-{
+class WaterfallView : public BaseView, public WaterFlowNodeDelegate, public FlowItemNodeDelegate, public RefreshNodeDelegate {
 public:
   WaterfallView(std::shared_ptr<NativeRenderContext> &ctx);
   ~WaterfallView();
@@ -79,27 +77,15 @@ public:
 
   // ArkUINodeDelegate
   void OnTouch(int32_t actionType, const HRPosition &screenPosition) override;
-  
-  // ListNodeDelegate override
-//  void OnScrollIndex(int32_t firstIndex, int32_t lastIndex, int32_t centerIndex) override;
-//  void OnScroll(float scrollOffsetX, float scrollOffsetY) override;
-//  void OnWillScroll(float offset, ArkUI_ScrollState state) override;
-//  
-//  void OnScrollStart() override;
-//  void OnScrollStop() override;
-//  void OnReachStart() override;
-//  void OnReachEnd() override;
-
-  // ArkUINodeDelegate override
-  void OnAppear() override;
-  void OnDisappear() override;
 
   // FlowItemNodeDelegate
   void OnFlowItemVisibleAreaChange(int32_t index, bool isVisible, float currentRatio) override;
-
-  // ListItemNodeDelegate
-//  void OnItemVisibleAreaChange(int32_t index, bool isVisible, float currentRatio) override;
-
+  
+  // RefreshNodeDelegate
+  void OnRefreshing() override;
+  void OnStateChange(int32_t state) override;
+  void OnOffsetChange(float_t offset) override;
+  
   // pull head
   void OnHeadRefreshFinish(int32_t delay);
   void OnHeadRefresh();
@@ -111,7 +97,7 @@ private:
   void CheckEndDrag();
   
   void SendOnReachedEvent();
-  void UpdateFooterView();
+
   void CheckInitListReadyNotify();
   
   void UpdateSectionOption();
@@ -123,27 +109,23 @@ private:
   constexpr static const char *PULL_FOOTER_VIEW_TYPE = "PullFooterView";
   constexpr static const char *LIST_VIEW_ITEM_TYPE = "WaterfallItem";
   
-//  std::shared_ptr<StackNode> stackNode_;
-//  std::shared_ptr<ListNode> listNode_;
-//  std::shared_ptr<ColumnNode> colInnerNode_;
-//  std::shared_ptr<ListItemNode> flowListNode_;
+  std::shared_ptr<RefreshNode> refreshNode_;
   std::shared_ptr<WaterFlowNode> flowNode_;
-//  std::shared_ptr<ListItemNode> bannerListNode_;
   
   std::shared_ptr<WaterfallItemAdapter> adapter_;
   
   ArkUI_WaterFlowSectionOption *sectionOption_ = nullptr;
 
-  ArkUI_EdgeEffect edgeEffect_ = ArkUI_EdgeEffect::ARKUI_EDGE_EFFECT_SPRING;
-  HRPadding padding_ = {0, 0, 0, 0};
   float_t scrollEventThrottle_ = 30.0;
   int32_t preloadItemNumber_ = 0;
   float_t interItemSpacing_ = 0;
   float_t columnSpacing_ = 0;
-  std::string columnsTemplate_ = "1fr 1fr";
+  int32_t numberOfColumns_ = 2;
+  bool toUpdateSection_ = false;
+  
+  bool onScrollEventEnable_ = false;
   
   bool hasPullHeader_ = false;
-  //float pullHeaderWH_ = 0;
 
   uint64_t end_batch_callback_id_;
   std::shared_ptr<WaterfallPullHeaderView> headerView_ = nullptr;
@@ -153,16 +135,12 @@ private:
 
   float width_ = 0;
   float height_ = 0;
-  bool scrollEnable_ = false;
   bool isDragging_ = false;
 //  int32_t lastScrollIndex_ = 0;
 //  bool headerVisible_ = false;
 //  bool footerVisible_ = false;
   
   bool isInitListReadyNotified_ = false;
-  
-//  bool isFirst__ = true;
-  float offValue_ = 0;
 };
 
 } // namespace native

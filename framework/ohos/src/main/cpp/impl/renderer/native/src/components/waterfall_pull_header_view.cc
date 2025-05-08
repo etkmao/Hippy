@@ -32,7 +32,52 @@ WaterfallPullHeaderView::WaterfallPullHeaderView(std::shared_ptr<NativeRenderCon
   type_ = "PullHeader";
 }
 
-WaterfallPullHeaderView::~WaterfallPullHeaderView() {}
+WaterfallPullHeaderView::~WaterfallPullHeaderView() {
+  if (!children_.empty()) {
+    if (headerItemNode_) {
+      for (const auto &child : children_) {
+        headerItemNode_->RemoveChild(child->GetLocalRootArkUINode());
+      }
+    }
+    children_.clear();
+  }
+}
+
+ArkUINode *WaterfallPullHeaderView::GetLocalRootArkUINode() { return headerItemNode_.get(); }
+
+void WaterfallPullHeaderView::CreateArkUINodeImpl() {
+  headerItemNode_ = std::make_shared<StackNode>();
+}
+
+void WaterfallPullHeaderView::DestroyArkUINodeImpl() {
+  headerItemNode_ = nullptr;
+}
+
+bool WaterfallPullHeaderView::RecycleArkUINodeImpl(std::shared_ptr<RecycleView> &recycleView) {
+  headerItemNode_->ResetAllAttributes();
+  recycleView->cachedNodes_.resize(1);
+  recycleView->cachedNodes_[0] = headerItemNode_;
+  headerItemNode_ = nullptr;
+  return true;
+}
+
+bool WaterfallPullHeaderView::ReuseArkUINodeImpl(std::shared_ptr<RecycleView> &recycleView) {
+  if (recycleView->cachedNodes_.size() < 1) {
+    return false;
+  }
+  headerItemNode_ = std::static_pointer_cast<StackNode>(recycleView->cachedNodes_[0]);
+  return true;
+}
+
+void WaterfallPullHeaderView::OnChildInsertedImpl(std::shared_ptr<BaseView> const &childView, int32_t index) {
+  BaseView::OnChildInsertedImpl(childView, index);
+  headerItemNode_->InsertChild(childView->GetLocalRootArkUINode(), index);
+}
+
+void WaterfallPullHeaderView::OnChildRemovedImpl(std::shared_ptr<BaseView> const &childView, int32_t index) {
+  BaseView::OnChildRemovedImpl(childView, index);;
+  headerItemNode_->RemoveChild(childView->GetLocalRootArkUINode());
+}
 
 bool WaterfallPullHeaderView::SetPropImpl(const std::string &propKey, const HippyValue &propValue) {
 //  FOOTSTONE_DLOG(INFO)<<__FUNCTION__<<" propKey = "<<propKey;
