@@ -28,7 +28,6 @@ inline namespace render {
 inline namespace native {
 
 static constexpr ArkUI_NodeEventType FLOW_ITEM_NODE_EVENT_TYPES[] = {
-  NODE_EVENT_ON_VISIBLE_AREA_CHANGE
 };
 
 WaterFlowItemNode::WaterFlowItemNode()
@@ -54,14 +53,9 @@ void WaterFlowItemNode::OnNodeEvent(ArkUI_NodeEvent *event) {
   if (flowItemNodeDelegate_ == nullptr) {
     return;
   }
-  auto eventType = OH_ArkUI_NodeEvent_GetEventType(event);
-  auto nodeComponentEvent = OH_ArkUI_NodeEvent_GetNodeComponentEvent(event);
+  // auto eventType = OH_ArkUI_NodeEvent_GetEventType(event);
+  // auto nodeComponentEvent = OH_ArkUI_NodeEvent_GetNodeComponentEvent(event);
   // FOOTSTONE_DLOG(INFO) << __FUNCTION__ << " event = " << eventType;
-  if (eventType == ArkUI_NodeEventType::NODE_EVENT_ON_VISIBLE_AREA_CHANGE) {
-    bool isVisible = nodeComponentEvent->data[0].i32;
-    float currentRatio = nodeComponentEvent->data[1].f32;
-    flowItemNodeDelegate_->OnFlowItemVisibleAreaChange(itemIndex_, isVisible, currentRatio);
-  }
 }
 
 void WaterFlowItemNode::SetConstraintSize(float minWidth, float maxWidth, float minHeight, float maxHeight) {

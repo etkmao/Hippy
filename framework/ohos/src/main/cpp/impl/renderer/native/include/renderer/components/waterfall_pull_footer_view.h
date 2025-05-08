@@ -46,7 +46,7 @@ public:
   void Show(bool show);
 
 private:
-  bool isVisible_ = true;
+  bool isVisible_ = false; // 瀑布流组件通过触底加载更多，直接不显示即可
 
   bool sticky_ = false;
 };

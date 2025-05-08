@@ -29,7 +29,6 @@
 #include "renderer/arkui/water_flow_node.h"
 #include "renderer/arkui/refresh_node.h"
 #include "renderer/arkui/scroll_node.h"
-#include "renderer/arkui/list_node.h"
 #include "renderer/arkui/water_flow_item_node.h"
 #include "renderer/components/pull_footer_view.h"
 #include "renderer/components/pull_header_view.h"
@@ -78,9 +77,6 @@ public:
   // ArkUINodeDelegate
   void OnTouch(int32_t actionType, const HRPosition &screenPosition) override;
 
-  // FlowItemNodeDelegate
-  void OnFlowItemVisibleAreaChange(int32_t index, bool isVisible, float currentRatio) override;
-  
   // RefreshNodeDelegate
   void OnRefreshing() override;
   void OnStateChange(int32_t state) override;
@@ -93,6 +89,8 @@ private:
 
   void HandleOnChildrenUpdated();
   
+  void EmitScrollEvent(const std::string &eventName);
+  void CheckSendOnScrollEvent();
   void CheckBeginDrag();
   void CheckEndDrag();
   
@@ -104,11 +102,9 @@ private:
   void UpdateSectionOption();
   
   static float GetItemMainSizeCallback(int32_t itemIndex, void* userData);
-
-  constexpr static const char *CONTENT_OFFSET = "contentOffset";
+  
   constexpr static const char *PULL_HEADER_VIEW_TYPE = "PullHeaderView";
   constexpr static const char *PULL_FOOTER_VIEW_TYPE = "PullFooterView";
-  constexpr static const char *LIST_VIEW_ITEM_TYPE = "WaterfallItem";
   
   std::shared_ptr<RefreshNode> refreshNode_;
   std::shared_ptr<WaterFlowNode> flowNode_;
@@ -125,6 +121,7 @@ private:
   bool toUpdateSection_ = false;
   
   bool onScrollEventEnable_ = false;
+  int64_t lastScrollTime_ = 0;
   
   bool hasPullHeader_ = false;
 
@@ -133,13 +130,10 @@ private:
   std::shared_ptr<WaterfallPullFooterView> footerView_ = nullptr;
   std::shared_ptr<WaterfallItemView> headBannerView_ = nullptr;
   std::shared_ptr<WaterfallItemView> footBannerView_ = nullptr;
-
+  
   float width_ = 0;
   float height_ = 0;
   bool isDragging_ = false;
-//  int32_t lastScrollIndex_ = 0;
-//  bool headerVisible_ = false;
-//  bool footerVisible_ = false;
   
   bool isListZeroSize = false;
   bool isInitListReadyNotified_ = false;

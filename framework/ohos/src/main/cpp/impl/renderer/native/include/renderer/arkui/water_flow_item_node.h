@@ -32,7 +32,6 @@ inline namespace native {
 class FlowItemNodeDelegate {
 public:
   virtual ~FlowItemNodeDelegate() = default;
-  virtual void OnFlowItemVisibleAreaChange(int32_t index, bool isVisible, float currentRatio) {}
 };
 
 class WaterFlowItemNode : public ArkUINode {
