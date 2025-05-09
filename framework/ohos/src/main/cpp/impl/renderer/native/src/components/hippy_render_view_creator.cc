@@ -46,7 +46,7 @@ namespace hippy {
 inline namespace render {
 inline namespace native {
 
-std::shared_ptr<BaseView> HippyCreateRenderView(std::string &view_name, bool is_parent_text, std::shared_ptr<NativeRenderContext> &ctx) {
+std::shared_ptr<BaseView> HippyCreateRenderView(std::string &view_name, bool is_parent_text, bool is_parent_waterfall, std::shared_ptr<NativeRenderContext> &ctx) {
 //  FOOTSTONE_DLOG(INFO)<<__FUNCTION__<<" view_name = "<<view_name;
   if (view_name == "View") {
     auto view = std::make_shared<DivView>(ctx);
@@ -117,15 +117,21 @@ std::shared_ptr<BaseView> HippyCreateRenderView(std::string &view_name, bool is_
     view->Init();
     return view;
   } else if (view_name == "PullHeaderView") {
-//    auto view = std::make_shared<PullHeaderView>(ctx);
-    // TODO(hot):
-    auto view = std::make_shared<WaterfallPullHeaderView>(ctx);
+    std::shared_ptr<BaseView> view;
+    if (is_parent_waterfall) {
+      view = std::make_shared<WaterfallPullHeaderView>(ctx);
+    } else {
+      view = std::make_shared<PullHeaderView>(ctx);
+    }
     view->Init();
     return view;
   } else if (view_name == "PullFooterView") {
-//    auto view = std::make_shared<PullFooterView>(ctx);
-    // TODO(hot):
-    auto view = std::make_shared<WaterfallPullFooterView>(ctx);
+    std::shared_ptr<BaseView> view;
+    if (is_parent_waterfall) {
+      view = std::make_shared<WaterfallPullFooterView>(ctx);
+    } else {
+      view = std::make_shared<PullFooterView>(ctx);
+    }
     view->Init();
     return view;
   }
