@@ -30,6 +30,7 @@ import { TurboModuleManager } from '../hippy_framework/modules/turbo/TurboModule
 import { NodeContent } from '@ohos.arkui.node';
 import { HRPosition, HRRect } from '../renderer_native/utils/HRTypes';
 import { HippyLayoutEngineType } from "../hippy_framework/HippyEngine";
+import { HippyWModuleManager } from "../hippy_framework/worker_modules/HippyWModuleManager";
 
 export interface HippyRenderViewInfo {
   tag: number
@@ -134,4 +135,7 @@ export interface HippyLibrary {
   Setting_SetDensityScale(densityScale: number): void;
   Setting_SetFontSizeScale(fontSizeScale: number): void;
   Setting_SetFontWeightScale(fontWeightScale: number): void;
+
+  // worker线程使用
+  Worker_RegisterWModules(moduleManager: HippyWModuleManager, moduleNames: HippyArray): void;
 }

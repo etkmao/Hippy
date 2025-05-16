@@ -17,30 +17,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { HippyAny } from '../../../support/common/HippyTypes';
-import { HippyEngineContext } from '../../HippyEngineContext';
-import { HippyModulePromise } from '../HippyModulePromise';
+import { HippyArray } from '../../support/common/HippyTypes';
+import { HippyCallNativeParams } from '../bridge/HippyCallNativeParams';
+import { HippyWModuleBase } from './native/HippyWModuleBase';
 
+export interface HippyWModuleManager {
 
-export class HippyNativeModuleBase {
-  public static readonly NAME: string
-  protected ctx: HippyEngineContext
+  callNatives(params: HippyCallNativeParams): void;
 
-  constructor(ctx: HippyEngineContext) {
-    this.ctx = ctx
-  }
+  destroy(): void;
 
-  isTurbo() {
-    return false;
-  }
+  getNativeModule(name: string, isTurbo: boolean): HippyWModuleBase | null;
 
-  call(method: string, params: Array<HippyAny>, promise: HippyModulePromise): HippyAny {
-    return null
-  }
-
-  initialize(): void {
-  }
-
-  destroy(): void {
-  }
+  getModuleNames(): HippyArray;
 }

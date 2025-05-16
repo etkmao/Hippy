@@ -17,30 +17,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { HippyAny } from '../../../support/common/HippyTypes';
-import { HippyEngineContext } from '../../HippyEngineContext';
-import { HippyModulePromise } from '../HippyModulePromise';
+
+#pragma once
+
+namespace hippy {
+inline namespace framework {
+inline namespace connector {
+inline namespace worker {
 
 
-export class HippyNativeModuleBase {
-  public static readonly NAME: string
-  protected ctx: HippyEngineContext
-
-  constructor(ctx: HippyEngineContext) {
-    this.ctx = ctx
-  }
-
-  isTurbo() {
-    return false;
-  }
-
-  call(method: string, params: Array<HippyAny>, promise: HippyModulePromise): HippyAny {
-    return null
-  }
-
-  initialize(): void {
-  }
-
-  destroy(): void {
-  }
+}
+}
+}
 }

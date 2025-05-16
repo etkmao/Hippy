@@ -18,16 +18,13 @@
  * limitations under the License.
  */
 import { HippyAny } from '../../../support/common/HippyTypes';
-import { HippyEngineContext } from '../../HippyEngineContext';
-import { HippyModulePromise } from '../HippyModulePromise';
+import { HippyModulePromise } from '../../modules/HippyModulePromise';
 
 
-export class HippyNativeModuleBase {
+export class HippyWModuleBase {
   public static readonly NAME: string
-  protected ctx: HippyEngineContext
 
-  constructor(ctx: HippyEngineContext) {
-    this.ctx = ctx
+  constructor() {
   }
 
   isTurbo() {
