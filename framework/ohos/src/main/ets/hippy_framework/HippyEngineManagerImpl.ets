@@ -66,6 +66,7 @@ import { HippyEngineLifecycleEventListener } from "./HippyEngineLifecycleEventLi
 import { Dimensions } from "./modules/javascript/Dimensions";
 import { window } from "@kit.ArkUI";
 import { HippyWindowInfo } from "./HippyWindowInfo";
+import { worker } from '@kit.ArkTS';
 
 export class HippyEngineManagerImpl implements HippyEngine, FrameworkProxy, DevServerCallBack {
   private static sEngineIdCounter = 0
@@ -139,6 +140,12 @@ export class HippyEngineManagerImpl implements HippyEngine, FrameworkProxy, DevS
 
     this.checkFontWeightScale();
     this.checkWindowInfo();
+
+    // TODO(hot):
+    let workerInstance = new worker.ThreadWorker("@hippy/ets/hippy_framework/worker_modules/worker/HippyModuleWorker.ets");
+    if (!workerInstance) {
+      LogUtils.e('hippy', 'error');
+    }
   }
 
   setUIContext(uiContext: UIContext | null): void {

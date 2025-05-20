@@ -29,8 +29,16 @@ import { HippyArray } from '../../support/common/HippyTypes'
 
 export type HippyWModuleCreator = (ctx: HippyWModuleContext) => HippyWModuleBase
 
+
+export class XXXModule extends HippyWModuleBase {
+  public static readonly NAME = 'XXXModule'
+
+}
+
 export function hippyWModuleCreatorRegisterMap(): Map<string, HippyWModuleCreator> {
   let registerMap: Map<string, HippyWModuleCreator> = new Map()
+  registerMap.set('NetInfo', (ctx): HippyWModuleBase => new XXXModule()) // TODO(hot):
+
   // registerMap.set(ConsoleModule.NAME, (ctx): HippyNativeModuleBase => new ConsoleModule(ctx))
   // registerMap.set(StorageModule.NAME, (ctx): HippyNativeModuleBase => new StorageModule(ctx))
   // registerMap.set(ImageLoaderModule.NAME, (ctx): HippyNativeModuleBase => new ImageLoaderModule(ctx))
@@ -97,7 +105,7 @@ export class HippyWModuleManagerImpl implements HippyWModuleManager {
   }
 
   getModuleNames(): HippyArray {
-    let array = new Array<string>()
+    let array = Array.from(this.nativeModuleCreatorRegisterMap.keys())
     return array
   }
 

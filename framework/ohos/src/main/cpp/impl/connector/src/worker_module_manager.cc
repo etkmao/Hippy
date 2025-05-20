@@ -51,6 +51,17 @@ namespace hippy {
 inline namespace framework {
 inline namespace worker {
 
+FnContextData *CreateFnContext() {
+  auto p = new FnContextData();
+  return p;
+}
+
+void DestoryFnContext(FnContextData *contextData) {
+  if (contextData) {
+    delete contextData;
+  }
+}
+
 std::shared_ptr<WorkerModuleManager> WorkerModuleManager::GetInstance() {
   static std::shared_ptr<WorkerModuleManager> instance = nullptr;
   static std::once_flag flag;
@@ -58,6 +69,27 @@ std::shared_ptr<WorkerModuleManager> WorkerModuleManager::GetInstance() {
     instance = std::make_shared<WorkerModuleManager>();
   });
   return instance;
+}
+
+void WorkerModuleManager::SetWModules(napi_env ts_worker_env, napi_threadsafe_function ts_func, std::set<std::string> &names) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  for (auto name : names) {
+    module_map_.emplace(name, WorkerModuleOwner(ts_worker_env, ts_func));
+  }
+}
+
+WorkerModuleOwner *WorkerModuleManager::GetWModule(std::string &name) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  auto it = module_map_.find(name);
+  if (it != module_map_.end()) {
+    return &it->second;
+  }
+  return nullptr;
+}
+
+size_t WorkerModuleManager::GetWModuleTotalNumber() {
+  std::lock_guard<std::mutex> lock(mutex_);
+  return module_map_.size();
 }
 
 }

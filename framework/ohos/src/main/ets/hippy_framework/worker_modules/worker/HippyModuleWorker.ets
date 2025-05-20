@@ -19,12 +19,36 @@
  */
 import { worker, MessageEvents, ErrorEvent } from '@kit.ArkTS';
 import libHippy from 'libhippy.so';
+import { LogUtils } from '../../../support/utils/LogUtils';
+import { HippyCallNativeParams } from '../../bridge/HippyCallNativeParams';
 import { HippyWModuleContext } from '../HippyWModuleContext';
 import { HippyWModuleManagerImpl } from '../HippyWModuleManagerImpl';
 
+
+
 let ctx = new HippyWModuleContext();
 let manager = new HippyWModuleManagerImpl(ctx, false);
-libHippy.RegisterWModules(manager, manager.getModuleNames());
+
+let callNatives = (
+  moduleName: string,
+  moduleFunc: string,
+  callId: string,
+  buffer: ArrayBuffer): void => {
+  LogUtils.i('hippy', 'Worker callNatives params, '
+    + moduleName + ' - '
+    + moduleFunc + ' - '
+    + callId + ' - '
+    + buffer);
+
+  if (manager) {
+    const callNativeParams = new HippyCallNativeParams(moduleName, moduleFunc, callId, buffer);
+    manager.callNatives(callNativeParams);
+  }
+
+  LogUtils.i('hippy', 'Worker callNatives end');
+}
+
+libHippy.Worker_RegisterWModules(callNatives, manager.getModuleNames());
 
 // 创建worker线程中与宿主线程通信的对象
 const workerPort = worker.workerPort
