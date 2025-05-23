@@ -21,6 +21,8 @@
  */
 
 #include "renderer/components/list_item_view.h"
+#include "renderer/arkui/arkui_node.h"
+#include "renderer/dom_node/hr_node_props.h"
 #include "renderer/utils/hr_event_utils.h"
 #include "renderer/utils/hr_value_utils.h"
 
@@ -115,6 +117,12 @@ bool ListItemView::SetViewProp(const std::string &propKey, const HippyValue &pro
 }
 
 bool ListItemView::SetPropImpl(const std::string &propKey, const HippyValue &propValue) {
+  // 设置背景属性到子容器节点上，方便sticky浮起时直接用
+  if (propKey == HRNodeProps::BACKGROUND_COLOR) {
+    uint32_t value = HRValueUtils::GetUint32(propValue);
+    stackNode_->SetBackgroundColor(value);
+    return true;
+  }
   return BaseView::SetPropImpl(propKey, propValue);
 }
 

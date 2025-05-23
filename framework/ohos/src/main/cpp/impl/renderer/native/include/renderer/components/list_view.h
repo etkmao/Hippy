@@ -93,10 +93,14 @@ private:
   void CheckEndDrag();
   void CheckPullOnItemVisibleAreaChange(int32_t index, bool isVisible, float currentRatio);
   void CheckPullOnScroll();
-  void CheckStickyOnItemVisibleAreaChange(int32_t index, bool isVisible, float currentRatio);
   void CheckInitOffset();
   void CheckValidListSize();
   void CheckInitListReadyNotify();
+  
+  void CheckStickyOnChildrenUpdated();
+  bool ShouldSticky();
+  bool CalculateStickyItemPosition(HRPosition *resultPosition);
+  void CheckStartAndUpdateSticky();
 
   constexpr static const char *CONTENT_OFFSET = "contentOffset";
   constexpr static const char *PULL_HEADER_VIEW_TYPE = "PullHeaderView";
@@ -132,16 +136,14 @@ private:
   std::shared_ptr<PullFooterView> footerView_ = nullptr;
   int64_t lastScrollTime_ = 0;
   bool isLastTimeReachEnd_ = false;
-
-  std::shared_ptr<ArkUINode> stickyNode_;
+  
   int32_t stickyIndex_ = INVALID_STICKY_INDEX;
   std::vector<int32_t> stickyArray_;
-  std::vector<int32_t> stickyStack_;
   
-  float stickyItemOffsetY_ = 0;
+  std::shared_ptr<ArkUINode> stickyNode_;
+  float stickyItemOffsetXY_ = 0;
 
   bool isDragging_ = false;
-  float lastMoveOffset_ = 0;
 
   bool headerViewFullVisible_ = false;
   bool footerViewFullVisible_ = false;
