@@ -58,6 +58,20 @@ void ListItemView::DestroyArkUINodeImpl() {
   stackNode_ = nullptr;
 }
 
+std::shared_ptr<RecycleView> ListItemView::RecycleArkUINode() {
+  if (isInSticky_) {
+    return nullptr;
+  }
+  return BaseView::RecycleArkUINode();
+}
+
+bool ListItemView::ReuseArkUINode(std::shared_ptr<RecycleView> &recycleView, int32_t index) {
+  if (isInSticky_) {
+    return false;
+  }
+  return BaseView::ReuseArkUINode(recycleView, index);
+}
+
 bool ListItemView::RecycleArkUINodeImpl(std::shared_ptr<RecycleView> &recycleView) {
   itemNode_->ResetAllAttributes();
   stackNode_->ResetAllAttributes();
@@ -115,6 +129,7 @@ void ListItemView::OnChildRemovedImpl(std::shared_ptr<BaseView> const &childView
 }
 
 void ListItemView::UpdateRenderViewFrameImpl(const HRRect &frame, const HRPadding &padding) {
+  itemNode_->SetSize(HRSize(frame.width, frame.height));
   stackNode_->SetPosition(HRPosition(0, 0));
   stackNode_->SetSize(HRSize(frame.width, frame.height));
   width_ = frame.width;
@@ -182,6 +197,34 @@ void ListItemView::MoveToExposureState(uint32_t state) {
       break;
   }
   exposureState_ = state;
+}
+
+void ListItemView::StartSticky() {
+  if (isInSticky_) {
+    return;
+  }
+  isInSticky_ = true;
+  
+  if (!GetLocalRootArkUINode()) {
+    CreateArkUINode(true);
+  }
+  
+  itemNode_->RemoveChild(stackNode_.get());
+}
+
+void ListItemView::EndSticky() {
+  if (!isInSticky_) {
+    return;
+  }
+  isInSticky_ = false;
+  
+  if (itemNode_ && stackNode_) {
+    itemNode_->AddChild(stackNode_.get());
+  }
+}
+
+std::shared_ptr<StackNode> ListItemView::GetStickyRootArkUINode() {
+  return stackNode_;
 }
 
 } // namespace native

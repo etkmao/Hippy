@@ -274,6 +274,15 @@ void ListView::OnWillScroll(float offset, ArkUI_ScrollState state) {
       footerView_->Show(true);
     }
   }
+  
+  auto totalOffset = listNode_->GetScrollOffset();
+  FOOTSTONE_LOG(INFO) << "xxx hippy, on will, y: " << totalOffset.y;
+  if (stickyNode_) {
+    HRPosition pos(0, 0);
+    pos.x = 0;
+    pos.y = totalOffset.y > stickyItemOffsetY_ ? 0 : stickyItemOffsetY_ - totalOffset.y;
+    stickyNode_->SetPosition(pos);
+  }
 }
 
 void ListView::OnScroll(float scrollOffsetX, float scrollOffsetY) {
@@ -327,7 +336,7 @@ void ListView::OnItemVisibleAreaChange(int32_t index, bool isVisible, float curr
   
   CheckPullOnItemVisibleAreaChange(index, isVisible, currentRatio);
   if (rowShouldSticky_) {
-    CheckStickyOnItemVisibleAreaChange(index, isVisible, currentRatio);
+//    CheckStickyOnItemVisibleAreaChange(index, isVisible, currentRatio);
   }
   if (exposureEventEnabled_) {
     if (index >= 0 && index < static_cast<int32_t>(children_.size())) {
@@ -373,6 +382,40 @@ void ListView::HandleOnChildrenUpdated() {
       }
     }
   }
+  
+#if 1
+  // 
+  if (stickyIndex_ != INVALID_STICKY_INDEX) {
+    auto itemView = std::static_pointer_cast<ListItemView>(children_[(size_t)stickyIndex_]);
+    itemView->EndSticky();
+    stackNode_->RemoveChild(stickyNode_.get());
+    stickyNode_ = nullptr;
+    stickyIndex_ = INVALID_STICKY_INDEX;
+  }
+  if (stickyArray_.size() > 0) {
+    stickyIndex_ = stickyArray_[0];
+    auto itemView = std::static_pointer_cast<ListItemView>(children_[(size_t)stickyIndex_]);
+    itemView->StartSticky();
+    
+    stickyItemOffsetY_ = 0;
+    int beginIndex = 0;//hasPullHeader_ ? 1 : 0;
+    for (int i = beginIndex; i < stickyIndex_; i++) {
+      auto iItemView = std::static_pointer_cast<ListItemView>(children_[(size_t)i]);
+      // TODO(hot):w
+      auto h = iItemView->GetHeight();
+      stickyItemOffsetY_ += h;
+    }
+    
+    stickyNode_ = itemView->GetStickyRootArkUINode();
+//    auto w = stickyItemView->GetWidth();
+//    auto h = stickyItemView->GetHeight();
+    stickyNode_->SetPosition(HRPosition{0, 0}); // TODO(hot):
+//    stickyNode_->SetSize(HRSize{w, h});
+    
+    stackNode_->AddChild(stickyNode_.get());
+  }
+#endif
+  
 }
 
 void ListView::EmitScrollEvent(const std::string &eventName) {
