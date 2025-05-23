@@ -100,7 +100,8 @@ private:
   void CheckStickyOnChildrenUpdated();
   bool ShouldSticky();
   bool CalculateStickyItemPosition(HRPosition *resultPosition);
-  void CheckStartAndUpdateSticky();
+  void StopSticky();
+  void CheckAndUpdateSticky();
 
   constexpr static const char *CONTENT_OFFSET = "contentOffset";
   constexpr static const char *PULL_HEADER_VIEW_TYPE = "PullHeaderView";
