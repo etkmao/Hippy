@@ -138,8 +138,9 @@ private:
   int64_t lastScrollTime_ = 0;
   bool isLastTimeReachEnd_ = false;
   
-  int32_t stickyIndex_ = INVALID_STICKY_INDEX;
   std::vector<int32_t> stickyArray_;
+  int32_t stickyIndex_ = INVALID_STICKY_INDEX;
+  int32_t stickyingIndex_ = INVALID_STICKY_INDEX;
   
   std::shared_ptr<ArkUINode> stickyNode_;
   float stickyItemOffsetXY_ = 0;

@@ -598,7 +598,7 @@ void ListView::CheckStickyOnChildrenUpdated() {
   }
   
   // 检测生效/失效吸顶并设置吸顶item显示位置，目前只支持1个item吸顶显示
-  if (stickyIndex_ != INVALID_STICKY_INDEX) {
+  if (stickyingIndex_ != INVALID_STICKY_INDEX) {
     StopSticky();
   }
   if (stickyArray_.size() > 0) {
@@ -657,9 +657,9 @@ bool ListView::CalculateStickyItemPosition(HRPosition *resultPosition) {
 void ListView::StopSticky() {
   stackNode_->RemoveChild(stickyNode_.get());
   stickyNode_ = nullptr;
-  auto itemView = std::static_pointer_cast<ListItemView>(children_[(size_t)stickyIndex_]);
+  auto itemView = std::static_pointer_cast<ListItemView>(children_[(size_t)stickyingIndex_]);
   itemView->EndSticky();
-  stickyIndex_ = INVALID_STICKY_INDEX;
+  stickyingIndex_ = INVALID_STICKY_INDEX;
 }
 
 void ListView::CheckAndUpdateSticky() {
@@ -669,6 +669,7 @@ void ListView::CheckAndUpdateSticky() {
     itemView->StartSticky();
     stickyNode_ = itemView->GetStickyRootArkUINode();
     stackNode_->AddChild(stickyNode_.get());
+    stickyingIndex_ = stickyIndex_;
   }
   if (!isSticky && stickyNode_) {
     StopSticky();
