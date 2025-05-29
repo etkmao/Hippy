@@ -584,11 +584,14 @@ void JsDriverUtils::CallJs(const string_view& action,
                            byte_string buffer_data,
                            std::function<void()> on_js_runner
                            ) {
+  static int cc = 0;
+  ++cc;
+  FOOTSTONE_LOG(INFO) << "xxx hippy, JsDriverUtils::CallJs action: " << action << ", buffer_size: " << buffer_data.size() << ", cc: " << cc;
   auto runner = scope->GetTaskRunner();
   std::weak_ptr<Scope> weak_scope = scope;
   auto callback = [weak_scope, cb = std::move(cb), action,
       buffer_data_ = std::move(buffer_data),
-      on_js_runner = std::move(on_js_runner)] {
+      on_js_runner = std::move(on_js_runner), ccx = cc] {
     on_js_runner();
     auto scope = weak_scope.lock();
     if (!scope) {
@@ -652,6 +655,7 @@ void JsDriverUtils::CallJs(const string_view& action,
     if (!params) {
       params = context->CreateNull();
     }
+    FOOTSTONE_LOG(INFO) << "xxx hippy, JsDriverUtils::CallJs jsContext call, action: " << action << ", buffer_size: " << str.size() << ", cc: " << ccx;
     std::shared_ptr<CtxValue> argv[] = {action_value, params};
     context->CallFunction(scope->GetBridgeObject(), context->GetGlobalObject(), 2, argv);
     cb(CALL_FUNCTION_CB_STATE::SUCCESS, "");
