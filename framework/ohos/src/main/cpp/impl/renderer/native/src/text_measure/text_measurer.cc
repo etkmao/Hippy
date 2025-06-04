@@ -576,7 +576,7 @@ OhMeasureResult TextMeasurer::EndMeasure(int width, int widthMode, int height, i
 
   // MATE 60, beta5, "新品" "商店" text cannot be fully displayed. So add 0.5.
   ret.width = ceil(OH_Drawing_TypographyGetLongestLine(typography_) + paddingWidthReduce + 0.5 * density);
-  ret.height = OH_Drawing_TypographyGetHeight(typography_) + paddingHeightReduce;
+  ret.height = OH_Drawing_TypographyGetHeight(typography_);
   ret.isEllipsized = OH_Drawing_TypographyDidExceedMaxLines(typography_);
   lineCount = OH_Drawing_TypographyGetLineCount(typography_);
   
@@ -599,6 +599,8 @@ OhMeasureResult TextMeasurer::EndMeasure(int width, int widthMode, int height, i
     FOOTSTONE_DLOG(INFO) << "hippy text - lineHeight fix result, result height: " << ret.height;
 #endif
   }
+  
+  ret.height += paddingHeightReduce;
   
   measureWidth_ = maxWidth;
   
