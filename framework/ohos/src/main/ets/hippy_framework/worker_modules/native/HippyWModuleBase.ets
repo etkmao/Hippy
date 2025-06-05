@@ -19,12 +19,15 @@
  */
 import { HippyAny } from '../../../support/common/HippyTypes';
 import { HippyModulePromise } from '../../modules/HippyModulePromise';
+import { HippyWModuleContext } from '../HippyWModuleContext';
 
 
 export class HippyWModuleBase {
   public static readonly NAME: string
+  protected ctx: HippyWModuleContext
 
-  constructor() {
+  constructor(ctx: HippyWModuleContext) {
+    this.ctx = ctx
   }
 
   isTurbo() {

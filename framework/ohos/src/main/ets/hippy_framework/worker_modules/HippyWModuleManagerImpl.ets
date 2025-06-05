@@ -33,11 +33,14 @@ export type HippyWModuleCreator = (ctx: HippyWModuleContext) => HippyWModuleBase
 export class XXXModule extends HippyWModuleBase {
   public static readonly NAME = 'XXXModule'
 
+  constructor(ctx: HippyWModuleContext) {
+    super(ctx)
+  }
 }
 
 export function hippyWModuleCreatorRegisterMap(): Map<string, HippyWModuleCreator> {
   let registerMap: Map<string, HippyWModuleCreator> = new Map()
-  registerMap.set('NetInfo', (ctx): HippyWModuleBase => new XXXModule()) // TODO(hot):
+  registerMap.set('NetInfo', (ctx): HippyWModuleBase => new XXXModule(ctx)) // TODO(hot):
 
   // registerMap.set(ConsoleModule.NAME, (ctx): HippyNativeModuleBase => new ConsoleModule(ctx))
   // registerMap.set(StorageModule.NAME, (ctx): HippyNativeModuleBase => new StorageModule(ctx))
