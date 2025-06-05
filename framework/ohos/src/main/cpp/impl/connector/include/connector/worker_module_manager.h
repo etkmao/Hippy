@@ -33,6 +33,7 @@ inline namespace worker {
 
 class FnContextData {
 public:
+  uint32_t scope_id_ = 0;
   std::u16string module_str_;
   std::u16string func_str_;
   std::u16string cb_id_str_;

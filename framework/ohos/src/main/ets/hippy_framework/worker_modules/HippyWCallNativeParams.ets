@@ -17,12 +17,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { HippyLibrary } from "../../hippy_library/HippyLibrary";
+import { HippyAny } from '../../support/common/HippyTypes';
 
-export class HippyWModuleContext {
-  public libHippy: HippyLibrary;
+export class HippyWCallNativeParams {
+  public scopeId: number = 0;
+  public moduleName: string = '';
+  public moduleFunc: string = '';
+  public callId: string = '';
+  public buffer: ArrayBuffer;
 
-  constructor(libHippy: HippyLibrary) {
-    this.libHippy = libHippy;
+  public constructor(scopeId: number,
+                     moduleName: string,
+                     moduleFunc: string,
+                     callId: string,
+                     buffer: ArrayBuffer) {
+    this.scopeId = scopeId;
+    this.moduleName = moduleName;
+    this.moduleFunc = moduleFunc;
+    this.callId = callId;
+    this.buffer = buffer;
   }
 }

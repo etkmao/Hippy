@@ -81,6 +81,7 @@ void CallHost(CallbackInfo& info) {
       WorkerModuleOwner *module_owner = WorkerModuleManager::GetInstance()->GetWModule(u8_module);
       if (module_owner) {
         FnContextData *context = CreateFnContext();
+        context->scope_id_ = scope->GetScopeId();
         context->module_str_ = module_str;
         context->func_str_ = func_str;
         context->cb_id_str_ = cb_id_str;

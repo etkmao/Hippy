@@ -18,7 +18,6 @@
  * limitations under the License.
  */
 import { HippyWModuleManager } from './HippyWModuleManager'
-import { HippyCallNativeParams } from '../bridge/HippyCallNativeParams'
 import { LogUtils } from '../../support/utils/LogUtils'
 import { HippyModuleUtils } from '../modules/HippyModuleUtils'
 import { HippyWModuleContext } from './HippyWModuleContext'
@@ -26,6 +25,7 @@ import { HippyWModuleBase } from './native/HippyWModuleBase'
 import { HippyModulePromise } from '../modules/HippyModulePromise'
 import { HippyWModulePromiseImpl } from './HippyWModulePromiseImpl'
 import { HippyArray } from '../../support/common/HippyTypes'
+import { HippyWCallNativeParams } from './HippyWCallNativeParams'
 
 export type HippyWModuleCreator = (ctx: HippyWModuleContext) => HippyWModuleBase
 
@@ -57,7 +57,7 @@ export class HippyWModuleManagerImpl implements HippyWModuleManager {
     this.mEnableV8Serialization = enableV8Serialization;
   }
 
-  public callNatives(params: HippyCallNativeParams): void {
+  public callNatives(params: HippyWCallNativeParams): void {
     const buffer = params.buffer;
     const moduleName = params.moduleName;
     const moduleFunc = params.moduleFunc;
@@ -69,6 +69,7 @@ export class HippyWModuleManagerImpl implements HippyWModuleManager {
     if (module) {
       const promise: HippyModulePromise = new HippyWModulePromiseImpl(
         this.ctx,
+        params.scopeId,
         params.moduleName,
         params.moduleFunc,
         params.callId

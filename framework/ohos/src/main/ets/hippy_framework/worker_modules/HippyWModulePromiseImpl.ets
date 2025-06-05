@@ -20,7 +20,9 @@
 import {
   HippyAny,
   HippyArray, HippyMap, HippyValue } from '../../support/common/HippyTypes';
+import { LogUtils } from '../../support/utils/LogUtils';
 import { TextUtils } from '../../support/utils/TextUtils';
+import { HippyBridgeUtils } from '../bridge/HippyBridgeUtils';
 import { HippyModulePromise } from '../modules/HippyModulePromise';
 import { HippyWModuleContext } from './HippyWModuleContext';
 
@@ -31,16 +33,19 @@ export class HippyWModulePromiseImpl implements HippyModulePromise {
   public static PROMISE_CODE_NORMAN_ERROR = 1;
   public static PROMISE_CODE_OTHER_ERROR = 2;
   public context: HippyWModuleContext;
+  public scopeId: number;
   public mModuleName: string;
   public mModuleFunc: string;
   public mCallId: string;
 
   public constructor(
     context: HippyWModuleContext,
+    scopeId: number,
     moduleName: string,
     moduleFunc: string,
     callId: string) {
     this.context = context;
+    this.scopeId = scopeId;
     this.mModuleName = moduleName;
     this.mModuleFunc = moduleFunc;
     this.mCallId = callId;
@@ -73,7 +78,9 @@ export class HippyWModulePromiseImpl implements HippyModulePromise {
     resultMap.set("moduleFunc", this.mModuleFunc);
     resultMap.set("callId", this.mCallId);
     resultMap.set("params", resultObject);
-    // TODO(hot):
-    // this.context.getBridgeManager()?.execPromiseCallback(resultMap);
+
+    let enableV8Serialization: boolean = false; // TODO(hot):
+    const buffer = HippyBridgeUtils.getSerializerBuffer(resultMap, enableV8Serialization);
+    this.context.libHippy?.Worker_CallJsFunction(this.scopeId, "callBack", buffer.buffer as ArrayBuffer)
   }
 }

@@ -29,6 +29,11 @@
 #include "oh_napi/ark_ts.h"
 #include "footstone/check.h"
 #include "footstone/logging.h"
+#include "driver/js_driver_utils.h"
+
+using string_view = footstone::stringview::string_view;
+using byte_string = std::string;
+using CALLFUNCTION_CB_STATE = hippy::CALL_FUNCTION_CB_STATE;
 
 namespace hippy {
 inline namespace framework {
@@ -43,6 +48,7 @@ static void CallTs(napi_env env, napi_value ts_cb, void *context, void *data) {
   
   ArkTS arkTs(env);
   std::vector<napi_value> args = {
+    arkTs.CreateUint32(contextData->scope_id_),
     arkTs.CreateStringUtf16(contextData->module_str_),
     arkTs.CreateStringUtf16(contextData->func_str_),
     arkTs.CreateStringUtf16(contextData->cb_id_str_),
@@ -90,7 +96,40 @@ static napi_value RegisterWModules(napi_env env, napi_callback_info info) {
   return arkTs.GetUndefined();
 }
 
+static napi_value CallJsFunction(napi_env env, napi_callback_info info) {
+  ArkTS arkTs(env);
+  auto args = arkTs.GetCallbackArgs(info);
+  uint32_t scope_id = static_cast<uint32_t>(arkTs.GetInteger(args[0]));
+  auto action_name = string_view(arkTs.GetString(args[1]));
+  void *buffer_data = NULL;
+  size_t byte_length = 0;
+  if (arkTs.IsArrayBuffer(args[2])) {
+    arkTs.GetArrayBufferInfo(args[2], &buffer_data, &byte_length);
+  }
+  byte_string buffer;
+  if (buffer_data && byte_length > 0) {
+    buffer.assign(static_cast<char*>(buffer_data), byte_length);
+  }
+
+  std::any scope_object;
+  auto flag = hippy::global_data_holder.Find(scope_id, scope_object);
+  if (!flag)  {
+    FOOTSTONE_LOG(ERROR) << "worker scope can not found, scope id = " << scope_id << "!!!";
+    return arkTs.GetUndefined();
+  }
+  auto scope = std::any_cast<std::shared_ptr<Scope>>(scope_object);
+  JsDriverUtils::CallJs(
+    action_name, scope,
+    [](CALLFUNCTION_CB_STATE state, const string_view &msg) {
+      FOOTSTONE_LOG(INFO) << "worker callFunctionCallBack, result: " << (int)state << ", msg: " << msg;
+    },
+    std::move(buffer),
+    []() {});
+  return arkTs.GetUndefined();
+}
+
 REGISTER_OH_NAPI("Worker", "Worker_RegisterWModules", RegisterWModules)
+REGISTER_OH_NAPI("Worker", "Worker_CallJsFunction", CallJsFunction)
 
 }
 }

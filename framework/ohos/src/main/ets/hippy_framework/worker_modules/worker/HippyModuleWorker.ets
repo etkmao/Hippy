@@ -20,28 +20,29 @@
 import { worker, MessageEvents, ErrorEvent } from '@kit.ArkTS';
 import libHippy from 'libhippy.so';
 import { LogUtils } from '../../../support/utils/LogUtils';
-import { HippyCallNativeParams } from '../../bridge/HippyCallNativeParams';
+import { HippyWCallNativeParams } from '../HippyWCallNativeParams';
 import { HippyWModuleContext } from '../HippyWModuleContext';
 import { HippyWModuleManagerImpl } from '../HippyWModuleManagerImpl';
 
 
-
-let ctx = new HippyWModuleContext();
+let ctx = new HippyWModuleContext(libHippy);
 let manager = new HippyWModuleManagerImpl(ctx, false);
 
 let callNatives = (
+  scopeId: number,
   moduleName: string,
   moduleFunc: string,
   callId: string,
   buffer: ArrayBuffer): void => {
   LogUtils.i('hippy', 'Worker callNatives params, '
+    + scopeId + ' - '
     + moduleName + ' - '
     + moduleFunc + ' - '
     + callId + ' - '
     + buffer);
 
   if (manager) {
-    const callNativeParams = new HippyCallNativeParams(moduleName, moduleFunc, callId, buffer);
+    const callNativeParams = new HippyWCallNativeParams(scopeId, moduleName, moduleFunc, callId, buffer);
     manager.callNatives(callNativeParams);
   }
 
