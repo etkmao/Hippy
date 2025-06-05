@@ -26,21 +26,13 @@ import { HippyModulePromise } from '../modules/HippyModulePromise'
 import { HippyWModulePromiseImpl } from './HippyWModulePromiseImpl'
 import { HippyArray } from '../../support/common/HippyTypes'
 import { HippyWCallNativeParams } from './HippyWCallNativeParams'
+import { NetInfoWModule } from './native/netinfo/NetInfoWModule'
 
 export type HippyWModuleCreator = (ctx: HippyWModuleContext) => HippyWModuleBase
 
-
-export class XXXModule extends HippyWModuleBase {
-  public static readonly NAME = 'XXXModule'
-
-  constructor(ctx: HippyWModuleContext) {
-    super(ctx)
-  }
-}
-
 export function hippyWModuleCreatorRegisterMap(): Map<string, HippyWModuleCreator> {
   let registerMap: Map<string, HippyWModuleCreator> = new Map()
-  registerMap.set('NetInfo', (ctx): HippyWModuleBase => new XXXModule(ctx)) // TODO(hot):
+  registerMap.set(NetInfoWModule.NAME, (ctx): HippyWModuleBase => new NetInfoWModule(ctx)) // TODO(hot):
 
   // registerMap.set(ConsoleModule.NAME, (ctx): HippyNativeModuleBase => new ConsoleModule(ctx))
   // registerMap.set(StorageModule.NAME, (ctx): HippyNativeModuleBase => new StorageModule(ctx))
