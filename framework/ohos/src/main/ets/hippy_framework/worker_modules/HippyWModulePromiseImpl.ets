@@ -79,7 +79,7 @@ export class HippyWModulePromiseImpl implements HippyModulePromise {
     resultMap.set("callId", this.mCallId);
     resultMap.set("params", resultObject);
 
-    let enableV8Serialization: boolean = false; // TODO(hot):
+    let enableV8Serialization: boolean = false; // Ohos上jsvm不支持v8二进制序列化
     const buffer = HippyBridgeUtils.getSerializerBuffer(resultMap, enableV8Serialization);
     this.context.libHippy?.Worker_CallJsFunction(this.scopeId, "callBack", buffer.buffer as ArrayBuffer)
   }

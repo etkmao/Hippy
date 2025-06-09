@@ -49,6 +49,10 @@ using byte_string = std::string;
 static napi_env s_env = 0;
 
 void InitBridge(napi_env env) {
+  // 此处记录的是主线程的env，只需要首次记录，避免被后续worker线程的env覆盖。
+  if (s_env) {
+    return;
+  }
   s_env = env;
 }
 

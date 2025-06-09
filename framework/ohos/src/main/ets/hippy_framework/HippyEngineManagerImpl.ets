@@ -66,7 +66,8 @@ import { HippyEngineLifecycleEventListener } from "./HippyEngineLifecycleEventLi
 import { Dimensions } from "./modules/javascript/Dimensions";
 import { window } from "@kit.ArkUI";
 import { HippyWindowInfo } from "./HippyWindowInfo";
-import { worker } from '@kit.ArkTS';
+import { ErrorEvent, worker } from '@kit.ArkTS';
+import { HippyModuleWorkerManager } from "./worker_modules/worker_manager/HippyModuleWorkerManager";
 
 export class HippyEngineManagerImpl implements HippyEngine, FrameworkProxy, DevServerCallBack {
   private static sEngineIdCounter = 0
@@ -140,12 +141,6 @@ export class HippyEngineManagerImpl implements HippyEngine, FrameworkProxy, DevS
 
     this.checkFontWeightScale();
     this.checkWindowInfo();
-
-    // TODO(hot):
-    let workerInstance = new worker.ThreadWorker("@hippy/ets/hippy_framework/worker_modules/worker/HippyModuleWorker.ets");
-    if (!workerInstance) {
-      LogUtils.e('hippy', 'error');
-    }
   }
 
   setUIContext(uiContext: UIContext | null): void {
@@ -352,6 +347,7 @@ export class HippyEngineManagerImpl implements HippyEngine, FrameworkProxy, DevS
     this.mEventListeners.push(listener);
     this.initDevModule();
     this.startEngine();
+    HippyModuleWorkerManager.useNativeModuleWorker();
   }
 
   notifyEngineInitialized(statusCode: EngineInitStatus, msg: string) {
@@ -418,6 +414,8 @@ export class HippyEngineManagerImpl implements HippyEngine, FrameworkProxy, DevS
     let applicationContext = this.params.context.getApplicationContext();
     applicationContext.off('environment', this.mEnvCallbackId);
     */
+
+    HippyModuleWorkerManager.releaseNativeModuleWorker();
   }
 
   preloadModule(loader: HippyBundleLoader): void {
