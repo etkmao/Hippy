@@ -141,6 +141,7 @@ export interface HippyLibrary {
     moduleFunc: string,
     callId: string,
     buffer: ArrayBuffer) => void, moduleNames: HippyArray): void;
+  Worker_UnregisterWModules(moduleNames: HippyArray): void;
   Worker_CallJsFunction(instanceId: number, action: string, buffer: ArrayBuffer): void;
 
 }

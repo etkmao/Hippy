@@ -78,7 +78,14 @@ void WorkerModuleManager::SetWModules(napi_env ts_worker_env, napi_threadsafe_fu
   }
 }
 
-WorkerModuleOwner *WorkerModuleManager::GetWModule(std::string &name) {
+void WorkerModuleManager::UnsetWModules(std::set<std::string> &names) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  for (auto name : names) {
+    module_map_.erase(name);
+  }
+}
+
+WorkerModuleOwner *WorkerModuleManager::GetWModule(const std::string &name) {
   std::lock_guard<std::mutex> lock(mutex_);
   auto it = module_map_.find(name);
   if (it != module_map_.end()) {

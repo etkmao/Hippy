@@ -40,6 +40,22 @@ inline namespace framework {
 inline namespace connector {
 inline namespace worker {
 
+static void GetModuleNamesFromTsArray(napi_env env, napi_value ts_array, std::set<std::string> &module_names) {
+  ArkTS arkTs(env);
+  if (arkTs.IsArray(ts_array)) {
+    auto length = arkTs.GetArrayLength(ts_array);
+    if (length > 0) {
+      for (uint32_t i = 0; i < length; i ++) {
+        auto ts_name = arkTs.GetArrayElement(ts_array, i);
+        auto name = arkTs.GetString(ts_name);
+        if (name.length() > 0) {
+          module_names.insert(name);
+        }
+      }
+    }
+  }
+}
+
 static void CallTs(napi_env env, napi_value ts_cb, void *context, void *data) {
   if (env == nullptr || data == nullptr) {
     return;
@@ -72,25 +88,37 @@ static napi_value RegisterWModules(napi_env env, napi_callback_info info) {
     FOOTSTONE_LOG(ERROR) << "ArkTS: Failed to create thread safe func, status: " << status;
     return arkTs.GetUndefined();
   }
-  // TODO(hot): release func
   
   // 模块名数组
   std::set<std::string> module_names;
-  if (arkTs.IsArray(ts_array)) {
-    auto length = arkTs.GetArrayLength(ts_array);
-    if (length > 0) {
-      for (uint32_t i = 0; i < length; i ++) {
-        auto ts_name = arkTs.GetArrayElement(ts_array, i);
-        auto name = arkTs.GetString(ts_name);
-        if (name.length() > 0) {
-          module_names.insert(name);
-        }
-      }
-    }
-  }
+  GetModuleNamesFromTsArray(env, ts_array, module_names);
   
   if (module_names.size() > 0) {
     WorkerModuleManager::GetInstance()->SetWModules(env, func, module_names);
+  }
+  
+  return arkTs.GetUndefined();
+}
+
+static napi_value UnregisterWModules(napi_env env, napi_callback_info info) {
+  ArkTS arkTs(env);
+  auto args = arkTs.GetCallbackArgs(info);
+  auto ts_array = args[0];
+  
+  // 模块名数组
+  std::set<std::string> module_names;
+  GetModuleNamesFromTsArray(env, ts_array, module_names);
+  
+  if (module_names.size() > 0) {
+    napi_threadsafe_function ts_func = nullptr;
+    WorkerModuleOwner *one_owner = WorkerModuleManager::GetInstance()->GetWModule(*(module_names.begin()));
+    if (one_owner) {
+      ts_func = one_owner->ts_func_;
+    }
+    WorkerModuleManager::GetInstance()->UnsetWModules(module_names);
+    if (ts_func) {
+      napi_release_threadsafe_function(ts_func, napi_tsfn_abort);
+    }
   }
   
   return arkTs.GetUndefined();
@@ -129,6 +157,7 @@ static napi_value CallJsFunction(napi_env env, napi_callback_info info) {
 }
 
 REGISTER_OH_NAPI("Worker", "Worker_RegisterWModules", RegisterWModules)
+REGISTER_OH_NAPI("Worker", "Worker_UnregisterWModules", UnregisterWModules)
 REGISTER_OH_NAPI("Worker", "Worker_CallJsFunction", CallJsFunction)
 
 }

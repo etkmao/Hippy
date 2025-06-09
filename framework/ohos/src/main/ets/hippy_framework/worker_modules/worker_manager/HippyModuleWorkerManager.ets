@@ -17,7 +17,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ErrorEvent, worker } from "@kit.ArkTS";
+import { ErrorEvent, MessageEvents, worker } from "@kit.ArkTS";
 import { LogUtils } from "../../../support/utils/LogUtils";
 
 // 模块Worker由多个HippyEngine共享，因为：
@@ -55,10 +55,19 @@ export class HippyModuleWorkerManager {
     HippyModuleWorkerManager.mModuleThreadWorker.onerror = (err: ErrorEvent) => {
       LogUtils.e('hippy', 'module thread worker error: ' + err.message);
     }
+    HippyModuleWorkerManager.mModuleThreadWorker.onmessage = (e: MessageEvents): void => {
+      // data：worker线程发送的信息
+      let data: string = e.data;
+      if (data == 'WorkerReady') {
+        LogUtils.i('hippy', 'module thread worker is ready.');
+        // TODO(hot):
+      }
+    }
   }
 
   private static stopNativeModuleWorker() {
     if (HippyModuleWorkerManager.mModuleThreadWorker) {
+      HippyModuleWorkerManager.mModuleThreadWorker.postMessage('DoExit');
       HippyModuleWorkerManager.mModuleThreadWorker.terminate();
     }
   }

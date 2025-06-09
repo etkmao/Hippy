@@ -55,7 +55,8 @@ public:
   static std::shared_ptr<WorkerModuleManager> GetInstance();
   
   void SetWModules(napi_env ts_worker_env, napi_threadsafe_function ts_func, std::set<std::string> &names);
-  WorkerModuleOwner *GetWModule(std::string &name);
+  void UnsetWModules(std::set<std::string> &names);
+  WorkerModuleOwner *GetWModule(const std::string &name);
   size_t GetWModuleTotalNumber();
   
 private:

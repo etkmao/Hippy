@@ -34,7 +34,7 @@ let callNatives = (
   moduleFunc: string,
   callId: string,
   buffer: ArrayBuffer): void => {
-  LogUtils.i('hippy', 'Worker callNatives params, '
+  LogUtils.i('hippy worker', 'Worker callNatives params, '
     + scopeId + ' - '
     + moduleName + ' - '
     + moduleFunc + ' - '
@@ -46,7 +46,7 @@ let callNatives = (
     manager.callNatives(callNativeParams);
   }
 
-  LogUtils.i('hippy', 'Worker callNatives end');
+  LogUtils.i('hippy worker', 'Worker callNatives end');
 }
 
 libHippy.Worker_RegisterWModules(callNatives, manager.getModuleNames());
@@ -57,14 +57,16 @@ const workerPort = worker.workerPort
 // worker线程接收宿主线程信息
 workerPort.onmessage = (e: MessageEvents): void => {
   // data：宿主线程发送的信息
-  let data: number = e.data;
-  // 往收到的buffer里写入数据
-  const view = new Int8Array(data).fill(3);
-  // worker线程向宿主线程发送信息
-  workerPort.postMessage(view);
+  let data: string = e.data;
+  if (data == 'DoExit') {
+    libHippy.Worker_UnregisterWModules(manager.getModuleNames())
+    LogUtils.i('hippy worker', 'Worker exited.');
+  }
 }
 
 // worker线程发生error的回调
 workerPort.onerror = (err: ErrorEvent) => {
-  console.log("HippyModuleWorker.ets onerror" + err.message);
+  LogUtils.e('hippy worker', 'HippyModuleWorker.ets onerror' + err.message);
 }
+
+workerPort.postMessage('WorkerReady');
