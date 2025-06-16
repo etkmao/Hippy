@@ -17,55 +17,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { worker, MessageEvents, ErrorEvent } from '@kit.ArkTS';
-import libHippy from 'libhippy.so';
-import { LogUtils } from '../../../support/utils/LogUtils';
-import { HippyWCallNativeParams } from '../HippyWCallNativeParams';
-import { HippyWModuleContext } from '../HippyWModuleContext';
-import { HippyWModuleManagerImpl } from '../HippyWModuleManagerImpl';
+import { HippyWModuleCreator } from '../HippyWModuleManagerImpl';
+import { HippyWModuleBase } from '../native/HippyWModuleBase';
+import { NetInfoWModule } from '../native/netinfo/NetInfoWModule';
+import { doStartHippyModuleWorker } from './HippyModuleWorkerHelper';
 
+export function hippyWModuleCreatorRegisterMap(): Map<string, HippyWModuleCreator> {
+  let registerMap: Map<string, HippyWModuleCreator> = new Map()
+  registerMap.set(NetInfoWModule.NAME, (ctx): HippyWModuleBase => new NetInfoWModule(ctx));
 
-let ctx = new HippyWModuleContext(libHippy);
-let manager = new HippyWModuleManagerImpl(ctx, false);
-
-let callNatives = (
-  scopeId: number,
-  moduleName: string,
-  moduleFunc: string,
-  callId: string,
-  buffer: ArrayBuffer): void => {
-  LogUtils.i('hippy worker', 'Worker callNatives params, '
-    + scopeId + ' - '
-    + moduleName + ' - '
-    + moduleFunc + ' - '
-    + callId + ' - '
-    + buffer);
-
-  if (manager) {
-    const callNativeParams = new HippyWCallNativeParams(scopeId, moduleName, moduleFunc, callId, buffer);
-    manager.callNatives(callNativeParams);
-  }
-
-  LogUtils.i('hippy worker', 'Worker callNatives end');
+  // registerMap.set(ConsoleModule.NAME, (ctx): HippyNativeModuleBase => new ConsoleModule(ctx))
+  // registerMap.set(StorageModule.NAME, (ctx): HippyNativeModuleBase => new StorageModule(ctx))
+  // registerMap.set(ImageLoaderModule.NAME, (ctx): HippyNativeModuleBase => new ImageLoaderModule(ctx))
+  return registerMap
 }
 
-// 创建worker线程中与宿主线程通信的对象
-const workerPort = worker.workerPort
-const workerName = workerPort.name
-
-libHippy.Worker_RegisterWModules(workerName, callNatives, manager.getModuleNames());
-
-// worker线程接收宿主线程信息
-workerPort.onmessage = (e: MessageEvents): void => {
-  // data：宿主线程发送的信息
-  let data: string = e.data;
-  if (data == 'DoExit') {
-    libHippy.Worker_UnregisterWModules(manager.getModuleNames())
-    LogUtils.i('hippy worker', 'Worker exited.');
-  }
-}
-
-// worker线程发生error的回调
-workerPort.onerror = (err: ErrorEvent) => {
-  LogUtils.e('hippy worker', 'HippyModuleWorker.ets onerror' + err.message);
-}
+doStartHippyModuleWorker(hippyWModuleCreatorRegisterMap());

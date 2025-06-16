@@ -26,19 +26,8 @@ import { HippyModulePromise } from '../modules/HippyModulePromise'
 import { HippyWModulePromiseImpl } from './HippyWModulePromiseImpl'
 import { HippyArray } from '../../support/common/HippyTypes'
 import { HippyWCallNativeParams } from './HippyWCallNativeParams'
-import { NetInfoWModule } from './native/netinfo/NetInfoWModule'
 
 export type HippyWModuleCreator = (ctx: HippyWModuleContext) => HippyWModuleBase
-
-export function hippyWModuleCreatorRegisterMap(): Map<string, HippyWModuleCreator> {
-  let registerMap: Map<string, HippyWModuleCreator> = new Map()
-  registerMap.set(NetInfoWModule.NAME, (ctx): HippyWModuleBase => new NetInfoWModule(ctx)) // TODO(hot):
-
-  // registerMap.set(ConsoleModule.NAME, (ctx): HippyNativeModuleBase => new ConsoleModule(ctx))
-  // registerMap.set(StorageModule.NAME, (ctx): HippyNativeModuleBase => new StorageModule(ctx))
-  // registerMap.set(ImageLoaderModule.NAME, (ctx): HippyNativeModuleBase => new ImageLoaderModule(ctx))
-  return registerMap
-}
 
 export class HippyWModuleManagerImpl implements HippyWModuleManager {
   private ctx: HippyWModuleContext;
@@ -46,9 +35,9 @@ export class HippyWModuleManagerImpl implements HippyWModuleManager {
   private cachedNativeModuleMap: Map<string, HippyWModuleBase> = new Map();
   private mEnableV8Serialization: boolean;
 
-  constructor(ctx: HippyWModuleContext, enableV8Serialization: boolean) {
+  constructor(ctx: HippyWModuleContext, moduleCreatorMap: Map<string, HippyWModuleCreator>, enableV8Serialization: boolean) {
     this.ctx = ctx;
-    this.nativeModuleCreatorRegisterMap = hippyWModuleCreatorRegisterMap();
+    this.nativeModuleCreatorRegisterMap = moduleCreatorMap;
     this.mEnableV8Serialization = enableV8Serialization;
   }
 
