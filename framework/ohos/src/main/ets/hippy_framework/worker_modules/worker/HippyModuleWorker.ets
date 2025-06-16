@@ -18,18 +18,16 @@
  * limitations under the License.
  */
 import { HippyWModuleCreator } from '../HippyWModuleManagerImpl';
+import { ConsoleWModule } from '../native/console/ConsoleWModule';
 import { HippyWModuleBase } from '../native/HippyWModuleBase';
 import { NetInfoWModule } from '../native/netinfo/NetInfoWModule';
 import { doStartHippyModuleWorker } from './HippyModuleWorkerHelper';
 
 export function hippyWModuleCreatorRegisterMap(): Map<string, HippyWModuleCreator> {
-  let registerMap: Map<string, HippyWModuleCreator> = new Map()
+  let registerMap: Map<string, HippyWModuleCreator> = new Map();
+  registerMap.set(ConsoleWModule.NAME, (ctx): HippyWModuleBase => new ConsoleWModule(ctx));
   registerMap.set(NetInfoWModule.NAME, (ctx): HippyWModuleBase => new NetInfoWModule(ctx));
-
-  // registerMap.set(ConsoleModule.NAME, (ctx): HippyNativeModuleBase => new ConsoleModule(ctx))
-  // registerMap.set(StorageModule.NAME, (ctx): HippyNativeModuleBase => new StorageModule(ctx))
-  // registerMap.set(ImageLoaderModule.NAME, (ctx): HippyNativeModuleBase => new ImageLoaderModule(ctx))
-  return registerMap
+  return registerMap;
 }
 
 doStartHippyModuleWorker(hippyWModuleCreatorRegisterMap());
