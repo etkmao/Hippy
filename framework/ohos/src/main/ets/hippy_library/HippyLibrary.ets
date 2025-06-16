@@ -135,8 +135,12 @@ export interface HippyLibrary {
   Setting_SetFontSizeScale(fontSizeScale: number): void;
   Setting_SetFontWeightScale(fontWeightScale: number): void;
 
+  // main线程使用
+  WorkerManager_InitWModuleManager(notifyMainThreadFunction: (
+    workerName: string) => void): void;
+
   // worker线程使用
-  Worker_RegisterWModules(callNativesFunction: (
+  Worker_RegisterWModules(workerName: string, callNativesFunction: (
     moduleName: string,
     moduleFunc: string,
     callId: string,

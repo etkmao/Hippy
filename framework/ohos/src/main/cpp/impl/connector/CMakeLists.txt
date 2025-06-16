@@ -89,6 +89,7 @@ set(PUBLIC_SOURCE_SET
   src/turbo_utils.cc
   src/worker_module_manager.cc
   src/worker_napi.cc
+  src/worker_manager_napi.cc
   )
 target_sources(${PROJECT_NAME} PUBLIC ${PUBLIC_SOURCE_SET})
 # endregion

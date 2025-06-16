@@ -60,7 +60,7 @@ static void CallTs(napi_env env, napi_value ts_cb, void *context, void *data) {
   if (env == nullptr || data == nullptr) {
     return;
   }
-  FnContextData *contextData = static_cast<FnContextData*>(data);
+  WorkerFnContextData *contextData = static_cast<WorkerFnContextData*>(data);
   
   ArkTS arkTs(env);
   std::vector<napi_value> args = {
@@ -71,13 +71,16 @@ static void CallTs(napi_env env, napi_value ts_cb, void *context, void *data) {
     arkTs.CreateExternalArrayBuffer(contextData->buffer_pair_.first, contextData->buffer_pair_.second)
   };
   arkTs.Call(ts_cb, args, nullptr);
+  
+  DestroyWorkerFnContext(contextData);
 }
 
 static napi_value RegisterWModules(napi_env env, napi_callback_info info) {
   ArkTS arkTs(env);
   auto args = arkTs.GetCallbackArgs(info);
-  auto ts_cb = args[0];
-  auto ts_array = args[1];
+  auto worker_name = arkTs.GetString(args[0]);
+  auto ts_cb = args[1];
+  auto ts_array = args[2];
   
   // 使用回调ts的函数创建一个线程安全函数
   napi_threadsafe_function func = nullptr;
@@ -96,6 +99,8 @@ static napi_value RegisterWModules(napi_env env, napi_callback_info info) {
   if (module_names.size() > 0) {
     WorkerModuleManager::GetInstance()->SetWModules(env, func, module_names);
   }
+  
+  WorkerModuleManager::GetInstance()->NotifyMainThreadRegisterWModulesFinished(worker_name);
   
   return arkTs.GetUndefined();
 }

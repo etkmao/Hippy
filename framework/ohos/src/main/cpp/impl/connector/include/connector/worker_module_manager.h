@@ -31,7 +31,7 @@ namespace hippy {
 inline namespace framework {
 inline namespace worker {
 
-class FnContextData {
+class WorkerFnContextData {
 public:
   uint32_t scope_id_ = 0;
   std::u16string module_str_;
@@ -40,8 +40,15 @@ public:
   std::pair<uint8_t*, size_t> buffer_pair_;
 };
 
-FnContextData *CreateFnContext();
-void DestoryFnContext(FnContextData *contextData);
+class MainThreadFnContextData {
+public:
+  std::string worker_name_;
+};
+
+WorkerFnContextData *CreateWorkerFnContext();
+void DestroyWorkerFnContext(WorkerFnContextData *contextData);
+MainThreadFnContextData *CreateMainThreadFnContext();
+void DestroyMainThreadFnContext(MainThreadFnContextData *contextData);
 
 class WorkerModuleOwner {
 public:
@@ -54,6 +61,9 @@ class WorkerModuleManager {
 public:
   static std::shared_ptr<WorkerModuleManager> GetInstance();
   
+  void RecordMainThreadTsEnvInfo(napi_env ts_main_env, napi_threadsafe_function ts_main_notify_func);
+  void NotifyMainThreadRegisterWModulesFinished(const std::string &worker_name);
+  
   void SetWModules(napi_env ts_worker_env, napi_threadsafe_function ts_func, std::set<std::string> &names);
   void UnsetWModules(std::set<std::string> &names);
   WorkerModuleOwner *GetWModule(const std::string &name);
@@ -62,6 +72,9 @@ public:
 private:
   std::unordered_map<std::string, WorkerModuleOwner> module_map_;
   std::mutex mutex_;
+  
+  napi_env ts_main_env_ = 0;
+  napi_threadsafe_function ts_main_notify_func_ = 0;
 };
 
 }

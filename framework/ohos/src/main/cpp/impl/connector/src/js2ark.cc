@@ -84,7 +84,7 @@ void CallHost(CallbackInfo& info) {
       std::string u8_module = (char*)StringViewUtils::ConvertEncoding(module, string_view::Encoding::Utf8).utf8_value().c_str();
       WorkerModuleOwner *module_owner = WorkerModuleManager::GetInstance()->GetWModule(u8_module);
       if (module_owner) {
-        FnContextData *context = CreateFnContext();
+        WorkerFnContextData *context = CreateWorkerFnContext();
         context->scope_id_ = scope->GetScopeId();
         context->module_str_ = module_str;
         context->func_str_ = func_str;

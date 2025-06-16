@@ -51,12 +51,23 @@ namespace hippy {
 inline namespace framework {
 inline namespace worker {
 
-FnContextData *CreateFnContext() {
-  auto p = new FnContextData();
+WorkerFnContextData *CreateWorkerFnContext() {
+  auto p = new WorkerFnContextData();
   return p;
 }
 
-void DestoryFnContext(FnContextData *contextData) {
+void DestroyWorkerFnContext(WorkerFnContextData *contextData) {
+  if (contextData) {
+    delete contextData;
+  }
+}
+
+MainThreadFnContextData *CreateMainThreadFnContext() {
+  auto p = new MainThreadFnContextData();
+  return p;
+}
+
+void DestroyMainThreadFnContext(MainThreadFnContextData *contextData) {
   if (contextData) {
     delete contextData;
   }
@@ -69,6 +80,25 @@ std::shared_ptr<WorkerModuleManager> WorkerModuleManager::GetInstance() {
     instance = std::make_shared<WorkerModuleManager>();
   });
   return instance;
+}
+
+void WorkerModuleManager::RecordMainThreadTsEnvInfo(napi_env ts_main_env, napi_threadsafe_function ts_main_notify_func) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  ts_main_env_ = ts_main_env;
+  ts_main_notify_func_ = ts_main_notify_func;
+}
+
+void WorkerModuleManager::NotifyMainThreadRegisterWModulesFinished(const std::string &worker_name) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  if (ts_main_env_ && ts_main_notify_func_) {
+    MainThreadFnContextData *context = CreateMainThreadFnContext();
+    context->worker_name_ = worker_name;
+    auto status = napi_call_threadsafe_function(ts_main_notify_func_, context, napi_tsfn_nonblocking);
+    if (status != napi_ok) {
+      FOOTSTONE_LOG(ERROR) << "ArkTS: Failed to call thread safe func when notify, status: " << status
+        << ", worker name: " << worker_name.c_str();
+    }
+  }
 }
 
 void WorkerModuleManager::SetWModules(napi_env ts_worker_env, napi_threadsafe_function ts_func, std::set<std::string> &names) {

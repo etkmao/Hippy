@@ -67,7 +67,8 @@ import { Dimensions } from "./modules/javascript/Dimensions";
 import { window } from "@kit.ArkUI";
 import { HippyWindowInfo } from "./HippyWindowInfo";
 import { ErrorEvent, worker } from '@kit.ArkTS';
-import { HippyModuleWorkerManager } from "./worker_modules/worker_manager/HippyModuleWorkerManager";
+import { HippyModuleWorkerManager,
+  HippyNativeModuleWorkerCreator } from "./worker_modules/worker_manager/HippyModuleWorkerManager";
 
 export class HippyEngineManagerImpl implements HippyEngine, FrameworkProxy, DevServerCallBack {
   private static sEngineIdCounter = 0
@@ -318,7 +319,9 @@ export class HippyEngineManagerImpl implements HippyEngine, FrameworkProxy, DevS
       return;
     }
 
-    this.notifyEngineInitialized(EngineInitStatus.STATUS_OK, "")
+    HippyModuleWorkerManager.checkWorkersReady(() => {
+      this.notifyEngineInitialized(EngineInitStatus.STATUS_OK, "");
+    });
   }
 
   public sendEvent(event: string, params: HippyAny): void {
@@ -347,7 +350,20 @@ export class HippyEngineManagerImpl implements HippyEngine, FrameworkProxy, DevS
     this.mEventListeners.push(listener);
     this.initDevModule();
     this.startEngine();
-    HippyModuleWorkerManager.useNativeModuleWorker();
+
+    let workerCreatorMap: Map<string, HippyNativeModuleWorkerCreator> | null = null
+    if (this.providers) {
+      workerCreatorMap = new Map()
+      for (let provider of this.providers) {
+        let map = provider.getCustomNativeModuleWorkerCreatorMap()
+        if (map) {
+          map.forEach((value, key) => {
+            workerCreatorMap?.set(key, value)
+          })
+        }
+      }
+    }
+    HippyModuleWorkerManager.initNativeModuleWorkers(this.libHippy, workerCreatorMap);
   }
 
   notifyEngineInitialized(statusCode: EngineInitStatus, msg: string) {
@@ -415,7 +431,19 @@ export class HippyEngineManagerImpl implements HippyEngine, FrameworkProxy, DevS
     applicationContext.off('environment', this.mEnvCallbackId);
     */
 
-    HippyModuleWorkerManager.releaseNativeModuleWorker();
+    let workerNames: Set<string> | null = null
+    if (this.providers) {
+      workerNames = new Set()
+      for (let provider of this.providers) {
+        let map = provider.getCustomNativeModuleWorkerCreatorMap()
+        if (map) {
+          map.forEach((value, key) => {
+            workerNames?.add(key);
+          })
+        }
+      }
+    }
+    HippyModuleWorkerManager.releaseNativeModuleWorkers(workerNames);
   }
 
   preloadModule(loader: HippyBundleLoader): void {

@@ -49,10 +49,11 @@ let callNatives = (
   LogUtils.i('hippy worker', 'Worker callNatives end');
 }
 
-libHippy.Worker_RegisterWModules(callNatives, manager.getModuleNames());
-
 // 创建worker线程中与宿主线程通信的对象
 const workerPort = worker.workerPort
+const workerName = workerPort.name
+
+libHippy.Worker_RegisterWModules(workerName, callNatives, manager.getModuleNames());
 
 // worker线程接收宿主线程信息
 workerPort.onmessage = (e: MessageEvents): void => {
@@ -68,5 +69,3 @@ workerPort.onmessage = (e: MessageEvents): void => {
 workerPort.onerror = (err: ErrorEvent) => {
   LogUtils.e('hippy worker', 'HippyModuleWorker.ets onerror' + err.message);
 }
-
-workerPort.postMessage('WorkerReady');
