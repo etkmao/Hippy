@@ -19,16 +19,9 @@
  */
 import { HRRenderViewCreator } from '../../renderer_native/components/HippyRenderRegisterMap';
 import { HippyJSModuleCreator, HippyNativeModuleCreator } from '../modules/HippyModuleManagerImpl';
-import {
-  HippyNativeModuleWorkerCreator
-} from '../worker_modules/worker_manager/HippyModuleWorkerManager';
 
 export class HippyAPIProvider {
   getCustomNativeModuleCreatorMap(): Map<string, HippyNativeModuleCreator> | null {
-    return null;
-  }
-
-  getCustomNativeModuleWorkerCreatorMap(): Map<string, HippyNativeModuleWorkerCreator> | null {
     return null;
   }
 
