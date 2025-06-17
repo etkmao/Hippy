@@ -363,6 +363,7 @@ export class HippyEngineManagerImpl implements HippyEngine, FrameworkProxy, DevS
         }
       }
     }
+    HippyModuleWorkerManager.initBaseNativeModuleWorkers(this.libHippy);
     HippyModuleWorkerManager.initNativeModuleWorkers(this.libHippy, workerCreatorMap);
   }
 
@@ -443,6 +444,7 @@ export class HippyEngineManagerImpl implements HippyEngine, FrameworkProxy, DevS
         }
       }
     }
+    HippyModuleWorkerManager.releaseBaseNativeModuleWorkers();
     HippyModuleWorkerManager.releaseNativeModuleWorkers(workerNames);
   }
 

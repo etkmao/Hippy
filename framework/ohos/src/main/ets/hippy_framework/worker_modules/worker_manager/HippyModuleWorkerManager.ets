@@ -25,7 +25,7 @@ export type HippyNativeModuleWorkerCreator = (workerName: string) => worker.Thre
 export type HippyNativeModuleWorkersReadyListener = () => void
 
 const HIPPY_INVALID_TIMER_ID = -1;
-const HIPPY_CORE_WORKER_NAME = "HippyCoreWorker";
+const HIPPY_BASE_WORKER_NAME = "HippyBaseWorker";
 
 export class HippyModuleWorkerInfo {
   mRefCounter: number = 0;
@@ -49,19 +49,25 @@ export class HippyModuleWorkerManager {
   private static mNotReadyWorkerNames: Set<string> = new Set<string>();
   private static mWorkerReadyListeners: Set<HippyNativeModuleWorkersReadyListener> = new Set<HippyNativeModuleWorkersReadyListener>();
 
+  public static initBaseNativeModuleWorkers(libHippy: HippyLibrary) {
+    let map = new Map<string, HippyNativeModuleWorkerCreator>();
+    map.set(HIPPY_BASE_WORKER_NAME, (workerName): worker.ThreadWorker | null => HippyModuleWorkerManager.startCoreNativeModuleWorker());
+    HippyModuleWorkerManager.initNativeModuleWorkers(libHippy, map);
+  }
+
+  public static releaseBaseNativeModuleWorkers() {
+    let names = new Set<string>();
+    names.add(HIPPY_BASE_WORKER_NAME);
+    HippyModuleWorkerManager.releaseNativeModuleWorkers(names);
+  }
+
   public static initNativeModuleWorkers(libHippy: HippyLibrary, workerCreatorMap: Map<string, HippyNativeModuleWorkerCreator> | null) {
     if (!HippyModuleWorkerManager.mHasInitWModuleManager) {
       libHippy.WorkerManager_InitWModuleManager(notifyMainThreadFromWorker);
       HippyModuleWorkerManager.mHasInitWModuleManager = true;
     }
 
-    let map = new Map<string, HippyNativeModuleWorkerCreator>();
-    map.set(HIPPY_CORE_WORKER_NAME, (workerName): worker.ThreadWorker | null => HippyModuleWorkerManager.startCoreNativeModuleWorker());
     workerCreatorMap?.forEach((value, key) => {
-      map.set(key, value);
-    });
-
-    map.forEach((value, key) => {
       let info = HippyModuleWorkerManager.getWorkerInfo(key);
       if (info.mRefCounter == 0) {
         if (info.mStopTimerId >= 0) {
@@ -77,13 +83,7 @@ export class HippyModuleWorkerManager {
   }
 
   public static releaseNativeModuleWorkers(workerNames: Set<string> | null) {
-    let names = new Set<string>();
-    names.add(HIPPY_CORE_WORKER_NAME);
     workerNames?.forEach((value) => {
-      names.add(value);
-    });
-
-    names.forEach((value) => {
       let info = HippyModuleWorkerManager.getWorkerInfo(value);
       if (info.mRefCounter > 0) {
         --info.mRefCounter;
@@ -126,7 +126,7 @@ export class HippyModuleWorkerManager {
   }
 
   private static startCoreNativeModuleWorker(): worker.ThreadWorker | null {
-    let w = new worker.ThreadWorker("@hippy/ets/hippy_framework/worker_modules/worker/HippyModuleWorker.ets", {name: HIPPY_CORE_WORKER_NAME});
+    let w = new worker.ThreadWorker("../worker/HippyBaseModuleWorker.ets", {name: HIPPY_BASE_WORKER_NAME});
     if (!w) {
       LogUtils.e('hippy', 'create module thread worker failed.');
       return null;

@@ -64,6 +64,7 @@ export * from "./src/main/ets/hippy_framework/modules/HippyModuleManagerImpl"
 export * from "./src/main/ets/hippy_framework/worker_modules/HippyWModuleManagerImpl"
 export * from "./src/main/ets/hippy_framework/worker_modules/native/HippyWModuleBase"
 export * from "./src/main/ets/hippy_framework/worker_modules/worker/HippyModuleWorkerHelper"
+export * from "./src/main/ets/hippy_framework/worker_modules/worker_manager/HippyModuleWorkerManager"
 
 export * from "./src/main/ets/hippy_library/HippyLibrary"
 

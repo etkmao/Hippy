@@ -69,6 +69,6 @@ export function doStartHippyModuleWorker(moduleCreatorMap: Map<string, HippyWMod
 
   // worker线程发生error的回调
   workerPort.onerror = (err: ErrorEvent) => {
-    LogUtils.e('hippy worker', 'HippyModuleWorker.ets onerror, name: ' + workerName + ', err: ' + err.message);
+    LogUtils.e('hippy worker', 'HippyBaseModuleWorker.ets onerror, name: ' + workerName + ', err: ' + err.message);
   }
 }
