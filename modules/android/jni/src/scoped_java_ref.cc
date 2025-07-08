@@ -38,13 +38,31 @@ JavaRef::JavaRef(JNIEnv* j_env, jobject j_obj) : obj_(nullptr) {
 
   if (j_obj) {
     obj_ = j_env->NewGlobalRef(j_obj);
+//    static int ii = 0;
+//    ++ii;
+//    FOOTSTONE_LOG(ERROR) << "xxx hippy, java ref, create: " << ii;
   }
 }
 
 JavaRef::~JavaRef() {
   if (obj_) {
     JNIEnvironment::GetInstance()->AttachCurrentThread()->DeleteGlobalRef(obj_);
+//    static int ii = 0;
+//    ++ii;
+//    FOOTSTONE_LOG(ERROR) << "xxx hippy, java ref, destroy: " << ii;
   }
+}
+
+
+TJavaRef::TJavaRef(JNIEnv* env, jobject obj) : JavaRef(env, obj) {
+  static int ii = 0;
+  ++ii;
+  FOOTSTONE_LOG(ERROR) << "xxx hippy, java ref, create: " << ii;
+}
+TJavaRef::~TJavaRef() {
+  static int ii = 0;
+  ++ii;
+  FOOTSTONE_LOG(ERROR) << "xxx hippy, java ref, destroy: " << ii;
 }
 
 }

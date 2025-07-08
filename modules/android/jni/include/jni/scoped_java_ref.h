@@ -31,7 +31,7 @@ inline namespace jni {
 class JavaRef {
  public:
   JavaRef(JNIEnv* env, jobject obj);
-  ~JavaRef();
+  virtual ~JavaRef();
   JavaRef(const JavaRef &) = delete;
   JavaRef &operator=(const JavaRef &) = delete;
 
@@ -39,6 +39,12 @@ class JavaRef {
 
  private:
   jobject obj_;
+};
+
+class TJavaRef : public JavaRef {
+public:
+  TJavaRef(JNIEnv* env, jobject obj);
+  ~TJavaRef() override;
 };
 
 }

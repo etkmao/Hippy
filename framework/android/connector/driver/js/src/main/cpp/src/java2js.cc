@@ -79,7 +79,7 @@ void CallFunction(JNIEnv* j_env,
                   byte_string buffer_data,
                   std::shared_ptr<JavaRef> buffer_owner) {
   auto action_name = JniUtils::ToStrView(j_env, j_action);
-  auto callback = std::make_shared<JavaRef>(j_env, j_callback);
+  auto callback = std::make_shared<TJavaRef>(j_env, j_callback);
   std::any scope_object;
   auto scope_id = footstone::checked_numeric_cast<jint, uint32_t>(j_scope_id);
   auto flag = hippy::global_data_holder.Find(scope_id, scope_object);

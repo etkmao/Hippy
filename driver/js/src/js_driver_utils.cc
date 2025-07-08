@@ -454,7 +454,7 @@ bool JsDriverUtils::RunScript(const std::shared_ptr<Scope>& scope,
   // perfromance start time
   auto entry = scope->GetPerformance()->PerformanceNavigation(kPerfNavigationHippyInit);
   entry->BundleInfoOfUrl(uri).execute_source_start_ = footstone::TimePoint::SystemNow();
-  
+
 #if (defined JS_V8) || (defined JS_JSH)
 #if (defined JS_V8)
   auto ret = std::static_pointer_cast<V8Ctx>(scope->GetContext())->RunScript(
@@ -589,6 +589,8 @@ void JsDriverUtils::CallJs(const string_view& action,
   auto callback = [weak_scope, cb = std::move(cb), action,
       buffer_data_ = std::move(buffer_data),
       on_js_runner = std::move(on_js_runner)] {
+//    auto cc = time(0);
+//    if (cc > 0) return;
     on_js_runner();
     auto scope = weak_scope.lock();
     if (!scope) {
@@ -657,7 +659,8 @@ void JsDriverUtils::CallJs(const string_view& action,
     cb(CALL_FUNCTION_CB_STATE::SUCCESS, "");
   };
 
-  runner->PostTask(std::move(callback));
+//  runner->PostTask(std::move(callback));
+  runner->PostDelayedTask(std::move(callback), footstone::TimeDelta::FromMilliseconds(10000));
 }
 
 void JsDriverUtils::CallNative(hippy::napi::CallbackInfo& info, const std::function<void(
