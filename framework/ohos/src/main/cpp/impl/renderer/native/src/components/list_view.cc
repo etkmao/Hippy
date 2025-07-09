@@ -551,6 +551,9 @@ void ListView::CheckBeginDrag() {
     if (scrollBeginDragEventEnable_) {
       EmitScrollEvent(HREventUtils::EVENT_SCROLLER_BEGIN_DRAG);
     }
+    
+    // 检测生效/失效吸顶并更新吸顶item显示位置
+    CheckAndUpdateSticky();
   }
 }
 
@@ -700,11 +703,11 @@ bool ListView::ShouldSticky() {
   }
   auto totalOffset = listNode_->GetScrollOffset();
   if (isVertical_) {
-    if (totalOffset.y > stickyItemOffsetXY_) {
+    if (totalOffset.y > stickyItemOffsetXY_ + 0.5) {
       return true;
     }
   } else {
-    if (totalOffset.x > stickyItemOffsetXY_) {
+    if (totalOffset.x > stickyItemOffsetXY_ + 0.5) {
       return true;
     }
   }
