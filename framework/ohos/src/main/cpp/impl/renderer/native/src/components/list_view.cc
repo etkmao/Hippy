@@ -402,17 +402,20 @@ void ListView::HandleOnChildrenUpdated() {
   auto childrenCount = children_.size();
   if (childrenCount > 0) {
     if (children_[0]->GetViewType() == PULL_HEADER_VIEW_TYPE) {
-      headerView_ = std::static_pointer_cast<PullHeaderView>(children_[0]);
-      hasPullHeader_ = true;
-      pullHeaderWH_ = isVertical_ ? headerView_->GetHeight() : headerView_->GetWidth();
-      
-      headerView_->CreateArkUINode(true, 0);
-      auto refreshOffset = pullHeaderWH_;
-      headerView_->SetPosition({0, - refreshOffset});
-      
-      refreshNode_->SetRefreshPullDownRatio(1);
-      refreshNode_->SetRefreshContent(headerView_->GetLocalRootArkUINode()->GetArkUINodeHandle());
-      refreshNode_->SetRefreshOffset(refreshOffset);
+      auto newHeaderView = std::static_pointer_cast<PullHeaderView>(children_[0]);
+      if (newHeaderView != headerView_) { // 不宜重复设置headerView的position，否则会闪
+        headerView_ = newHeaderView;
+        hasPullHeader_ = true;
+        pullHeaderWH_ = isVertical_ ? headerView_->GetHeight() : headerView_->GetWidth();
+        
+        headerView_->CreateArkUINode(true, 0);
+        auto refreshOffset = pullHeaderWH_;
+        headerView_->SetPosition({0, - refreshOffset});
+        
+        refreshNode_->SetRefreshPullDownRatio(1);
+        refreshNode_->SetRefreshContent(headerView_->GetLocalRootArkUINode()->GetArkUINodeHandle());
+        refreshNode_->SetRefreshOffset(refreshOffset);
+      }
     }
     if (children_[childrenCount - 1]->GetViewType() == PULL_FOOTER_VIEW_TYPE) {
       footerView_ = std::static_pointer_cast<PullFooterView>(children_[childrenCount - 1]);
@@ -422,7 +425,7 @@ void ListView::HandleOnChildrenUpdated() {
   
   if (!adapter_) {
     adapter_ = std::make_shared<ListItemAdapter>(children_, hasPullHeader_ ? 1 : 0);
-    listNode_->SetLazyAdapter(adapter_->GetHandle());
+    listNode_->SetLazyAdapter(adapter_->GetHandle());//TODO(hot):
   }
   
 //  if (childrenCount > 0) {
