@@ -39,8 +39,6 @@ const int32_t INVALID_STICKY_INDEX = -1;
 
 enum class ScrollAction : int32_t {
   None,
-  PullHeader,
-  ReleaseHeader,
   PullFooter,
   ReleaseFooter
 };

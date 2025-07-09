@@ -208,6 +208,10 @@ void ListView::CallImpl(const std::string &method, const std::vector<HippyValue>
       align = HRConvertUtils::ScrollAlignmentToArk(params[3]);
     }
     auto index = isVertical_ ? yIndex : xIndex;
+    auto totalItemCount = ((int32_t)children_.size() - (hasPullHeader_ ? 1 : 0) - (footerView_ ? 1 : 0));
+    if (index > totalItemCount - 1) {
+      index = totalItemCount - 1;
+    }
     listNode_->ScrollToIndex(index, animated, align);
   } else if (method == "scrollToContentOffset") {
     auto xOffset = HRValueUtils::GetFloat(params[0]);
@@ -242,7 +246,7 @@ void ListView::OnChildInsertedImpl(std::shared_ptr<BaseView> const &childView, i
   FOOTSTONE_DLOG(INFO) << "hippy ListView - on child inserted: " << index;
 #endif
   
-  auto itemView = std::static_pointer_cast<ListItemView>(childView); // TODO(hot):
+  auto itemView = std::static_pointer_cast<ListItemView>(childView);
   if (itemView->GetType() != "PullHeader") {
     auto node = (ListItemNode *)(itemView->GetLocalRootArkUINode());
     node->SetNodeDelegate(this);
@@ -257,7 +261,7 @@ void ListView::OnChildRemovedImpl(std::shared_ptr<BaseView> const &childView, in
 void ListView::OnChildReusedImpl(std::shared_ptr<BaseView> const &childView, int index) {
   BaseView::OnChildReusedImpl(childView, index);
   
-  auto itemView = std::static_pointer_cast<ListItemView>(childView); // TODO(hot):
+  auto itemView = std::static_pointer_cast<ListItemView>(childView);
   if (itemView->GetType() != "PullHeader") {
     auto node = (ListItemNode *)(itemView->GetLocalRootArkUINode());
     node->SetItemIndex(index);
@@ -266,7 +270,7 @@ void ListView::OnChildReusedImpl(std::shared_ptr<BaseView> const &childView, int
 
 void ListView::UpdateRenderViewFrameImpl(const HRRect &frame, const HRPadding &padding) {
   auto parent = parent_.lock();
-  if (parent && parent->GetViewType() == "RefreshWrapper") { // TODO(hot):
+  if (parent && parent->GetViewType() == "RefreshWrapper") {
     GetLocalRootArkUINode()->SetSize(HRSize(frame.width, frame.height));
   } else {
     BaseView::UpdateRenderViewFrameImpl(frame, padding);
@@ -297,7 +301,7 @@ void ListView::OnScrollIndex(int32_t firstIndex, int32_t lastIndex, int32_t cent
 }
 
 void ListView::OnWillScroll(float offset, ArkUI_ScrollState state) {
-  if (offset > 0) { // TODO(hot):
+  if (offset > 0) {
     if (footerView_) {
       footerView_->Show(true);
     }
@@ -423,23 +427,21 @@ void ListView::HandleOnChildrenUpdated() {
       footerView_->Show(false);
     }
     
+    // Index must be recalculated.
+    for (uint32_t i = 0; i < childrenCount; i++) {
+      auto itemView = std::static_pointer_cast<ListItemView>(children_[i]);
+      if (itemView->GetType() != "PullHeader") {
+        auto node = (ListItemNode *)(itemView->GetLocalRootArkUINode());
+        if (node) {
+          node->SetItemIndex((int32_t)i);
+        }
+      }
+    }
+    
     if (GetLocalRootArkUINode()) {
       CreateArkUINodeAfterHeaderCheck();
     }
   }
-  
-
-  
-//  if (childrenCount > 0) {
-//    // Index must be recalculated.
-//    for (uint32_t i = 0; i < childrenCount; i++) {//TODO(hot):
-//      auto itemView = std::static_pointer_cast<ListItemView>(children_[i]);
-//      if (itemView->GetType() != "PullHeader") {
-//        auto node = (ListItemNode *)(itemView->GetLocalRootArkUINode());
-//        node->SetItemIndex((int32_t)i);
-//      }
-//    }
-//  }
   
   CheckStickyOnChildrenUpdated();
 }
@@ -568,7 +570,7 @@ void ListView::CheckEndDrag() {
                                          HREventUtils::EVENT_PULL_FOOTER_RELEASED, nullptr);
       } else {
         auto lastIndex = static_cast<int32_t>(children_.size()) - 1;
-        listNode_->ScrollToIndex(lastIndex - 1, true, ARKUI_SCROLL_ALIGNMENT_END); // TODO(hot):
+        listNode_->ScrollToIndex(lastIndex - 1 - (hasPullHeader_? 1 : 0), true, ARKUI_SCROLL_ALIGNMENT_END);
       }
       pullAction_ = ScrollAction::None;
     }
@@ -587,7 +589,7 @@ void ListView::CheckPullOnItemVisibleAreaChange(int32_t index, bool isVisible, f
           footerViewFullVisible_ = false;
         }
       } else {
-        listNode_->ScrollToIndex(lastIndex - 1, true, ARKUI_SCROLL_ALIGNMENT_END); // TODO(hot):
+        listNode_->ScrollToIndex(lastIndex - 1 - (hasPullHeader_? 1 : 0), true, ARKUI_SCROLL_ALIGNMENT_END);
       }
     } else {
       footerViewFullVisible_ = false;
