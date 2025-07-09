@@ -52,7 +52,7 @@ ListView::~ListView() {
     children_.clear();
   }
   if (stackNode_) {
-    stackNode_->RemoveChild(listNode_.get());
+    stackNode_->RemoveAllChildren();
   }
   if (headerView_) {
     headerView_->DestroyArkUINode();
@@ -73,13 +73,12 @@ void ListView::Init() {
   });
 }
 
-ArkUINode *ListView::GetLocalRootArkUINode() { return refreshNode_.get(); }
+ArkUINode *ListView::GetLocalRootArkUINode() { return stackNode_.get(); }
 
 void ListView::CreateArkUINodeImpl() {
   stackNode_ = std::make_shared<StackNode>();
   listNode_ = std::make_shared<ListNode>();
   
-  stackNode_->AddChild(listNode_.get());
   listNode_->SetArkUINodeDelegate(this);
   listNode_->SetNodeDelegate(this);
   listNode_->SetSizePercent(HRSize(1.f, 1.f));
@@ -87,17 +86,16 @@ void ListView::CreateArkUINodeImpl() {
   listNode_->SetListCachedCount(4);
   listNode_->SetScrollNestedScroll(ARKUI_SCROLL_NESTED_MODE_SELF_FIRST, ARKUI_SCROLL_NESTED_MODE_SELF_FIRST);
   
-  refreshNode_ = std::make_shared<RefreshNode>();
-  refreshNode_->SetNodeDelegate(this);
-  refreshNode_->SetRefreshPullToRefresh(true);
-  refreshNode_->SetRefreshRefreshing(false);
-  refreshNode_->SetRefreshPullDownRatio(0);
-  refreshNode_->AddChild(stackNode_.get());
+  if (children_.size() > 0) {
+    CreateArkUINodeAfterHeaderCheck();
+  }
   
   CheckInitOffset();
 }
 
 void ListView::DestroyArkUINodeImpl() {
+  hasCreateAfterHeaderCheck_ = false;
+  
   listNode_->SetArkUINodeDelegate(nullptr);
   listNode_->SetNodeDelegate(nullptr);
   listNode_->ResetLazyAdapter();
@@ -110,8 +108,10 @@ void ListView::DestroyArkUINodeImpl() {
     adapter_ = nullptr;
   }
   
-  refreshNode_->SetNodeDelegate(nullptr);
-  refreshNode_ = nullptr;
+  if (refreshNode_) {
+    refreshNode_->SetNodeDelegate(nullptr);
+    refreshNode_ = nullptr;
+  }
 }
 
 bool ListView::SetPropImpl(const std::string &propKey, const HippyValue &propValue) {
@@ -368,17 +368,17 @@ void ListView::OnItemVisibleAreaChange(int32_t index, bool isVisible, float curr
   }
 }
 
-void ListView::OnRefreshing() {//TODO(hot):
+void ListView::OnRefreshing() {
   refreshNode_->SetRefreshRefreshing(true);
   HREventUtils::SendComponentEvent(headerView_->GetCtx(), headerView_->GetTag(),
                                    HREventUtils::EVENT_PULL_HEADER_RELEASED, nullptr);
 }
 
-void ListView::OnStateChange(int32_t state) {//TODO(hot):
+void ListView::OnStateChange(int32_t state) {
   
 }
 
-void ListView::OnOffsetChange(float_t offset) {//TODO(hot):
+void ListView::OnOffsetChange(float_t offset) {
   auto refreshOffset = isVertical_ ? headerView_->GetHeight() : headerView_->GetWidth();
   headerView_->SetPosition({0, offset - refreshOffset});
   if (isDragging_) {
@@ -409,24 +409,26 @@ void ListView::HandleOnChildrenUpdated() {
         pullHeaderWH_ = isVertical_ ? headerView_->GetHeight() : headerView_->GetWidth();
         
         headerView_->CreateArkUINode(true, 0);
-        auto refreshOffset = pullHeaderWH_;
-        headerView_->SetPosition({0, - refreshOffset});
+        headerView_->SetPosition({0, - pullHeaderWH_});
         
-        refreshNode_->SetRefreshPullDownRatio(1);
-        refreshNode_->SetRefreshContent(headerView_->GetLocalRootArkUINode()->GetArkUINodeHandle());
-        refreshNode_->SetRefreshOffset(refreshOffset);
+        if (refreshNode_) {
+          refreshNode_->SetRefreshContent(headerView_->GetLocalRootArkUINode()->GetArkUINodeHandle());
+          auto refreshOffset = pullHeaderWH_;
+          refreshNode_->SetRefreshOffset(refreshOffset);
+        }
       }
     }
     if (children_[childrenCount - 1]->GetViewType() == PULL_FOOTER_VIEW_TYPE) {
       footerView_ = std::static_pointer_cast<PullFooterView>(children_[childrenCount - 1]);
       footerView_->Show(false);
     }
+    
+    if (GetLocalRootArkUINode()) {
+      CreateArkUINodeAfterHeaderCheck();
+    }
   }
   
-  if (!adapter_) {
-    adapter_ = std::make_shared<ListItemAdapter>(children_, hasPullHeader_ ? 1 : 0);
-    listNode_->SetLazyAdapter(adapter_->GetHandle());//TODO(hot):
-  }
+
   
 //  if (childrenCount > 0) {
 //    // Index must be recalculated.
@@ -440,6 +442,32 @@ void ListView::HandleOnChildrenUpdated() {
 //  }
   
   CheckStickyOnChildrenUpdated();
+}
+
+void ListView::CreateArkUINodeAfterHeaderCheck() {
+  if (hasCreateAfterHeaderCheck_) {
+    return;
+  }
+  hasCreateAfterHeaderCheck_ = true;
+  
+  if (hasPullHeader_) {
+    refreshNode_ = std::make_shared<RefreshNode>();
+    refreshNode_->SetNodeDelegate(this);
+    refreshNode_->SetRefreshPullToRefresh(true);
+    refreshNode_->SetRefreshRefreshing(false);
+    refreshNode_->SetRefreshPullDownRatio(1);
+    refreshNode_->SetRefreshContent(headerView_->GetLocalRootArkUINode()->GetArkUINodeHandle());
+    auto refreshOffset = pullHeaderWH_;
+    refreshNode_->SetRefreshOffset(refreshOffset);
+    refreshNode_->AddChild(listNode_.get());
+    stackNode_->InsertChild(refreshNode_.get(), 0);
+  } else {
+    stackNode_->InsertChild(listNode_.get(), 0);
+  }
+  if (!adapter_) {
+    adapter_ = std::make_shared<ListItemAdapter>(children_, hasPullHeader_ ? 1 : 0);
+    listNode_->SetLazyAdapter(adapter_->GetHandle());
+  }
 }
 
 void ListView::EmitScrollEvent(const std::string &eventName) {

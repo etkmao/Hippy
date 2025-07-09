@@ -92,6 +92,7 @@ public:
   void OnHeadRefresh();
 private:
   void HandleOnChildrenUpdated();
+  void CreateArkUINodeAfterHeaderCheck();
 
   void EmitScrollEvent(const std::string &eventName);
   void CheckSendOnScrollEvent();
@@ -116,9 +117,9 @@ private:
   constexpr static const char *PULL_HEADER_VIEW_TYPE = "PullHeaderView";
   constexpr static const char *PULL_FOOTER_VIEW_TYPE = "PullFooterView";
   constexpr static const char *LIST_VIEW_ITEM_TYPE = "ListViewItem";
-
-  std::shared_ptr<RefreshNode> refreshNode_;
+  
   std::shared_ptr<StackNode> stackNode_;
+  std::shared_ptr<RefreshNode> refreshNode_;
   std::shared_ptr<ListNode> listNode_;
 
   std::shared_ptr<ListItemAdapter> adapter_;
@@ -145,6 +146,8 @@ private:
 
   bool hasPullHeader_ = false;
   float pullHeaderWH_ = 0;
+  
+  bool hasCreateAfterHeaderCheck_ = false;
 
   ScrollAction pullAction_ = ScrollAction::None;
   std::shared_ptr<PullHeaderView> headerView_ = nullptr;
