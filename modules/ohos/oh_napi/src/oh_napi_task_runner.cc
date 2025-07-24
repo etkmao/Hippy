@@ -26,6 +26,8 @@
 #include <napi/native_api.h>
 
 namespace hippy {
+ 
+napi_env OhNapiTaskRunner::main_env_ = 0;
 
 OhNapiTaskRunner *OhNapiTaskRunner::Instance(napi_env env) {
   static OhNapiTaskRunner *sp = NULL;

@@ -45,6 +45,8 @@ class OhNapiTaskRunner : public AbstractTaskRunner  {
 
   void RunAsyncTask(Task &&task) override;
   void RunSyncTask(Task &&task) override;
+  
+  static napi_env main_env_; // TODO(hot):
 
  private:
   napi_env env_;

@@ -54,6 +54,8 @@ void InitBridge(napi_env env) {
     return;
   }
   s_env = env;
+  
+  OhNapiTaskRunner::main_env_ = env;
 }
 
 void CallHost(CallbackInfo& info) {
