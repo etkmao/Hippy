@@ -41,15 +41,15 @@ void WsClient::Connect(const std::string &url, WReceiveDataHandler handler) {
   }, nullptr);
   
   std::string cmdArray[] = {
-    "{\"id\":1,\"method\":\"Network.enable\",\"params\":{\"maxPostDataSize\":65536,\"reportDirectSocketTraffic\":true}}",
-    "{\"id\":2,\"method\":\"Network.setAttachDebugStack\",\"params\":{\"enabled\":true}}",
-    "{\"id\":3,\"method\":\"Runtime.enable\",\"params\":{}}",
-    "{\"id\":4,\"method\":\"Debugger.enable\",\"params\":{\"maxScriptsCacheSize\":10000000}}",
-    "{\"id\":5,\"method\":\"Debugger.setPauseOnExceptions\",\"params\":{\"state\":\"none\"}}",
-    "{\"id\":6,\"method\":\"Debugger.setAsyncCallStackDepth\",\"params\":{\"maxDepth\":32}}",
-    "{\"id\":7,\"method\":\"Profiler.enable\",\"params\":{}}",
-    "{\"id\":8,\"method\":\"Network.clearAcceptedEncodingsOverride\",\"params\":{}}",
-    "{\"id\":9,\"method\":\"Debugger.setBlackboxPatterns\",\"params\":{\"patterns\":[\"/node_modules/|^node:\"],\"skipAnonymous\":false}}",
+//    "{\"id\":1,\"method\":\"Network.enable\",\"params\":{\"maxPostDataSize\":65536,\"reportDirectSocketTraffic\":true}}",
+//    "{\"id\":2,\"method\":\"Network.setAttachDebugStack\",\"params\":{\"enabled\":true}}",
+//    "{\"id\":3,\"method\":\"Runtime.enable\",\"params\":{}}",
+//    "{\"id\":4,\"method\":\"Debugger.enable\",\"params\":{\"maxScriptsCacheSize\":10000000}}",
+//    "{\"id\":5,\"method\":\"Debugger.setPauseOnExceptions\",\"params\":{\"state\":\"none\"}}",
+//    "{\"id\":6,\"method\":\"Debugger.setAsyncCallStackDepth\",\"params\":{\"maxDepth\":32}}",
+//    "{\"id\":7,\"method\":\"Profiler.enable\",\"params\":{}}",
+//    "{\"id\":8,\"method\":\"Network.clearAcceptedEncodingsOverride\",\"params\":{}}",
+//    "{\"id\":9,\"method\":\"Debugger.setBlackboxPatterns\",\"params\":{\"patterns\":[\"/node_modules/|^node:\"],\"skipAnonymous\":false}}",
     "{\"id\":10,\"method\":\"Runtime.runIfWaitingForDebugger\",\"params\":{}}",
   };
   int len = sizeof(cmdArray) / sizeof(cmdArray[0]);
@@ -81,16 +81,16 @@ void WsClient::HandleReceiveData(const std::string& msg) {
     FOOTSTONE_LOG(INFO) << "xxx hippy, recv, method: " << method << ", scriptId: " << scriptId;
   }
   
-  if (method == "Debugger.paused") {
-    std::string cmdArray[] = {
-      "{\"id\":11,\"method\":\"Debugger.getScriptSource\",\"params\":{\"scriptId\":\"3\"}}",
-      "{\"id\":13,\"method\":\"Debugger.resume\",\"params\":{\"terminateOnResume\":false}}",
-    };
-    int len = sizeof(cmdArray) / sizeof(cmdArray[0]);
-    for (int i = 0; i < len; i++) {
-      ws_->Send(cmdArray[i]);
-    }
-  }
+//  if (method == "Debugger.paused") {
+//    std::string cmdArray[] = {
+//      "{\"id\":11,\"method\":\"Debugger.getScriptSource\",\"params\":{\"scriptId\":\"3\"}}",
+//      "{\"id\":13,\"method\":\"Debugger.resume\",\"params\":{\"terminateOnResume\":false}}",
+//    };
+//    int len = sizeof(cmdArray) / sizeof(cmdArray[0]);
+//    for (int i = 0; i < len; i++) {
+//      ws_->Send(cmdArray[i]);
+//    }
+//  }
 }
 
 } // namespace hippy::devtools
