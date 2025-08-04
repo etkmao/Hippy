@@ -54,6 +54,8 @@ void DevtoolsBackendService::Create() {
   data_channel_->GetNotificationCenter()->vm_response_notification =
       std::make_shared<DefaultVmResponseAdapter>([WEAK_THIS](const std::string& data) {
         DEFINE_AND_CHECK_SELF(DevtoolsBackendService)
+
+        FOOTSTONE_LOG(INFO) << "xxx hippy, send to front: " << data;
         self->tunnel_service_->SendDataToFrontend(data);
       });
 #endif

@@ -122,6 +122,7 @@ void JSHInspectorClientImpl::DestroyInspector(bool is_reload) {
 }
 
 void JSHInspectorClientImpl::SendMessageToJSH(const std::string&& params) {
+  FOOTSTONE_LOG(INFO) << "xxx hippy, send to jsh: " << params;
   wsc_->Send(params);
 }
 

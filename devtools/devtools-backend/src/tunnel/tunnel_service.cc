@@ -53,7 +53,22 @@ void TunnelService::Connect(std::function<void()> reconnect_handler) {
 }
 
 void TunnelService::HandleReceiveData(const std::string& msg) {
+  
+  std::string method;
+  std::string scriptId;
+  nlohmann::json data_json = nlohmann::json::parse(msg, nullptr, false);
+  if (data_json.contains("method")) {
+    method = data_json["method"].get<std::string>();
+  }
+//  if (method == "DOM.getDocument") {
+//    FOOTSTONE_LOG(INFO) << "xxx hippy, send before, DOM.getDocument return";
+//    return;
+//  }
+  
   auto is_inspect_domain = dispatch_->ReceiveDataFromFrontend(msg);
+  if (is_inspect_domain) {
+    FOOTSTONE_LOG(INFO) << "xxx hippy, send to client: " << msg;
+  }
   if (!is_inspect_domain) {  // others send to VM if use CDP
     dispatch_->DispatchToVm(msg);
   }

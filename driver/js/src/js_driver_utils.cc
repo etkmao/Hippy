@@ -350,6 +350,18 @@ void CreateScopeAndAsyncInitialize(const std::shared_ptr<Engine>& engine,
 #endif
     scope_initialized_callback(scope);
   });
+  
+//  engine->GetJsTaskRunner()->PostDelayedTask([scope]() {
+//    auto engine = scope->GetEngine().lock();
+//    FOOTSTONE_CHECK(engine);
+//    auto vm = std::static_pointer_cast<JSHVM>(engine->GetVM());
+//    if (vm->IsDebug()) {
+//      auto inspector_client = vm->GetInspectorClient();
+//      if (inspector_client) {
+//        inspector_client->CreateInspector(scope);
+//      }
+//    }
+//  }, footstone::TimeDelta::FromMilliseconds(5000));
 }
 
 void JsDriverUtils::InitInstance(

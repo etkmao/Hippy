@@ -151,6 +151,15 @@ void V8InspectorClientImpl::SendMessageToV8(const std::shared_ptr<V8InspectorCon
           inspector_context->SetSession(std::move(session));
           return;
         }
+      
+      FOOTSTONE_LOG(INFO) << "xxx hippy, send to v8: " << params;
+      
+        static int ii = 0;
+        ++ii;
+        if (str == u"Runtime.runIfWaitingForDebugger" && ii == 1) {
+          FOOTSTONE_LOG(INFO) << "xxx hippy, hit debugger resume";
+          return;
+        }
 #ifdef __OHOS__
         // 特殊逻辑：Ohos上v8 debug时，chrome输入命令（一定是键盘敲入，箭头选择没问题）会发生未知原因的crash，crash
         // 在v8内StartSideEffectCheckMode里，crash总是在第2次如下命令串时触发，没办法先兜底保证不crash。
