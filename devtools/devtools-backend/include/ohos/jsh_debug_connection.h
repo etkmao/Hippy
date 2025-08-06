@@ -29,6 +29,7 @@ using JSHDebugRecvMessageHandler = std::function<void(const std::string& msg)>;
 class JSHDebugConnection : public std::enable_shared_from_this<JSHDebugConnection> {
  public:
   JSHDebugConnection() {}
+  ~JSHDebugConnection();
 
   void Connect(const std::string &url, JSHDebugRecvMessageHandler handler);
   

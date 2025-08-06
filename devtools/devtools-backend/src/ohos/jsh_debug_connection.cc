@@ -25,6 +25,12 @@ namespace hippy::devtools {
 
 using WebSocketChannel = hippy::devtools::WebSocketChannel;
 
+JSHDebugConnection::~JSHDebugConnection() {
+  if (ws_) {
+    ws_->Close(0, "");
+  }
+}
+
 void JSHDebugConnection::Connect(const std::string &url, JSHDebugRecvMessageHandler handler) {
   msg_handler_ = handler;
   ws_ = std::make_shared<WebSocketChannel>(url);
@@ -45,7 +51,9 @@ void JSHDebugConnection::Connect(const std::string &url, JSHDebugRecvMessageHand
 }
 
 void JSHDebugConnection::Send(const std::string &data) {
-  ws_->Send(data);
+  if (ws_) {
+    ws_->Send(data);
+  }
 }
 
 } // namespace hippy::devtools

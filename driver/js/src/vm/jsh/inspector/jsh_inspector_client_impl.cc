@@ -52,6 +52,8 @@ void JSHInspectorClientImpl::ConnInspector() {
     return;
   }
   
+  get_url_conn_ = nullptr;
+  
   // 建立调试连接
   debug_conn_ = std::make_shared<JSHDebugConnection>();
   debug_conn_->Connect(wsUrl, [WEAK_THIS](const std::string& msg) {
@@ -71,7 +73,7 @@ void JSHInspectorClientImpl::CreateInspector(const std::shared_ptr<Scope>& scope
   OhNapiTaskRunner *taskRunner = OhNapiTaskRunner::Instance(nullptr);
   taskRunner->RunAsyncTask([WEAK_THIS]() {
     DEFINE_AND_CHECK_SELF(JSHInspectorClientImpl)
-    sleep(2);
+    sleep(1);
     self->ConnInspector();
   });
 
@@ -84,11 +86,16 @@ void JSHInspectorClientImpl::CreateInspector(const std::shared_ptr<Scope>& scope
 }
 
 void JSHInspectorClientImpl::DestroyInspector(bool is_reload) {
-  OH_JSVM_CloseInspector(opened_jsvm_env_);
+  if (opened_jsvm_env_) {
+    OH_JSVM_CloseInspector(opened_jsvm_env_);
+    opened_jsvm_env_ = nullptr;
+  }
 }
 
 void JSHInspectorClientImpl::SendMessageToJSH(const std::string&& msg) {
-  debug_conn_->Send(msg);
+  if (debug_conn_) {
+    debug_conn_->Send(msg);
+  }
 }
 
 } // namespace inspector
