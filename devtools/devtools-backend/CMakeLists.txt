@@ -156,9 +156,11 @@ set(SOURCE_SET
     src/tunnel/tcp/tcp_channel.cc
     src/tunnel/tunnel_service.cc
     src/tunnel/ws/web_socket_channel.cc
-    src/tunnel/tcp/socket.cc
-    src/ohos/jsh_get_url_connection.cc
-    src/ohos/jsh_debug_connection.cc
-    )
+    src/tunnel/tcp/socket.cc)
+if (OHOS)
+  list(APPEND SOURCE_SET
+          src/ohos/jsh_get_url_connection.cc
+          src/ohos/jsh_debug_connection.cc)
+endif ()
 target_sources(${PROJECT_NAME} PRIVATE ${SOURCE_SET})
 # endregion

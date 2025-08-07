@@ -107,7 +107,7 @@ bool JSHGetUrlConnection::ParseWsUrlFromBody(std::string &body, std::string &ret
   if (data_json.is_array() && data_json.size() > 0) {
     nlohmann::json obj_json = data_json[0];
     if (obj_json.is_object()) {
-      char* devUrlKey = "devtoolsFrontendUrl";
+      const char* devUrlKey = "devtoolsFrontendUrl";
       if (obj_json.contains(devUrlKey)) {
         std::string devUrl = obj_json[devUrlKey].get<std::string>();
         FOOTSTONE_LOG(INFO) << "JSH debug request json, devtoolsFrontendUrl: " << devUrl;
