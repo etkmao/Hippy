@@ -101,7 +101,10 @@ void ImageLoader::LoadImage(const std::string &uri, LoadImageCallback result_cb)
     // in main thread
     DEFINE_AND_CHECK_SELF(ImageLoader)
     if (ret_code == UriLoader::RetCode::Success && content.length() > 0) {
-      self->BuildPixmap(uri, content);
+      // 因为开始都判断到没有uri对应的pixelmap，可能相同uri多个在下载，下载完后再判断是否已经有了,需优化成不重复下载
+      if (!self->GetPixelmapInfo(uri)) {
+        self->BuildPixmap(uri, content);
+      }
       result_cb(true);
     } else {
       FOOTSTONE_LOG(ERROR) << "LoadImage request content error, uri: " << uri 
