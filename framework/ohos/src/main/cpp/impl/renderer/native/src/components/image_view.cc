@@ -67,6 +67,10 @@ bool ImageView::ReuseArkUINodeImpl(std::shared_ptr<RecycleView> &recycleView) {
   if (recycleView->cachedNodes_.size() < 1) {
     return false;
   }
+  // 图片组件衍生出整图和9图两种情况，这里做个判断
+  if (recycleView->cachedNodes_[0]->IsCustomNode()) {
+    return false;
+  }
   imageNode_ = std::static_pointer_cast<ImageNode>(recycleView->cachedNodes_[0]);
   imageNode_->SetNodeDelegate(this);
   return true;

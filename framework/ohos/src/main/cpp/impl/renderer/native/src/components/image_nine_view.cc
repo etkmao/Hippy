@@ -54,7 +54,7 @@ void ImageNineView::DestroyArkUINodeImpl() {
   ClearProps();
 }
 
-bool ImageNineView::RecycleArkUINodeImpl(std::shared_ptr<RecycleView> &recycleView) { // TODO(hot): recycle and reuse
+bool ImageNineView::RecycleArkUINodeImpl(std::shared_ptr<RecycleView> &recycleView) {
   customNode_->SetCustomNodeDelegate(nullptr);
   customNode_->ResetAllAttributes();
   recycleView->cachedNodes_.resize(1);
@@ -66,6 +66,10 @@ bool ImageNineView::RecycleArkUINodeImpl(std::shared_ptr<RecycleView> &recycleVi
 
 bool ImageNineView::ReuseArkUINodeImpl(std::shared_ptr<RecycleView> &recycleView) {
   if (recycleView->cachedNodes_.size() < 1) {
+    return false;
+  }
+  // 图片组件衍生出整图和9图两种情况，这里做个判断
+  if (!recycleView->cachedNodes_[0]->IsCustomNode()) {
     return false;
   }
   customNode_ = std::static_pointer_cast<CustomNode>(recycleView->cachedNodes_[0]);
@@ -81,17 +85,21 @@ bool ImageNineView::SetPropImpl(const std::string &propKey, const HippyValue &pr
   if (propKey == "src") {
     auto& value = HRValueUtils::GetString(propValue);
     if (value != src_) {
+      FOOTSTONE_LOG(INFO) << "xxx hippy, nine img, set src, tag: " << tag_ << ", src: " << value;
       src_ = value;
-      ctx_->GetImageLoader()->LoadImage(value, [WEAK_THIS](bool is_success) {
+      ctx_->GetImageLoader()->LoadImage(value, ctx_, [WEAK_THIS](bool is_success) {
         DEFINE_AND_CHECK_SELF(ImageNineView)
-        self->customNode_->MarkDirty(NODE_NEED_RENDER);
+        FOOTSTONE_LOG(INFO) << "xxx hippy, nine img, load img ok, tag: " << self->tag_ << ", has node: " << (self->customNode_ ? 1 : 0);
+        if (self->customNode_) self->customNode_->MarkDirty(NODE_NEED_RENDER);
       });
 //      FetchImage(value);
+      customNode_->MarkDirty(NODE_NEED_RENDER);
     }
     return true;
   } else if (propKey == "defaultSource") {
     auto& value = HRValueUtils::GetString(propValue);
     if (!value.empty()) {
+      FOOTSTONE_LOG(INFO) << "xxx hippy, nine img, set default, tag: " << tag_ << ", src: " << value;
 //      FetchAltImage(value);
       return true;
     }
@@ -99,10 +107,10 @@ bool ImageNineView::SetPropImpl(const std::string &propKey, const HippyValue &pr
   } else if (propKey == "capInsets") {
     HippyValueObjectType m;
     if (propValue.IsObject() && propValue.ToObject(m)) {
-      capInsetsLeft_ = HRValueUtils::GetFloat(m["left"]);
-      capInsetsTop_ = HRValueUtils::GetFloat(m["top"]);
-      capInsetsRight_ = HRValueUtils::GetFloat(m["right"]);
-      capInsetsBottom_= HRValueUtils::GetFloat(m["bottom"]);
+      capInsetsLeft_ = HRValueUtils::GetInt32(m["left"]);
+      capInsetsTop_ = HRValueUtils::GetInt32(m["top"]);
+      capInsetsRight_ = HRValueUtils::GetInt32(m["right"]);
+      capInsetsBottom_= HRValueUtils::GetInt32(m["bottom"]);
       return true;
     } else {
       return false;
@@ -145,137 +153,141 @@ void ImageNineView::OnForegroundDraw(ArkUI_NodeCustomEvent *event) { // TODO(hot
 //    OH_Drawing_Rect *dst = OH_Drawing_RectCreate(0, 0, (float)size.width, (float)size.height);
 //    OH_Drawing_CanvasDrawPixelMapNine(drawingHandle, info->pixelmap_, center, dst, FILTER_MODE_LINEAR);
     
+    FOOTSTONE_LOG(INFO) << "xxx hippy, nine img, draw, tag: " << tag_ << ", srcSize: " << info->width_ << ", " << info->height_ << ", dstSize: " << size.width << ", " << size.height;
+    
     // 采样选项对象
     OH_Drawing_SamplingOptions* samplingOptions = OH_Drawing_SamplingOptionsCreate(
       OH_Drawing_FilterMode::FILTER_MODE_LINEAR, OH_Drawing_MipmapMode::MIPMAP_MODE_LINEAR);
     
+    int32_t SPACE_PIXEL = 0;
+    
     // left top
-    float left = 0;
-    float top = 0;
-    float right = capInsetsLeft_;
-    float bottom = capInsetsTop_;
-    float dstLeft = 0;
-    float dstTop = 0;
-    float dstRight = HRPixelUtils::DpToPx(capInsetsLeft_);
-    float dstBottom = HRPixelUtils::DpToPx(capInsetsTop_);
-    OH_Drawing_Rect *src = OH_Drawing_RectCreate(left, top, right, bottom);
-    OH_Drawing_Rect *dst = OH_Drawing_RectCreate(dstLeft, dstTop, dstRight, dstBottom);
+    int32_t left = 0;
+    int32_t top = 0;
+    int32_t right = capInsetsLeft_;
+    int32_t bottom = capInsetsTop_;
+    int32_t dstLeft = 0;
+    int32_t dstTop = 0;
+    int32_t dstRight = (int32_t)HRPixelUtils::DpToPx((float)capInsetsLeft_);
+    int32_t dstBottom = (int32_t)HRPixelUtils::DpToPx((float)capInsetsTop_);
+    OH_Drawing_Rect *src = OH_Drawing_RectCreate((float)left, (float)top, (float)right, (float)bottom);
+    OH_Drawing_Rect *dst = OH_Drawing_RectCreate((float)dstLeft, (float)dstTop, (float)dstRight, (float)dstBottom);
     OH_Drawing_CanvasDrawPixelMapRect(drawingHandle, info->pixelmap_, src, dst, samplingOptions);
     
     // center top
     left = capInsetsLeft_;
     top = 0;
-    right = (float)info->width_ - capInsetsRight_;
+    right = (int32_t)info->width_ - capInsetsRight_;
     bottom = capInsetsTop_;
-    dstLeft = HRPixelUtils::DpToPx(left) - 1;
+    dstLeft = (int32_t)HRPixelUtils::DpToPx((float)capInsetsLeft_) - SPACE_PIXEL;
     dstTop = 0;
-    dstRight = (float)size.width - HRPixelUtils::DpToPx(capInsetsRight_) + 1;
-    dstBottom = HRPixelUtils::DpToPx(capInsetsTop_);
+    dstRight = size.width - (int32_t)HRPixelUtils::DpToPx((float)capInsetsRight_) + SPACE_PIXEL;
+    dstBottom = (int32_t)HRPixelUtils::DpToPx((float)capInsetsTop_);
     dstLeft = dstLeft < 0 ? 0 : dstLeft;
-    dstRight = dstRight > (float)size.width ? (float)size.width : dstRight;
-    src = OH_Drawing_RectCreate(left, top, right, bottom);
-    dst = OH_Drawing_RectCreate(dstLeft, dstTop, dstRight, dstBottom);
+    dstRight = dstRight > size.width ? size.width : dstRight;
+    src = OH_Drawing_RectCreate((float)left, (float)top, (float)right, (float)bottom);
+    dst = OH_Drawing_RectCreate((float)dstLeft, (float)dstTop, (float)dstRight, (float)dstBottom);
     OH_Drawing_CanvasDrawPixelMapRect(drawingHandle, info->pixelmap_, src, dst, samplingOptions);
     
     // right top
-    left = (float)info->width_ - capInsetsRight_;
+    left = (int32_t)info->width_ - capInsetsRight_;
     top = 0;
-    right = (float)info->width_;
+    right = (int32_t)info->width_;
     bottom = capInsetsTop_;
-    dstLeft = (float)size.width - HRPixelUtils::DpToPx(capInsetsRight_);
+    dstLeft = size.width - (int32_t)HRPixelUtils::DpToPx((float)capInsetsRight_);
     dstTop = 0;
-    dstRight = (float)size.width;
-    dstBottom = HRPixelUtils::DpToPx(capInsetsTop_);
-    src = OH_Drawing_RectCreate(left, top, right, bottom);
-    dst = OH_Drawing_RectCreate(dstLeft, dstTop, dstRight, dstBottom);
+    dstRight = size.width;
+    dstBottom = (int32_t)HRPixelUtils::DpToPx((float)capInsetsTop_);
+    src = OH_Drawing_RectCreate((float)left, (float)top, (float)right, (float)bottom);
+    dst = OH_Drawing_RectCreate((float)dstLeft, (float)dstTop, (float)dstRight, (float)dstBottom);
     OH_Drawing_CanvasDrawPixelMapRect(drawingHandle, info->pixelmap_, src, dst, samplingOptions);
     
     // left center
     left = 0;
     top = capInsetsTop_;
     right = capInsetsLeft_;
-    bottom = (float)info->height_ - capInsetsBottom_;
+    bottom = (int32_t)info->height_ - capInsetsBottom_;
     dstLeft = 0;
-    dstTop = HRPixelUtils::DpToPx(capInsetsTop_) - 1;
-    dstRight = HRPixelUtils::DpToPx(capInsetsLeft_);
-    dstBottom = (float)size.height - HRPixelUtils::DpToPx(capInsetsBottom_) + 1;
+    dstTop = (int32_t)HRPixelUtils::DpToPx((float)capInsetsTop_) - SPACE_PIXEL;
+    dstRight = (int32_t)HRPixelUtils::DpToPx((float)capInsetsLeft_);
+    dstBottom = size.height - (int32_t)HRPixelUtils::DpToPx((float)capInsetsBottom_) + SPACE_PIXEL;
     dstTop = dstTop < 0 ? 0 : dstTop;
-    dstBottom = dstBottom > (float)size.height ? (float)size.height : dstBottom;
-    src = OH_Drawing_RectCreate(left, top, right, bottom);
-    dst = OH_Drawing_RectCreate(dstLeft, dstTop, dstRight, dstBottom);
+    dstBottom = dstBottom > size.height ? size.height : dstBottom;
+    src = OH_Drawing_RectCreate((float)left, (float)top, (float)right, (float)bottom);
+    dst = OH_Drawing_RectCreate((float)dstLeft, (float)dstTop, (float)dstRight, (float)dstBottom);
     OH_Drawing_CanvasDrawPixelMapRect(drawingHandle, info->pixelmap_, src, dst, samplingOptions);
     
     // center center
     left = capInsetsLeft_;
     top = capInsetsTop_;
-    right = (float)info->width_ - capInsetsRight_;
-    bottom = (float)info->height_ - capInsetsBottom_;
-    dstLeft = HRPixelUtils::DpToPx(capInsetsLeft_) - 1;
-    dstTop = HRPixelUtils::DpToPx(capInsetsTop_) - 1;
-    dstRight = (float)size.width - HRPixelUtils::DpToPx(capInsetsRight_) + 1;
-    dstBottom = (float)size.height - HRPixelUtils::DpToPx(capInsetsBottom_) + 1;
+    right = (int32_t)info->width_ - capInsetsRight_;
+    bottom = (int32_t)info->height_ - capInsetsBottom_;
+    dstLeft = (int32_t)HRPixelUtils::DpToPx((float)capInsetsLeft_) - SPACE_PIXEL;
+    dstTop = (int32_t)HRPixelUtils::DpToPx((float)capInsetsTop_) - SPACE_PIXEL;
+    dstRight = size.width - (int32_t)HRPixelUtils::DpToPx((float)capInsetsRight_) + SPACE_PIXEL;
+    dstBottom = size.height - (int32_t)HRPixelUtils::DpToPx((float)capInsetsBottom_) + SPACE_PIXEL;
     dstLeft = dstLeft < 0 ? 0 : dstLeft;
-    dstRight = dstRight > (float)size.width ? (float)size.width : dstRight;
+    dstRight = dstRight > size.width ? size.width : dstRight;
     dstTop = dstTop < 0 ? 0 : dstTop;
-    dstBottom = dstBottom > (float)size.height ? (float)size.height : dstBottom;
-    src = OH_Drawing_RectCreate(left, top, right, bottom);
-    dst = OH_Drawing_RectCreate(dstLeft, dstTop, dstRight, dstBottom);
+    dstBottom = dstBottom > size.height ? size.height : dstBottom;
+    src = OH_Drawing_RectCreate((float)left, (float)top, (float)right, (float)bottom);
+    dst = OH_Drawing_RectCreate((float)dstLeft, (float)dstTop, (float)dstRight, (float)dstBottom);
     OH_Drawing_CanvasDrawPixelMapRect(drawingHandle, info->pixelmap_, src, dst, samplingOptions);
     
     // right center
-    left = (float)info->width_ - capInsetsRight_;
+    left = (int32_t)info->width_ - capInsetsRight_;
     top = capInsetsTop_;
-    right = (float)info->width_;
-    bottom = (float)info->height_ - capInsetsBottom_;
-    dstLeft = (float)size.width - HRPixelUtils::DpToPx(capInsetsRight_);
-    dstTop = HRPixelUtils::DpToPx(capInsetsTop_) - 1;
-    dstRight = (float)size.width;
-    dstBottom = (float)size.height - HRPixelUtils::DpToPx(capInsetsBottom_) + 1;
+    right = (int32_t)info->width_;
+    bottom = (int32_t)info->height_ - capInsetsBottom_;
+    dstLeft = size.width - (int32_t)HRPixelUtils::DpToPx((float)capInsetsRight_);
+    dstTop = (int32_t)HRPixelUtils::DpToPx((float)capInsetsTop_) - SPACE_PIXEL;
+    dstRight = size.width;
+    dstBottom = size.height - (int32_t)HRPixelUtils::DpToPx((float)capInsetsBottom_) + SPACE_PIXEL;
     dstTop = dstTop < 0 ? 0 : dstTop;
-    dstBottom = dstBottom > (float)size.height ? (float)size.height : dstBottom;
-    src = OH_Drawing_RectCreate(left, top, right, bottom);
-    dst = OH_Drawing_RectCreate(dstLeft, dstTop, dstRight, dstBottom);
+    dstBottom = dstBottom > size.height ? size.height : dstBottom;
+    src = OH_Drawing_RectCreate((float)left, (float)top, (float)right, (float)bottom);
+    dst = OH_Drawing_RectCreate((float)dstLeft, (float)dstTop, (float)dstRight, (float)dstBottom);
     OH_Drawing_CanvasDrawPixelMapRect(drawingHandle, info->pixelmap_, src, dst, samplingOptions);
     
     // left bottom
     left = 0;
-    top = (float)info->height_ - capInsetsBottom_;
+    top = (int32_t)info->height_ - capInsetsBottom_;
     right = capInsetsLeft_;
-    bottom = (float)info->height_;
+    bottom = (int32_t)info->height_;
     dstLeft = 0;
-    dstTop = (float)size.height - HRPixelUtils::DpToPx(capInsetsBottom_);
-    dstRight = HRPixelUtils::DpToPx(capInsetsLeft_);
-    dstBottom = (float)size.height;
-    src = OH_Drawing_RectCreate(left, top, right, bottom);
-    dst = OH_Drawing_RectCreate(dstLeft, dstTop, dstRight, dstBottom);
+    dstTop = size.height - (int32_t)HRPixelUtils::DpToPx((float)capInsetsBottom_);
+    dstRight = (int32_t)HRPixelUtils::DpToPx((float)capInsetsLeft_);
+    dstBottom = size.height;
+    src = OH_Drawing_RectCreate((float)left, (float)top, (float)right, (float)bottom);
+    dst = OH_Drawing_RectCreate((float)dstLeft, (float)dstTop, (float)dstRight, (float)dstBottom);
     OH_Drawing_CanvasDrawPixelMapRect(drawingHandle, info->pixelmap_, src, dst, samplingOptions);
     
     // center bottom
     left = capInsetsLeft_;
-    top = (float)info->height_ - capInsetsBottom_;
-    right = (float)info->width_ - capInsetsRight_;
-    bottom = (float)info->height_;
-    dstLeft = HRPixelUtils::DpToPx(capInsetsLeft_) - 1;
-    dstTop = (float)size.height - HRPixelUtils::DpToPx(capInsetsBottom_);
-    dstRight = (float)size.width - HRPixelUtils::DpToPx(capInsetsRight_) + 1;
-    dstBottom = (float)size.height;
+    top = (int32_t)info->height_ - capInsetsBottom_;
+    right = (int32_t)info->width_ - capInsetsRight_;
+    bottom = (int32_t)info->height_;
+    dstLeft = (int32_t)HRPixelUtils::DpToPx((float)capInsetsLeft_) - SPACE_PIXEL;
+    dstTop = size.height - (int32_t)HRPixelUtils::DpToPx((float)capInsetsBottom_);
+    dstRight = size.width - (int32_t)HRPixelUtils::DpToPx((float)capInsetsRight_) + SPACE_PIXEL;
+    dstBottom = size.height;
     dstLeft = dstLeft < 0 ? 0 : dstLeft;
-    dstRight = dstRight > (float)size.width ? (float)size.width : dstRight;
-    src = OH_Drawing_RectCreate(left, top, right, bottom);
-    dst = OH_Drawing_RectCreate(dstLeft, dstTop, dstRight, dstBottom);
+    dstRight = dstRight > size.width ? size.width : dstRight;
+    src = OH_Drawing_RectCreate((float)left, (float)top, (float)right, (float)bottom);
+    dst = OH_Drawing_RectCreate((float)dstLeft, (float)dstTop, (float)dstRight, (float)dstBottom);
     OH_Drawing_CanvasDrawPixelMapRect(drawingHandle, info->pixelmap_, src, dst, samplingOptions);
     
     // right bottom
-    left = (float)info->width_ - capInsetsRight_;
-    top = (float)info->height_ - capInsetsBottom_;
-    right = (float)info->width_;
-    bottom = (float)info->height_;
-    dstLeft = (float)size.width - HRPixelUtils::DpToPx(capInsetsRight_);
-    dstTop = (float)size.height - HRPixelUtils::DpToPx(capInsetsBottom_);
-    dstRight = (float)size.width;
-    dstBottom = (float)size.height;
-    src = OH_Drawing_RectCreate(left, top, right, bottom);
-    dst = OH_Drawing_RectCreate(dstLeft, dstTop, dstRight, dstBottom);
+    left = (int32_t)info->width_ - capInsetsRight_;
+    top = (int32_t)info->height_ - capInsetsBottom_;
+    right = (int32_t)info->width_;
+    bottom = (int32_t)info->height_;
+    dstLeft = size.width - (int32_t)HRPixelUtils::DpToPx((float)capInsetsRight_);
+    dstTop = size.height - (int32_t)HRPixelUtils::DpToPx((float)capInsetsBottom_);
+    dstRight = size.width;
+    dstBottom = size.height;
+    src = OH_Drawing_RectCreate((float)left, (float)top, (float)right, (float)bottom);
+    dst = OH_Drawing_RectCreate((float)dstLeft, (float)dstTop, (float)dstRight, (float)dstBottom);
     OH_Drawing_CanvasDrawPixelMapRect(drawingHandle, info->pixelmap_, src, dst, samplingOptions);
     
   }

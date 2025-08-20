@@ -55,10 +55,10 @@ protected:
 private:
   std::shared_ptr<CustomNode> customNode_;
   std::string src_;
-  float capInsetsLeft_ = 0;
-  float capInsetsTop_ = 0;
-  float capInsetsRight_ = 0;
-  float capInsetsBottom_ = 0;
+  int32_t capInsetsLeft_ = 0;
+  int32_t capInsetsTop_ = 0;
+  int32_t capInsetsRight_ = 0;
+  int32_t capInsetsBottom_ = 0;
 };
 
 } // namespace native

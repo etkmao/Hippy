@@ -52,6 +52,8 @@ using HippyValueObjectType = footstone::value::HippyValue::HippyValueObjectType;
 
 using LoadImageCallback = std::function<void(bool is_success)>;
 
+class NativeRenderContext;
+
 class PixelMapInfo {
 public:
   uint32_t width_ = 0;
@@ -64,7 +66,7 @@ public:
   ImageLoader(uint32_t root_id, std::weak_ptr<NativeRender> &native_render)
     : root_id_(root_id), native_render_(native_render) {}
 
-  void LoadImage(const std::string &uri, LoadImageCallback result_cb);
+  void LoadImage(const std::string &uri, const std::shared_ptr<NativeRenderContext> &ctx, LoadImageCallback result_cb);
   void BuildPixmap(const std::string &uri, const std::string &content);
   
   std::shared_ptr<PixelMapInfo> GetPixelmapInfo(const std::string &uri);

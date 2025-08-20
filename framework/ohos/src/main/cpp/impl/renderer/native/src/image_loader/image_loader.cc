@@ -24,6 +24,8 @@
 #include "footstone/logging.h"
 #include "dom/root_node.h"
 #include "footstone/string_view.h"
+#include "renderer/utils/hr_url_utils.h"
+#include "renderer/native_render_context.h"
 #include <multimedia/image_framework/image/image_common.h>
 #include <multimedia/image_framework/image/image_source_native.h>
 #include <multimedia/image_framework/image/pixelmap_native.h>
@@ -38,7 +40,7 @@ namespace hippy {
 inline namespace render {
 inline namespace native {
 
-void ImageLoader::LoadImage(const std::string &uri, LoadImageCallback result_cb) {
+void ImageLoader::LoadImage(const std::string &uri, const std::shared_ptr<NativeRenderContext> &ctx, LoadImageCallback result_cb) {
   auto &root_map = RootNode::PersistentMap();
   std::shared_ptr<RootNode> root_node;
   bool ret = root_map.Find(root_id_, root_node);
@@ -62,6 +64,12 @@ void ImageLoader::LoadImage(const std::string &uri, LoadImageCallback result_cb)
   if (!loader) {
     return;
   }
+  
+  // hpfile://./assets/bg.png
+  auto bundlePath = ctx->GetNativeRender().lock()->GetBundlePath();
+  auto imageUrl = HRUrlUtils::ConvertImageUrl(bundlePath, ctx->IsRawFile(), ctx->GetResModuleName(), uri);
+  
+  
 
   auto cb = [WEAK_THIS, uri, result_cb](UriLoader::RetCode ret_code,
                         const std::unordered_map<std::string, std::string>&,
@@ -76,9 +84,9 @@ void ImageLoader::LoadImage(const std::string &uri, LoadImageCallback result_cb)
   };
 
   std::vector<std::function<void()>> ops;
-  ops.emplace_back([dom_manager, root_node, loader, uri, cb] {
-    string_view uri_str(uri);
-    loader->RequestUntrustedContent(uri_str, {}, cb);
+  ops.emplace_back([dom_manager, root_node, loader, imageUrl, cb] {
+    string_view url_str(imageUrl);
+    loader->RequestUntrustedContent(url_str, {}, cb);
   });
   dom_manager->PostTask(Scene(std::move(ops)));
 }
