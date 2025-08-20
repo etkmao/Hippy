@@ -157,7 +157,7 @@ void ImageNineView::OnForegroundDraw(ArkUI_NodeCustomEvent *event) { // TODO(hot
     
     // 采样选项对象
     OH_Drawing_SamplingOptions* samplingOptions = OH_Drawing_SamplingOptionsCreate(
-      OH_Drawing_FilterMode::FILTER_MODE_LINEAR, OH_Drawing_MipmapMode::MIPMAP_MODE_LINEAR);
+      OH_Drawing_FilterMode::FILTER_MODE_LINEAR, OH_Drawing_MipmapMode::MIPMAP_MODE_NONE);
     
     int32_t SPACE_PIXEL = 0;
     
