@@ -60,9 +60,18 @@ public:
 
 private:
   void BuildPixmap(const std::string &uri, const std::string &content);
+  
+  void AddUrlListener(const std::string &uri, LoadImageCallback result_cb);
+  void NotifyListeners(const std::string &uri, bool is_success);
+  
+  bool IsInDownload(const std::string &uri);
+  void AddToDownloadSet(const std::string &uri);
+  void RemoveFromDownloadSet(const std::string &uri);
 
   std::weak_ptr<NativeRenderContext> weak_ctx_;
   std::map<std::string, std::shared_ptr<PixelMapInfo>> pixelmapInfoMap_;
+  std::map<std::string, std::vector<LoadImageCallback>> uriListeners_;
+  std::set<std::string> downloadUris_;
 };
 
 } // namespace native

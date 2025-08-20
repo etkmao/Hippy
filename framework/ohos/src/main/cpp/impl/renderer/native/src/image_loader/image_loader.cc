@@ -55,6 +55,13 @@ void ImageLoader::LoadImage(const std::string &uri, LoadImageCallback result_cb)
     result_cb(true);
     return;
   }
+  
+  if (IsInDownload(uri)) {
+    AddUrlListener(uri, result_cb);
+    return;
+  } else {
+    AddToDownloadSet(uri);
+  }
 
   auto ctx = weak_ctx_.lock();
   if (!ctx) {
@@ -101,11 +108,12 @@ void ImageLoader::LoadImage(const std::string &uri, LoadImageCallback result_cb)
     // in main thread
     DEFINE_AND_CHECK_SELF(ImageLoader)
     if (ret_code == UriLoader::RetCode::Success && content.length() > 0) {
-      // 因为开始都判断到没有uri对应的pixelmap，可能相同uri多个在下载，下载完后再判断是否已经有了,需优化成不重复下载
       if (!self->GetPixelmapInfo(uri)) {
         self->BuildPixmap(uri, content);
       }
       result_cb(true);
+      self->NotifyListeners(uri, true);
+      self->RemoveFromDownloadSet(uri);
     } else {
       FOOTSTONE_LOG(ERROR) << "LoadImage request content error, uri: " << uri 
         << ", code: " << (int)ret_code << ", content len: " << content.length();
@@ -184,6 +192,41 @@ void ImageLoader::BuildPixmap(const std::string &uri, const std::string &content
 std::shared_ptr<PixelMapInfo> ImageLoader::GetPixelmapInfo(const std::string &uri) {
   auto it = pixelmapInfoMap_.find(uri);
   return it != pixelmapInfoMap_.end() ? it->second : nullptr;
+}
+
+void ImageLoader::AddUrlListener(const std::string &uri, LoadImageCallback result_cb) {
+  auto it = uriListeners_.find(uri);
+  if (it != uriListeners_.end()) {
+    auto &listeners = it->second;
+    listeners.push_back(result_cb);
+  } else {
+    std::vector<LoadImageCallback> listeners;
+    listeners.push_back(result_cb);
+    uriListeners_[uri] = listeners;
+  }
+}
+
+void ImageLoader::NotifyListeners(const std::string &uri, bool is_success) {
+  auto it = uriListeners_.find(uri);
+  if (it != uriListeners_.end()) {
+    auto &listeners = it->second;
+    for (auto cb : listeners) {
+      cb(is_success);
+    }
+    uriListeners_.erase(it);
+  }
+}
+
+bool ImageLoader::IsInDownload(const std::string &uri) {
+  return downloadUris_.find(uri) != downloadUris_.end();
+}
+
+void ImageLoader::AddToDownloadSet(const std::string &uri) {
+  downloadUris_.insert(uri);
+}
+
+void ImageLoader::RemoveFromDownloadSet(const std::string &uri) {
+  downloadUris_.erase(uri);
 }
 
 } // namespace native
