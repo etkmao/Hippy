@@ -115,7 +115,7 @@ void ImageNineView::UpdateRenderViewFrameImpl(const HRRect &frame, const HRPaddi
   BaseView::UpdateRenderViewFrameImpl(frame, padding);
 }
 
-void ImageNineView::OnForegroundDraw(ArkUI_NodeCustomEvent *event) { // TODO(hot): make dirty
+void ImageNineView::OnForegroundDraw(ArkUI_NodeCustomEvent *event) {
   auto *drawContext = OH_ArkUI_NodeCustomEvent_GetDrawContextInDraw(event);
   if (drawContext == nullptr) {
     return;
@@ -317,12 +317,10 @@ void ImageNineView::FetchNineImage(const std::string &imageUrl) {
 void ImageNineView::LoadNineImage(const std::string &imageUrl) {
   ctx_->GetImageLoader()->LoadImage(imageUrl, [WEAK_THIS](bool is_success) {
     DEFINE_AND_CHECK_SELF(ImageNineView)
-    FOOTSTONE_LOG(INFO) << "xxx hippy, nine img, load img ok, tag: " << self->tag_ << ", has node: " << (self->customNode_ ? 1 : 0);
-    if (self->customNode_) {
+    if (is_success && self->customNode_) {
       self->customNode_->MarkDirty(NODE_NEED_RENDER);
     }
   });
-  customNode_->MarkDirty(NODE_NEED_RENDER);
 }
 
 void ImageNineView::ClearProps() {

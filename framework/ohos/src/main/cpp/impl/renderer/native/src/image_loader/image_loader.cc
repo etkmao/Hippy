@@ -51,8 +51,14 @@ ImageLoader::~ImageLoader() {
 }
 
 void ImageLoader::LoadImage(const std::string &uri, LoadImageCallback result_cb) {
+  if (GetPixelmapInfo(uri)) {
+    result_cb(true);
+    return;
+  }
+
   auto ctx = weak_ctx_.lock();
   if (!ctx) {
+    result_cb(false);
     return;
   }
 
@@ -61,23 +67,27 @@ void ImageLoader::LoadImage(const std::string &uri, LoadImageCallback result_cb)
   bool ret = root_map.Find(ctx->GetRootId(), root_node);
   if (!ret) {
     FOOTSTONE_DLOG(WARNING) << "LoadImage root_node is nullptr";
+    result_cb(false);
     return;
   }
   
   std::shared_ptr<DomManager> dom_manager = root_node->GetDomManager().lock();
   if (dom_manager == nullptr) {
     FOOTSTONE_DLOG(WARNING) << "LoadImage dom_manager is nullptr";
+    result_cb(false);
     return;
   }
 
   auto render = ctx->GetNativeRender().lock();
   if (!render) {
+    result_cb(false);
     return;
   }
 
   auto loader = render->GetUriLoader().lock();
   FOOTSTONE_CHECK(loader);
   if (!loader) {
+    result_cb(false);
     return;
   }
 
