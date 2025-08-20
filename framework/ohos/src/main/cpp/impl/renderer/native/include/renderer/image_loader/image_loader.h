@@ -22,26 +22,12 @@
 
 #pragma once
 
-#include "footstone/logging.h"
 #include "footstone/hippy_value.h"
-#include "renderer/native_render.h"
 #include "renderer/text_measure/font_collection_manager.h"
-#include "renderer/utils/hr_pixel_utils.h"
+#include <multimedia/image_framework/image/pixelmap_native.h>
 #include <string>
 #include <map>
-#include <set>
-#include <unordered_map>
-#include <arkui/native_node.h>
-#include <arkui/native_type.h>
-#include <arkui/styled_string.h>
-#include <native_drawing/drawing_color.h>
-#include <native_drawing/drawing_font_collection.h>
-#include <native_drawing/drawing_point.h>
-#include <native_drawing/drawing_text_declaration.h>
 #include <native_drawing/drawing_types.h>
-#include <native_drawing/drawing_text_typography.h>
-#include <native_drawing/drawing_register_font.h>
-
 
 namespace hippy {
 inline namespace render {
@@ -58,22 +44,24 @@ class PixelMapInfo {
 public:
   uint32_t width_ = 0;
   uint32_t height_ = 0;
+  OH_PixelmapNative *pixelmapNative_ = nullptr;
   OH_Drawing_PixelMap *pixelmap_ = nullptr;
 };
 
 class ImageLoader : public std::enable_shared_from_this<ImageLoader> {
 public:
-  ImageLoader(uint32_t root_id, std::weak_ptr<NativeRender> &native_render)
-    : root_id_(root_id), native_render_(native_render) {}
+  ImageLoader(std::weak_ptr<NativeRenderContext> weak_ctx)
+    : weak_ctx_(weak_ctx) {}
+  ~ImageLoader();
 
-  void LoadImage(const std::string &uri, const std::shared_ptr<NativeRenderContext> &ctx, LoadImageCallback result_cb);
-  void BuildPixmap(const std::string &uri, const std::string &content);
-  
+  void LoadImage(const std::string &uri, LoadImageCallback result_cb);
+
   std::shared_ptr<PixelMapInfo> GetPixelmapInfo(const std::string &uri);
-  
+
 private:
-  uint32_t root_id_ = 0;
-  std::weak_ptr<NativeRender> native_render_;
+  void BuildPixmap(const std::string &uri, const std::string &content);
+
+  std::weak_ptr<NativeRenderContext> weak_ctx_;
   std::map<std::string, std::shared_ptr<PixelMapInfo>> pixelmapInfoMap_;
 };
 

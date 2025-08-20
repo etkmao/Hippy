@@ -117,18 +117,6 @@ bool ImageView::SetPropImpl(const std::string &propKey, const HippyValue &propVa
     auto value = HRValueUtils::GetInt32(propValue);
     GetLocalRootArkUINode()->SetTintColorBlendMode(value);
     return true;
-  } else if (propKey == "capInsets") { // TODO(hot): to delete
-    HippyValueObjectType m;
-    if (propValue.IsObject() && propValue.ToObject(m)) {
-      auto left = HRValueUtils::GetFloat(m["left"]);
-      auto top = HRValueUtils::GetFloat(m["top"]);
-      auto right = HRValueUtils::GetFloat(m["right"]);
-      auto bottom = HRValueUtils::GetFloat(m["bottom"]);
-      GetLocalRootArkUINode()->SetResizeable(HRPixelUtils::PxToDp(left), HRPixelUtils::PxToDp(top),
-        HRPixelUtils::PxToDp(right), HRPixelUtils::PxToDp(bottom));
-    } else {
-      return false;
-    }
 	} else if (propKey == "blur") {
 		auto value = HRPixelUtils::DpToPx(HRValueUtils::GetFloat(propValue));
     GetLocalRootArkUINode()->SetBlur(value);

@@ -85,22 +85,14 @@ bool ImageNineView::SetPropImpl(const std::string &propKey, const HippyValue &pr
   if (propKey == "src") {
     auto& value = HRValueUtils::GetString(propValue);
     if (value != src_) {
-      FOOTSTONE_LOG(INFO) << "xxx hippy, nine img, set src, tag: " << tag_ << ", src: " << value;
       src_ = value;
-      ctx_->GetImageLoader()->LoadImage(value, ctx_, [WEAK_THIS](bool is_success) {
-        DEFINE_AND_CHECK_SELF(ImageNineView)
-        FOOTSTONE_LOG(INFO) << "xxx hippy, nine img, load img ok, tag: " << self->tag_ << ", has node: " << (self->customNode_ ? 1 : 0);
-        if (self->customNode_) self->customNode_->MarkDirty(NODE_NEED_RENDER);
-      });
-//      FetchImage(value);
-      customNode_->MarkDirty(NODE_NEED_RENDER);
+      FetchNineImage(value);
     }
     return true;
   } else if (propKey == "defaultSource") {
     auto& value = HRValueUtils::GetString(propValue);
     if (!value.empty()) {
-      FOOTSTONE_LOG(INFO) << "xxx hippy, nine img, set default, tag: " << tag_ << ", src: " << value;
-//      FetchAltImage(value);
+      FetchAltNineImage(value);
       return true;
     }
     return false;
@@ -132,35 +124,19 @@ void ImageNineView::OnForegroundDraw(ArkUI_NodeCustomEvent *event) { // TODO(hot
   if (drawingHandle == nullptr) {
     return;
   }
-  
+
   ArkUI_IntSize size = OH_ArkUI_DrawContext_GetSize(drawContext);
 
   auto info = ctx_->GetImageLoader()->GetPixelmapInfo(src_);
   if (info) {
-//    // PixelMap中像素的截取区域
-//    OH_Drawing_Rect *src = OH_Drawing_RectCreate(0, 0, 600, 400);
-//    // 画布中显示的区域
-//    OH_Drawing_Rect *dst = OH_Drawing_RectCreate(200, 200, 800, 600);
-//    // 采样选项对象
-//    OH_Drawing_SamplingOptions* samplingOptions = OH_Drawing_SamplingOptionsCreate(
-//      OH_Drawing_FilterMode::FILTER_MODE_LINEAR, OH_Drawing_MipmapMode::MIPMAP_MODE_LINEAR);
-//    // 绘制PixelMap
-//    OH_Drawing_CanvasDrawPixelMapRect(drawingHandle, info->pixelmap_, src, dst, samplingOptions);
-    
-//    // PixelMap中分割像素图的中心矩形
-//    OH_Drawing_Rect *center = OH_Drawing_RectCreate(capInsetsLeft_, capInsetsTop_, (float)info->width_ - capInsetsRight_, (float)info->height_ - capInsetsBottom_);
-//    // 画布中显示的区域
-//    OH_Drawing_Rect *dst = OH_Drawing_RectCreate(0, 0, (float)size.width, (float)size.height);
-//    OH_Drawing_CanvasDrawPixelMapNine(drawingHandle, info->pixelmap_, center, dst, FILTER_MODE_LINEAR);
-    
-    FOOTSTONE_LOG(INFO) << "xxx hippy, nine img, draw, tag: " << tag_ << ", srcSize: " << info->width_ << ", " << info->height_ << ", dstSize: " << size.width << ", " << size.height;
-    
-    // 采样选项对象
+    // 采样选项
     OH_Drawing_SamplingOptions* samplingOptions = OH_Drawing_SamplingOptionsCreate(
-      OH_Drawing_FilterMode::FILTER_MODE_LINEAR, OH_Drawing_MipmapMode::MIPMAP_MODE_NONE);
-    
+      OH_Drawing_FilterMode::FILTER_MODE_LINEAR,
+      OH_Drawing_MipmapMode::MIPMAP_MODE_NONE);
+
+    // 9块图之间的间隙
     int32_t SPACE_PIXEL = 0;
-    
+
     // left top
     int32_t left = 0;
     int32_t top = 0;
@@ -173,6 +149,8 @@ void ImageNineView::OnForegroundDraw(ArkUI_NodeCustomEvent *event) { // TODO(hot
     OH_Drawing_Rect *src = OH_Drawing_RectCreate((float)left, (float)top, (float)right, (float)bottom);
     OH_Drawing_Rect *dst = OH_Drawing_RectCreate((float)dstLeft, (float)dstTop, (float)dstRight, (float)dstBottom);
     OH_Drawing_CanvasDrawPixelMapRect(drawingHandle, info->pixelmap_, src, dst, samplingOptions);
+    OH_Drawing_RectDestroy(src);
+    OH_Drawing_RectDestroy(dst);
     
     // center top
     left = capInsetsLeft_;
@@ -188,6 +166,8 @@ void ImageNineView::OnForegroundDraw(ArkUI_NodeCustomEvent *event) { // TODO(hot
     src = OH_Drawing_RectCreate((float)left, (float)top, (float)right, (float)bottom);
     dst = OH_Drawing_RectCreate((float)dstLeft, (float)dstTop, (float)dstRight, (float)dstBottom);
     OH_Drawing_CanvasDrawPixelMapRect(drawingHandle, info->pixelmap_, src, dst, samplingOptions);
+    OH_Drawing_RectDestroy(src);
+    OH_Drawing_RectDestroy(dst);
     
     // right top
     left = (int32_t)info->width_ - capInsetsRight_;
@@ -201,6 +181,8 @@ void ImageNineView::OnForegroundDraw(ArkUI_NodeCustomEvent *event) { // TODO(hot
     src = OH_Drawing_RectCreate((float)left, (float)top, (float)right, (float)bottom);
     dst = OH_Drawing_RectCreate((float)dstLeft, (float)dstTop, (float)dstRight, (float)dstBottom);
     OH_Drawing_CanvasDrawPixelMapRect(drawingHandle, info->pixelmap_, src, dst, samplingOptions);
+    OH_Drawing_RectDestroy(src);
+    OH_Drawing_RectDestroy(dst);
     
     // left center
     left = 0;
@@ -216,6 +198,8 @@ void ImageNineView::OnForegroundDraw(ArkUI_NodeCustomEvent *event) { // TODO(hot
     src = OH_Drawing_RectCreate((float)left, (float)top, (float)right, (float)bottom);
     dst = OH_Drawing_RectCreate((float)dstLeft, (float)dstTop, (float)dstRight, (float)dstBottom);
     OH_Drawing_CanvasDrawPixelMapRect(drawingHandle, info->pixelmap_, src, dst, samplingOptions);
+    OH_Drawing_RectDestroy(src);
+    OH_Drawing_RectDestroy(dst);
     
     // center center
     left = capInsetsLeft_;
@@ -233,6 +217,8 @@ void ImageNineView::OnForegroundDraw(ArkUI_NodeCustomEvent *event) { // TODO(hot
     src = OH_Drawing_RectCreate((float)left, (float)top, (float)right, (float)bottom);
     dst = OH_Drawing_RectCreate((float)dstLeft, (float)dstTop, (float)dstRight, (float)dstBottom);
     OH_Drawing_CanvasDrawPixelMapRect(drawingHandle, info->pixelmap_, src, dst, samplingOptions);
+    OH_Drawing_RectDestroy(src);
+    OH_Drawing_RectDestroy(dst);
     
     // right center
     left = (int32_t)info->width_ - capInsetsRight_;
@@ -248,6 +234,8 @@ void ImageNineView::OnForegroundDraw(ArkUI_NodeCustomEvent *event) { // TODO(hot
     src = OH_Drawing_RectCreate((float)left, (float)top, (float)right, (float)bottom);
     dst = OH_Drawing_RectCreate((float)dstLeft, (float)dstTop, (float)dstRight, (float)dstBottom);
     OH_Drawing_CanvasDrawPixelMapRect(drawingHandle, info->pixelmap_, src, dst, samplingOptions);
+    OH_Drawing_RectDestroy(src);
+    OH_Drawing_RectDestroy(dst);
     
     // left bottom
     left = 0;
@@ -261,6 +249,8 @@ void ImageNineView::OnForegroundDraw(ArkUI_NodeCustomEvent *event) { // TODO(hot
     src = OH_Drawing_RectCreate((float)left, (float)top, (float)right, (float)bottom);
     dst = OH_Drawing_RectCreate((float)dstLeft, (float)dstTop, (float)dstRight, (float)dstBottom);
     OH_Drawing_CanvasDrawPixelMapRect(drawingHandle, info->pixelmap_, src, dst, samplingOptions);
+    OH_Drawing_RectDestroy(src);
+    OH_Drawing_RectDestroy(dst);
     
     // center bottom
     left = capInsetsLeft_;
@@ -276,6 +266,8 @@ void ImageNineView::OnForegroundDraw(ArkUI_NodeCustomEvent *event) { // TODO(hot
     src = OH_Drawing_RectCreate((float)left, (float)top, (float)right, (float)bottom);
     dst = OH_Drawing_RectCreate((float)dstLeft, (float)dstTop, (float)dstRight, (float)dstBottom);
     OH_Drawing_CanvasDrawPixelMapRect(drawingHandle, info->pixelmap_, src, dst, samplingOptions);
+    OH_Drawing_RectDestroy(src);
+    OH_Drawing_RectDestroy(dst);
     
     // right bottom
     left = (int32_t)info->width_ - capInsetsRight_;
@@ -289,22 +281,56 @@ void ImageNineView::OnForegroundDraw(ArkUI_NodeCustomEvent *event) { // TODO(hot
     src = OH_Drawing_RectCreate((float)left, (float)top, (float)right, (float)bottom);
     dst = OH_Drawing_RectCreate((float)dstLeft, (float)dstTop, (float)dstRight, (float)dstBottom);
     OH_Drawing_CanvasDrawPixelMapRect(drawingHandle, info->pixelmap_, src, dst, samplingOptions);
+    OH_Drawing_RectDestroy(src);
+    OH_Drawing_RectDestroy(dst);
     
+    // destroy
+    OH_Drawing_SamplingOptionsDestroy(samplingOptions);
   }
+}
+
+void ImageNineView::OnFetchLocalPathAsyncResult(bool success, const std::string &path) {
+  if (success) {
+    LoadNineImage(path);
+  }
+}
+
+void ImageNineView::FetchAltNineImage(const std::string &imageUrl) {
+  if (imageUrl.size() > 0) {
+    LoadNineImage(imageUrl);
+  }
+}
+
+void ImageNineView::FetchNineImage(const std::string &imageUrl) {
+  if (imageUrl.size() > 0) {
+    auto localPath = GetLocalPathFromAdapter(imageUrl);
+    if (localPath.length() > 0) {
+      LoadNineImage(imageUrl);
+    } else {
+      if (!GetLocalPathAsyncFromAdapter(imageUrl)) {
+        LoadNineImage(imageUrl);
+      }
+    }
+	}
+}
+
+void ImageNineView::LoadNineImage(const std::string &imageUrl) {
+  ctx_->GetImageLoader()->LoadImage(imageUrl, [WEAK_THIS](bool is_success) {
+    DEFINE_AND_CHECK_SELF(ImageNineView)
+    FOOTSTONE_LOG(INFO) << "xxx hippy, nine img, load img ok, tag: " << self->tag_ << ", has node: " << (self->customNode_ ? 1 : 0);
+    if (self->customNode_) {
+      self->customNode_->MarkDirty(NODE_NEED_RENDER);
+    }
+  });
+  customNode_->MarkDirty(NODE_NEED_RENDER);
 }
 
 void ImageNineView::ClearProps() {
   src_.clear();
-}
-
-void ImageNineView::SetSourcesOrAlt(const std::string &imageUrl, bool isSources) {
-  auto bundlePath = ctx_->GetNativeRender().lock()->GetBundlePath();
-  auto url = HRUrlUtils::ConvertImageUrl(bundlePath, ctx_->IsRawFile(), ctx_->GetResModuleName(), imageUrl);
-//  if (isSources) {
-//    GetLocalRootArkUINode()->SetSources(url);
-//  } else {
-//    GetLocalRootArkUINode()->SetAlt(url);
-//  }
+  capInsetsLeft_ = 0;
+  capInsetsTop_ = 0;
+  capInsetsRight_ = 0;
+  capInsetsBottom_ = 0;
 }
 
 } // namespace native

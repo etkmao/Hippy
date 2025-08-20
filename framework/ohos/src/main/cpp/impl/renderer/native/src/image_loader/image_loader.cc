@@ -40,10 +40,25 @@ namespace hippy {
 inline namespace render {
 inline namespace native {
 
-void ImageLoader::LoadImage(const std::string &uri, const std::shared_ptr<NativeRenderContext> &ctx, LoadImageCallback result_cb) {
+ImageLoader::~ImageLoader() {
+  for (auto it : pixelmapInfoMap_) {
+    OH_Drawing_PixelMap *pixelmap = it.second->pixelmap_;
+    if (pixelmap) {
+      OH_Drawing_PixelMapDissolve(pixelmap);
+      OH_PixelmapNative_Release(it.second->pixelmapNative_);
+    }
+  }
+}
+
+void ImageLoader::LoadImage(const std::string &uri, LoadImageCallback result_cb) {
+  auto ctx = weak_ctx_.lock();
+  if (!ctx) {
+    return;
+  }
+
   auto &root_map = RootNode::PersistentMap();
   std::shared_ptr<RootNode> root_node;
-  bool ret = root_map.Find(root_id_, root_node);
+  bool ret = root_map.Find(ctx->GetRootId(), root_node);
   if (!ret) {
     FOOTSTONE_DLOG(WARNING) << "LoadImage root_node is nullptr";
     return;
@@ -55,36 +70,38 @@ void ImageLoader::LoadImage(const std::string &uri, const std::shared_ptr<Native
     return;
   }
 
-  auto render = native_render_.lock();
+  auto render = ctx->GetNativeRender().lock();
   if (!render) {
     return;
   }
+
   auto loader = render->GetUriLoader().lock();
   FOOTSTONE_CHECK(loader);
   if (!loader) {
     return;
   }
-  
-  // hpfile://./assets/bg.png
-  auto bundlePath = ctx->GetNativeRender().lock()->GetBundlePath();
+
+  // 路径需要处理，如：hpfile://./assets/bg.png
+  auto bundlePath = render->GetBundlePath();
   auto imageUrl = HRUrlUtils::ConvertImageUrl(bundlePath, ctx->IsRawFile(), ctx->GetResModuleName(), uri);
-  
-  
 
   auto cb = [WEAK_THIS, uri, result_cb](UriLoader::RetCode ret_code,
                         const std::unordered_map<std::string, std::string>&,
                         UriLoader::bytes content) {
-    FOOTSTONE_LOG(INFO) << "xxx hippy, load image, data len: " << content.length() << ", uri: " << uri;
     // in main thread
-  
     DEFINE_AND_CHECK_SELF(ImageLoader)
-    self->BuildPixmap(uri, content);
-    
-    result_cb(true);
+    if (ret_code == UriLoader::RetCode::Success && content.length() > 0) {
+      self->BuildPixmap(uri, content);
+      result_cb(true);
+    } else {
+      FOOTSTONE_LOG(ERROR) << "LoadImage request content error, uri: " << uri 
+        << ", code: " << (int)ret_code << ", content len: " << content.length();
+      result_cb(false);
+    }
   };
 
   std::vector<std::function<void()>> ops;
-  ops.emplace_back([dom_manager, root_node, loader, imageUrl, cb] {
+  ops.emplace_back([loader, imageUrl, cb] {
     string_view url_str(imageUrl);
     loader->RequestUntrustedContent(url_str, {}, cb);
   });
@@ -92,21 +109,8 @@ void ImageLoader::LoadImage(const std::string &uri, const std::shared_ptr<Native
 }
 
 void ImageLoader::BuildPixmap(const std::string &uri, const std::string &content) {
-  // 获取解码能力范围。
-//    Image_MimeType* mimeType = nullptr;
-//    size_t length = 0;
-//    Image_ErrorCode errCode = OH_ImageSourceNative_GetSupportedFormats(&mimeType, &length);
-//    if (errCode != IMAGE_SUCCESS) {
-//        OH_LOG_ERROR(LOG_APP, "ImageSourceNativeCTest sourceTest OH_ImageSourceNative_GetSupportedFormats failed, errCode: %{public}d.", errCode);
-//        return getJsResult(env, errCode);
-//    }
-//    for (size_t count = 0; count < length; count++) {
-//        OH_LOG_INFO(LOG_APP, "Decode supportedFormats:%{public}s", mimeType[count].data);
-//    }
-  
   // 创建ImageSource实例
   OH_ImageSourceNative *source = nullptr;
-//  Image_ErrorCode errCode = OH_ImageSourceNative_CreateFromUri(name, nameSize, &source);
   Image_ErrorCode errCode = OH_ImageSourceNative_CreateFromData((uint8_t*)content.c_str(), content.size(), &source);
   if (errCode != IMAGE_SUCCESS) {
     FOOTSTONE_LOG(ERROR) << "ImageSourceNative create failed, errCode: " << errCode;
@@ -119,6 +123,8 @@ void ImageLoader::BuildPixmap(const std::string &uri, const std::string &content
   errCode = OH_ImageSourceNative_GetImageInfo(source, 0, imageInfo);
   if (errCode != IMAGE_SUCCESS) {
     FOOTSTONE_LOG(ERROR) << "ImageSourceNative get image info failed, errCode: " << errCode;
+    OH_ImageSourceInfo_Release(imageInfo);
+    OH_ImageSourceNative_Release(source);
     return;
   }
 
@@ -127,95 +133,35 @@ void ImageLoader::BuildPixmap(const std::string &uri, const std::string &content
   OH_ImageSourceInfo_GetWidth(imageInfo, &width);
   OH_ImageSourceInfo_GetHeight(imageInfo, &height);
   OH_ImageSourceInfo_Release(imageInfo);
-  FOOTSTONE_LOG(INFO) << "ImageSourceNative get image info success, w: " << width << ", h: " << height;
-  
-//  Image_String getKey;
-//  const std::string PIXEL_X_DIMENSION = "PixelXDimension";
-//  getKey.data = (char *)PIXEL_X_DIMENSION.c_str();
-//  getKey.size = PIXEL_X_DIMENSION.length();
-//  Image_String getValue;
-//  errCode = OH_ImageSourceNative_GetImageProperty(source, &getKey, &getValue);
-//  if (errCode != IMAGE_SUCCESS) {
-//    FOOTSTONE_LOG(ERROR) << "ImageSourceNative get image prop failed, errCode: " << errCode;
-//    return;
-//  }
-
-  // 修改指定属性键的值
-//  Image_String setKey;
-//  const std::string ORIENTATION = "Orientation";
-//  setKey.data = (char *)ORIENTATION.c_str();
-//  setKey.size = ORIENTATION.length();
-//  Image_String setValue;
-//  setValue.data = (char *)"4";
-//  setValue.size = 1;
-//  errCode = OH_ImageSourceNative_ModifyImageProperty(source, &setKey, &setValue);
-//  if (errCode != IMAGE_SUCCESS) {
-//    FOOTSTONE_LOG(ERROR) << "ImageSourceNative modify image prop failed, errCode: " << errCode;
-//    return;
-//  }
+  // FOOTSTONE_LOG(INFO) << "ImageSourceNative get image info success, w: " << width << ", h: " << height;
 
   // 通过图片解码参数创建PixelMap对象
   OH_DecodingOptions *ops = nullptr;
   OH_DecodingOptions_Create(&ops);
   // 设置为AUTO会根据图片资源格式解码，如果图片资源为HDR资源则会解码为HDR的pixelmap
   OH_DecodingOptions_SetDesiredDynamicRange(ops, IMAGE_DYNAMIC_RANGE_AUTO);
-  OH_PixelmapNative *resPixMap = nullptr;
 
-  // ops参数支持传入nullptr, 当不需要设置解码参数时，不用创建
-  errCode = OH_ImageSourceNative_CreatePixelmap(source, ops, &resPixMap);
+  OH_PixelmapNative *resPixmap = nullptr;
+  errCode = OH_ImageSourceNative_CreatePixelmap(source, ops, &resPixmap);
   OH_DecodingOptions_Release(ops);
   if (errCode != IMAGE_SUCCESS) {
     FOOTSTONE_LOG(ERROR) << "ImageSourceNative create pixmap failed, errCode: " << errCode;
-    return;
-  }
-  
-  if (resPixMap) {
-    OH_Drawing_PixelMap *pixelMap = OH_Drawing_PixelMapGetFromOhPixelMapNative(resPixMap);
-    auto info = std::make_shared<PixelMapInfo>();
-    info->width_ = width;
-    info->height_ = height;
-    info->pixelmap_ = pixelMap;
-    pixelmapInfoMap_[uri] = info;
+    OH_ImageSourceNative_Release(source);
     return;
   }
 
-  // 判断pixelmap是否为hdr内容
-  OH_Pixelmap_ImageInfo *pixelmapImageInfo = nullptr;
-  OH_PixelmapImageInfo_Create(&pixelmapImageInfo);
-  OH_PixelmapNative_GetImageInfo(resPixMap, pixelmapImageInfo);
-  bool pixelmapIsHdr = false;
-  OH_PixelmapImageInfo_GetDynamicRange(pixelmapImageInfo, &pixelmapIsHdr);
-  OH_PixelmapImageInfo_Release(pixelmapImageInfo);
-
-  // 获取图像帧数
-  uint32_t frameCnt = 0;
-  errCode = OH_ImageSourceNative_GetFrameCount(source, &frameCnt);
-  if (errCode != IMAGE_SUCCESS) {
-    FOOTSTONE_LOG(ERROR) << "ImageSourceNative get frame count failed, errCode: " << errCode;
-    return;
-  }
-
-  // 通过图片解码参数创建Pixelmap列表。
-  OH_DecodingOptions *opts = nullptr;
-  OH_DecodingOptions_Create(&opts);
-  OH_PixelmapNative **resVecPixMap = new OH_PixelmapNative*[frameCnt];
-  size_t outSize = frameCnt;
-  errCode = OH_ImageSourceNative_CreatePixelmapList(source, opts, resVecPixMap, outSize);
-  OH_DecodingOptions_Release(opts);
-  delete[] resVecPixMap;
-  if (errCode != IMAGE_SUCCESS) {
-    FOOTSTONE_LOG(ERROR) << "ImageSourceNative create pixmap list failed, errCode: " << errCode;
-    return;
-  }
-
-  // 获取图像延迟时间列表
-  int32_t *delayTimeList = new int32_t[frameCnt];
-  size_t size = frameCnt;
-  errCode = OH_ImageSourceNative_GetDelayTimeList(source, delayTimeList, size);
-  delete[] delayTimeList;
-  if (errCode != IMAGE_SUCCESS) {
-    FOOTSTONE_LOG(ERROR) << "ImageSourceNative get delay time list failed, errCode: " << errCode;
-    return;
+  if (resPixmap) {
+    OH_Drawing_PixelMap *pixelmap = OH_Drawing_PixelMapGetFromOhPixelMapNative(resPixmap);
+    if (pixelmap) {
+      auto info = std::make_shared<PixelMapInfo>();
+      info->width_ = width;
+      info->height_ = height;
+      info->pixelmapNative_ = resPixmap;
+      info->pixelmap_ = pixelmap;
+      pixelmapInfoMap_[uri] = info;
+    } else {
+      OH_PixelmapNative_Release(resPixmap);
+    }
   }
 
   // 释放ImageSource实例

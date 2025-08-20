@@ -44,12 +44,16 @@ public:
   void UpdateRenderViewFrameImpl(const HRRect &frame, const HRPadding &padding) override;
 
   void OnForegroundDraw(ArkUI_NodeCustomEvent *event) override;
+  
+  void OnFetchLocalPathAsyncResult(bool success, const std::string &path) override;
 
   std::string GetSrc();
 
 protected:
-  void SetSourcesOrAlt(const std::string &imageUrl, bool isSources) override;
-  
+  void FetchAltNineImage(const std::string &imageUrl);
+  void FetchNineImage(const std::string &imageUrl);
+  void LoadNineImage(const std::string &imageUrl);
+
   void ClearProps();
 
 private:
