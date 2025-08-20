@@ -113,7 +113,7 @@ bool ImageView::SetPropImpl(const std::string &propKey, const HippyValue &propVa
     auto value = HRValueUtils::GetInt32(propValue);
     GetLocalRootArkUINode()->SetTintColorBlendMode(value);
     return true;
-  } else if (propKey == "capInsets") {
+  } else if (propKey == "capInsets") { // TODO(hot): to delete
     HippyValueObjectType m;
     if (propValue.IsObject() && propValue.ToObject(m)) {
       auto left = HRValueUtils::GetFloat(m["left"]);

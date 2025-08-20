@@ -24,6 +24,7 @@
 
 #include <memory>
 #include <string>
+#include "renderer/image_loader/image_loader.h"
 #include "renderer/native_render.h"
 #include "renderer/text_measure/text_measure_manager.h"
 
@@ -44,6 +45,12 @@ public:
   bool IsRawFile() { return is_rawfile_; }
   std::string &GetResModuleName() { return res_module_name_; }
   std::shared_ptr<TextMeasureManager> &GetTextMeasureManager() { return text_measure_manager_; }
+  std::shared_ptr<ImageLoader> &GetImageLoader() {
+    if (!image_loader_) {
+      image_loader_ = std::make_shared<ImageLoader>(root_id_, native_render_);
+    }
+    return image_loader_;
+  }
   
 private:
   uint32_t instance_id_;
@@ -52,6 +59,7 @@ private:
   bool is_rawfile_;
   std::string res_module_name_;
   std::shared_ptr<TextMeasureManager> text_measure_manager_;
+  std::shared_ptr<ImageLoader> image_loader_;
 };
 
 } // namespace native
