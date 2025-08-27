@@ -714,12 +714,15 @@ void ArkUINode::OnNodeEvent(ArkUI_NodeEvent *event) {
     arkUINodeDelegate_->OnAttach();
   } else if (eventType == ArkUI_NodeEventType::NODE_EVENT_ON_DETACH) {
     arkUINodeDelegate_->OnDetach();
+  } else if (eventType == ArkUI_NodeEventType::NODE_TEXT_SPAN_ON_LONG_PRESS) {
+    FOOTSTONE_LOG(INFO) << "xxx hippy";
   }
 }
 
 void ArkUINode::RegisterClickEvent() {
   // SpanNode调用addGestureToNode API会crash
   if (isSpanNode_) {
+    MaybeThrow(NativeNodeApi::GetInstance()->registerNodeEvent(nodeHandle_, NODE_TEXT_SPAN_ON_LONG_PRESS, 0, nullptr));
     return;
   }
   if (!nodeHandle_) {

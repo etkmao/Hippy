@@ -222,6 +222,8 @@ export struct HippyRoot {
       let libHippy = this.hippyEngine?.getHippyEngineContext()?.getLibHippy()
       libHippy?.NativeRenderProvider_BindNativeRoot(this.rootSlot, this.renderInstanceId, this.rootView.getRootId(), 0)
     })
+
+    this.controller.setStyledString(this.mutableStyledString1);
   }
 
   aboutToDisappear(): void {
@@ -231,8 +233,26 @@ export struct HippyRoot {
     }
   }
 
+  controller: TextController = new TextController();
+  mutableStyledString1: MutableStyledString = new MutableStyledString("test hello world", [{
+      styledKey: StyledStringKey.DECORATION,
+      styledValue: new DecorationStyle({ type: TextDecorationType.LineThrough, color: Color.Blue}, {enableMultiType: true})
+    },
+    {
+      styledKey: StyledStringKey.DECORATION,
+      styledValue: new DecorationStyle({ type: TextDecorationType.Underline, color: Color.Red }, {enableMultiType: true})
+    }
+  ]);
+
   build() {
     Column() {
+      // Text(undefined, {controller: this.controller})
+      //   .width(200)
+      //   .height(40)
+      //   .fontColor(Color.Black)
+
+
+
       if (this.rootView) {
         if (this.enableArkCApi) {
           ContentSlot(this.rootSlot)
