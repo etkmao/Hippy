@@ -20,7 +20,27 @@
         }
       },
       {
-        "name": "release"
+        "name": "release",
+        "buildOption": {
+          "strictMode": {
+            "useNormalizedOHMUrl": true
+          }
+        }
+      }
+    ],
+    "signingConfigs": [
+      {
+        "name": "default",
+        "type": "HarmonyOS",
+        "material": {
+          "storeFile": "/Users/etkm/work_huawei/上架宣传0829/证书20250901/TDSKeyStoreFile.p12",
+          "storePassword": "0000001F13D697271BF3865D62E02D3771A3C81DE2EB041CBD9EB966B40410E91D1D7C2674A9EA3C0F6DC61B8A170E",
+          "keyAlias": "TDSKeyStoreFile",
+          "keyPassword": "0000001F4B5BE4217191293C21CF058DDB00376609FA9953E2CB301724C349653BD8B8EABA3216128F20B73AA890A0",
+          "signAlg": "SHA256withECDSA",
+          "profile": "/Users/etkm/work_huawei/上架宣传0829/证书20250901/HippyRelease.p7b",
+          "certpath": "/Users/etkm/work_huawei/上架宣传0829/证书20250901/TDSKeyStore.cer"
+        }
       }
     ]
   },

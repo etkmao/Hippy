@@ -13,5 +13,8 @@
   },
   "debugging": {
     // "stacktrace": false                      /* Disable stacktrace compilation. Default: false */
+  },
+  "properties": {
+    "ohos.sign.har": true
   }
 }

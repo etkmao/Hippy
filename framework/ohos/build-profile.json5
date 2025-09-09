@@ -37,6 +37,7 @@
         }
       },
       "arkOptions": {
+        "byteCodeHar": true,
         "obfuscation": {
           "ruleOptions": {
             "enable": true,
