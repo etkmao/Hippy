@@ -142,6 +142,7 @@ void Animation::RemoveEventListener(const std::string& event) {
 }
 
 void Animation::Start() {
+  FOOTSTONE_LOG(INFO) << "xxx hippy, to start...";
   auto animation_manager = animation_manager_.lock();
   auto animation = animation_manager->GetAnimation(id_);
   if (!animation) {
@@ -149,7 +150,8 @@ void Animation::Start() {
   }
   auto status = animation->GetStatus();
   switch (status) {
-    case Animation::Status::kCreated: {
+    case Animation::Status::kCreated:
+    case Animation::Status::kEnd: {
       animation->SetStatus(Animation::Status::kStart);
       break;
     }
@@ -157,7 +159,6 @@ void Animation::Start() {
     case Animation::Status::kRunning:
     case Animation::Status::kPause:
     case Animation::Status::kResume:
-    case Animation::Status::kEnd:
     case Animation::Status::kDestroy:
     default: {
       return;
@@ -171,6 +172,7 @@ void Animation::Start() {
         child->SetExecTime(delay_);
       }
     }
+    FOOTSTONE_LOG(INFO) << "xxx hippy, to start: add anim 1";
     animation_manager->AddActiveAnimation(animation);
     if (on_start_) {
       on_start_();
@@ -214,6 +216,7 @@ void Animation::Start() {
           child->SetExecTime(delay);
         }
       }
+      FOOTSTONE_LOG(INFO) << "xxx hippy, to start: add anim 2";
       animation_manager->AddActiveAnimation(animation);
       auto on_start = animation->GetAnimationStartCb();
       if (on_start) {
@@ -375,6 +378,7 @@ void Animation::Pause() {
 }
 
 void Animation::Resume() {
+  FOOTSTONE_LOG(INFO) << "xxx hippy, to resume...";
   auto animation_manager = animation_manager_.lock();
   if (!animation_manager) {
     return;
@@ -428,6 +432,7 @@ void Animation::Resume() {
       auto delay = animation->GetDelay();
       animation->SetExecTime(delay);
       animation->SetLastBeginTime(now);
+      FOOTSTONE_LOG(INFO) << "xxx hippy, to resume: add anim 1";
       animation_manager->AddActiveAnimation(animation);
     }};
     int64_t ms_delay;
@@ -442,6 +447,7 @@ void Animation::Resume() {
   } else if (exec_time >= delay && exec_time < delay + duration) {
     auto now = footstone::time::MonotonicallyIncreasingTime();
     last_begin_time_ = now;
+    FOOTSTONE_LOG(INFO) << "xxx hippy, to resume: add anim 2";
     animation_manager->AddActiveAnimation(animation);
   } else {
     animation->SetStatus(Animation::Status::kEnd);
@@ -459,6 +465,7 @@ void Animation::Resume() {
 }
 
 void Animation::Repeat(uint64_t now) {
+  FOOTSTONE_LOG(INFO) << "xxx hippy, to repeat...";
   last_begin_time_ = now;
   exec_time_ = 0;
   status_ = Animation::Status::kCreated;
@@ -488,6 +495,7 @@ void Animation::Repeat(uint64_t now) {
         child->SetExecTime(self->GetDelay());
       }
     }
+    FOOTSTONE_LOG(INFO) << "xxx hippy, to repeat: add anim 1";
     animation_manager->AddActiveAnimation(self);
   } else {
     auto root_node = animation_manager->GetRootNode().lock();
@@ -519,6 +527,7 @@ void Animation::Repeat(uint64_t now) {
           child->SetExecTime(delay);
         }
       }
+      FOOTSTONE_LOG(INFO) << "xxx hippy, to repeat: add anim 2";
       animation_manager->AddActiveAnimation(animation);
     }};
     int64_t delay;

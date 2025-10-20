@@ -222,6 +222,9 @@ bool AnimationManager::IsActive(uint32_t id) {
 void AnimationManager::AddActiveAnimation(const std::shared_ptr<Animation>& animation) {
   animation->SetStatus(Animation::Status::kRunning);
   active_animations_.push_back(animation);
+  
+  FOOTSTONE_LOG(INFO) << "xxx hippy, add anim, cnt: " << active_animations_.size();
+  
   if (active_animations_.size() == 1) {
     auto render_manager = GetRenderManager();
     if (!render_manager) {
@@ -279,6 +282,7 @@ void AnimationManager::RemoveActiveAnimation(uint32_t id) {
         }
       }
       active_animations_.erase(it);
+      FOOTSTONE_LOG(INFO) << "xxx hippy, remove anim, cnt: " << active_animations_.size() << ", id: " << id;
       break;
     }
   }
@@ -418,6 +422,7 @@ void AnimationManager::UpdateAnimations() {
   std::unordered_map<uint32_t, std::shared_ptr<DomNode>> update_node_map;
   // xcode crash if we change for to loop
   std::vector<std::shared_ptr<Animation>> loop_animations = active_animations_;
+  FOOTSTONE_LOG(INFO) << "xxx hippy, update anim, cnt: " << loop_animations.size();
   for (size_t i = 0; i < loop_animations.size(); ++i) {
     auto it = std::find(active_animations_.begin(), active_animations_.end(), loop_animations[i]);
     if (it != active_animations_.end()) {
