@@ -37,19 +37,41 @@
 static std::string sBufSaved;
 static uint32_t sFirstIdSaved = 0;
 
-static std::string binaryBufferToHexString(const std::string& buffer) {
-  std::ostringstream oss;
-  for (const auto& byte : buffer) {
-    // 将每个字节转换为两位十六进制数
-    oss << "0x" << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte) << ",";
-  }
-  return oss.str();
-}
+//static std::string binaryBufferToHexString(const std::string& buffer) {
+//  std::ostringstream oss;
+//  for (const auto& byte : buffer) {
+//    // 将每个字节转换为两位十六进制数
+//    oss << "0x" << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte) << ",";
+//  }
+//  return oss.str();
+//}
 
 extern "C" {
 void PrintCreateNodeBuf() {
-  auto logBufferString = binaryBufferToHexString(sBufSaved);
-  FOOTSTONE_LOG(ERROR) << "hippy c, buf for firstId: " << sFirstIdSaved << ", bufLen:" << sBufSaved.size() << ", buffer: = " << logBufferString << ", end.";
+//  auto logBufferString = binaryBufferToHexString(sBufSaved);
+//  FOOTSTONE_LOG(ERROR) << "hippy c, buf for firstId: " << sFirstIdSaved << ", bufLen:" << sBufSaved.size() << ", buffer: = " << logBufferString << ", end.";
+
+  FOOTSTONE_LOG(ERROR) << "hippy c, buf for firstId: " << sFirstIdSaved << ", bufLen:" << sBufSaved.size() << ", begin:";
+  std::ostringstream oss;
+  size_t len = sBufSaved.size();
+  for (size_t i = 0; i < len; i++) {
+    if (i % 1024 == 0) {
+      std::string lineStr = oss.str();
+      if (lineStr.size() > 0) {
+        FOOTSTONE_LOG(ERROR) << "hippy c, buf: " << lineStr;
+        oss.str("");
+        oss.clear();
+      }
+    }
+    oss << static_cast<uint32_t>(sBufSaved[i]) << ",";
+  }
+  std::string lineStr = oss.str();
+  if (lineStr.size() > 0) {
+    FOOTSTONE_LOG(ERROR) << "hippy c, buf: " << lineStr << " - end";
+    oss.str("");
+    oss.clear();
+  }
+  FOOTSTONE_LOG(ERROR) << "hippy c, buf end ---------";
 }
 }
 
