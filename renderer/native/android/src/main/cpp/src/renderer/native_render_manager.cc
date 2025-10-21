@@ -32,6 +32,26 @@
 #include "jni/jni_env.h"
 #include "jni/jni_invocation.h"
 #include "renderer/native_render_jni.h"
+#include <iomanip>
+
+static std::string sBufSaved;
+static uint32_t sFirstIdSaved = 0;
+
+static std::string binaryBufferToHexString(const std::string& buffer) {
+  std::ostringstream oss;
+  for (const auto& byte : buffer) {
+    // 将每个字节转换为两位十六进制数
+    oss << "0x" << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte) << ",";
+  }
+  return oss.str();
+}
+
+extern "C" {
+void PrintCreateNodeBuf() {
+  auto logBufferString = binaryBufferToHexString(sBufSaved);
+  FOOTSTONE_LOG(ERROR) << "hippy c, buf for firstId: " << sFirstIdSaved << ", bufLen:" << sBufSaved.size() << ", buffer: = " << logBufferString << ", end.";
+}
+}
 
 constexpr char kId[] = "id";
 constexpr char kPid[] = "pId";
@@ -128,6 +148,8 @@ void NativeRenderManager::CreateRenderNode(std::weak_ptr<RootNode> root_node,
   footstone::value::SerializerHelper::DestroyBuffer(serializer_->Release());
   serializer_->WriteHeader();
 
+  uint32_t firstId = 0;
+
   auto len = nodes.size();
   footstone::value::HippyValue::HippyValueArrayType dom_node_array;
   dom_node_array.resize(len);
@@ -138,6 +160,10 @@ void NativeRenderManager::CreateRenderNode(std::weak_ptr<RootNode> root_node,
     dom_node[kPid] = footstone::value::HippyValue(render_info.pid);
     dom_node[kIndex] = footstone::value::HippyValue(render_info.index);
     dom_node[kName] = footstone::value::HippyValue(nodes[i]->GetViewName());
+
+    if (!firstId) firstId = render_info.id;
+    FOOTSTONE_LOG(ERROR) << "hippy c, create node, id: " << render_info.id << ", pid: " << render_info.pid
+      << ", index: " << render_info.index << ", name: " << nodes[i]->GetViewName();
 
     if (IsMeasureNode(nodes[i]->GetViewName())) {
       int32_t id =  footstone::check::checked_numeric_cast<uint32_t, int32_t>(nodes[i]->GetId());
@@ -183,6 +209,11 @@ void NativeRenderManager::CreateRenderNode(std::weak_ptr<RootNode> root_node,
   }
   serializer_->WriteValue(HippyValue(dom_node_array));
   std::pair<uint8_t*, size_t> buffer_pair = serializer_->Release();
+
+  // save buffer
+  sBufSaved.assign((char*)buffer_pair.first, buffer_pair.second);
+  sFirstIdSaved = firstId;
+
   CallNativeMethod("createNode", root->GetId(), buffer_pair);
   footstone::value::SerializerHelper::DestroyBuffer(buffer_pair);
 }
@@ -267,6 +298,9 @@ void NativeRenderManager::MoveRenderNode(std::weak_ptr<RootNode> root_node,
     dom_node[kPid] = footstone::value::HippyValue(render_info.pid);
     dom_node[kIndex] = footstone::value::HippyValue(render_info.index);
     dom_node_array[i] = dom_node;
+
+    FOOTSTONE_LOG(ERROR) << "hippy c, move node, id: " << render_info.id << ", pid: " << render_info.pid
+                         << ", index: " << render_info.index << ", name: " << nodes[i]->GetViewName();
   }
   serializer_->WriteValue(HippyValue(dom_node_array));
   std::pair<uint8_t*, size_t> buffer_pair = serializer_->Release();
@@ -313,6 +347,9 @@ void NativeRenderManager::DeleteRenderNode(std::weak_ptr<RootNode> root_node,
   id.resize(nodes.size());
   for (size_t i = 0; i < nodes.size(); i++) {
     id[i] = footstone::check::checked_numeric_cast<uint32_t, jint>(nodes[i]->GetRenderInfo().id);
+
+    FOOTSTONE_LOG(ERROR) << "hippy c, delete node, id: " << nodes[i]->GetRenderInfo().id << ", pid: " << nodes[i]->GetRenderInfo().pid
+                         << ", index: " << nodes[i]->GetRenderInfo().index << ", name: " << nodes[i]->GetViewName();
   }
   j_env->SetIntArrayRegion(j_int_array, 0, size, &id[0]);
 
@@ -401,6 +438,13 @@ void NativeRenderManager::MoveRenderNode(std::weak_ptr<RootNode> root_node,
     FOOTSTONE_LOG(ERROR) << "moveNode j_cb_id error";
     return;
   }
+
+  for (int i = 0; i < (int)moved_ids.size(); i++) {
+    FOOTSTONE_LOG(ERROR) << "hippy c, move2 node, id: " << moved_ids[(size_t)i] << ", from_pid: " << from_pid
+                         << ", to_pid: " << to_pid << ", index: " << index;
+  }
+
+
 
   j_env->CallVoidMethod(j_object, j_method_id, root->GetId(), j_int_array, to_pid, from_pid, index);
   JNIEnvironment::ClearJEnvException(j_env);

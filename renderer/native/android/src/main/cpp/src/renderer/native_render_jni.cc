@@ -57,6 +57,11 @@ static jmethodID j_render_manager_get_density_method_id;
 static jmethodID j_render_manager_get_provider_method_id;
 static jmethodID j_render_manager_get_style_for_render_id;
 
+extern "C" void PrintCreateNodeBuf();
+void PrintBuf(JNIEnv *j_env, jobject j_object) {
+  PrintCreateNodeBuf();
+}
+
 REGISTER_JNI("com/tencent/renderer/NativeRenderProvider",
              "updateNodeSize",
              "(IIIFFZ)V",
@@ -76,6 +81,11 @@ REGISTER_JNI("com/tencent/renderer/NativeRenderProvider",
              "updateRootSize",
              "(IIFF)V",
              UpdateRootSize)
+
+REGISTER_JNI("com/tencent/renderer/NativeRenderProvider",
+              "printBuf",
+              "()V",
+              PrintBuf)
 
 static jint JNI_OnLoad(__unused JavaVM* j_vm, __unused void* reserved) {
   auto j_env = JNIEnvironment::GetInstance()->AttachCurrentThread();

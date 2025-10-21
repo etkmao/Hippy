@@ -136,8 +136,11 @@ public class NativeRenderProvider {
             try {
                 final List<Object> list = bytesToArgument(ByteBuffer.wrap(buffer));
                 renderDelegate.createNode(rootId, list);
+
+                //printBuf();
             } catch (NativeRenderException e) {
                 renderDelegate.handleRenderException(e);
+                printBuf();
             }
         }
     }
@@ -483,4 +486,6 @@ public class NativeRenderProvider {
     @SuppressWarnings("JavaJniMissingFunction")
     private native void doCallBack(int instanceId, int result, String functionName, int rootId,
             int nodeId, long callbackId, byte[] params, int offset, int length);
+
+    private native void printBuf();
 }
