@@ -38,10 +38,12 @@ export class DimensionsUtil {
     return windowObj.getWindowProperties().windowRect;
   }
 
-  static async getDimensions(ww: number, wh: number, context: Context): Promise<HippyMap> {
+  static async getDimensions(ww: number, wh: number, context: Context, uiContext: UIContext): Promise<HippyMap> {
     let displayClass: display.Display = display.getDefaultDisplaySync();
     await DimensionsUtil.getStatusBarHeight(displayClass);
     let dimensionMap = new Map<string, HippyValue | Map<string, HippyValue>>()
+
+    LogUtils.e('xxx hippy', 'get rect begin');
 
     let windowRect = await DimensionsUtil.getLastWindowRect(context);
     let w = 0;
@@ -53,6 +55,14 @@ export class DimensionsUtil {
       w = displayClass.width;
       h = displayClass.height;
     }
+
+    LogUtils.e('xxx hippy', 'getLastWindowRect result, w: ' + windowRect.width + ', h: ' + windowRect.height);
+    LogUtils.e('xxx hippy', 'getDefaultDisplaySync result, w: ' + displayClass.width + ', h: ' + displayClass.height);
+
+    // let windowRect2 = await DimensionsUtil.getLastWindowRect(uiContext as Context);
+    // LogUtils.e('xxx hippy', 'getLastWindowRect from uiContext, result, w: ' + windowRect2.width + ', h: ' + windowRect2.height);
+
+    LogUtils.e('xxx hippy', 'get rect end');
 
     let windowDisplayMetricsMap = new Map<string, HippyValue>()
     windowDisplayMetricsMap.set("width", ww >= 0 ? ww : w);

@@ -345,8 +345,12 @@ export class HippyBridgeManagerImpl implements HippyBridgeManager, BridgeCallbac
   async getGlobalConfigsString(): Promise<string> {
     let context = this.mContext.getGlobalConfigs().getContext();
     if (context == null) return ""
+    let uiContext = this.mContext.getGlobalConfigs().getUIContext();
+    if (!uiContext) {
+      return "";
+    }
     let globalParams = new Map<string, HippyAny>()
-    let dimensionMap = await DimensionsUtil.getDimensions(-1, -1, context);
+    let dimensionMap = await DimensionsUtil.getDimensions(-1, -1, context, uiContext);
     if (this.mContext.getGlobalConfigs() != null
       && this.mContext.getGlobalConfigs().getDeviceAdapter() != null) {
       this.mContext.getGlobalConfigs()

@@ -33,6 +33,7 @@ import { EngineInitParams } from './HippyEngine';
 
 export class HippyGlobalConfigs {
   private mContext: Context | null;
+  private mUiContext: UIContext | null;
   private mIsLoadFromRawfile: boolean;
   private mResModuleName: string;
   /**
@@ -82,6 +83,7 @@ export class HippyGlobalConfigs {
 
   constructor(params: EngineInitParams) {
     this.mContext = params.context;
+    this.mUiContext = params.uiContext;
     this.mIsLoadFromRawfile = params.isLoadFromRawfile;
     this.mResModuleName = params.resModuleName;
     this.mPreferencesStorageAdapter = params.preferencesStorageAdapter;
@@ -156,6 +158,10 @@ export class HippyGlobalConfigs {
 
   public getContext(): Context | null {
     return this.mContext;
+  }
+
+  public getUIContext(): UIContext | null {
+    return this.mUiContext;
   }
 
   public getStorageAdapter(): HippyStorageAdapter | null {

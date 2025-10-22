@@ -466,7 +466,11 @@ export class HippyEngineManagerImpl implements HippyEngine, FrameworkProxy, DevS
     if (!context) {
       return;
     }
-    let dimensionMap = await DimensionsUtil.getDimensions(-1, -1, context);
+    let uiContext = this.mEngineContext.getGlobalConfigs().getUIContext();
+    if (!uiContext) {
+      return;
+    }
+    let dimensionMap = await DimensionsUtil.getDimensions(-1, -1, context, uiContext);
     let dimensionW: number = 0;
     let dimensionH: number = 0;
     if (dimensionMap) {
