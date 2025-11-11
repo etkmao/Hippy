@@ -30,6 +30,7 @@ import {
   ExampleComponentB,
   ExampleViewB } from '../hippy_extend/ExampleViewB'
 import { LogUtils } from 'hippy/src/main/ets/support/utils/LogUtils'
+import { FloatingWindowManager } from './FloatingWindowManager'
 
 //dimens.xml
 const page_index_item_margin:number = 16
@@ -44,6 +45,8 @@ const page_item_attribute_prompt_height:number = 23
 struct PageManagement {
   @StorageLink('pageManagementItems') pageitems:HippyInfo[] = [] //AppStorage.get('pageManagementItems') as InitParams[]
   @StorageLink('showIndex') showIndex:number = -1
+
+  static isFirst: boolean = true
 
   getDriverDisplayTips(param:HippyInfo):string {
     let tips = ''
@@ -218,10 +221,17 @@ struct PageManagement {
                   .width(page_item_add_image_width)
                   .height(page_item_add_image_height)
                   .onClick(() => {
-                    router.pushUrl({
-                      url: 'pages/PageConfiguration',
-                      params: {}
-                    })
+
+                    if (PageManagement.isFirst) {
+                      FloatingWindowManager.getInstance().show("", ()=>{}, ()=>{}, ()=>{});
+                      PageManagement.isFirst = false;
+                    } else {
+                      // router.pushUrl({
+                      //   url: 'pages/PageConfiguration',
+                      //   params: {}
+                      // })
+                    }
+
                   })
               }
               .width('100%')

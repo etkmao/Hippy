@@ -27,6 +27,7 @@ import font from '@ohos.font';
 import { EngineInitParams } from 'hippy';
 import { BusinessError } from '@kit.BasicServicesKit';
 import fs from '@ohos.file.fs';
+import { FloatingWindowManager } from '../pages/FloatingWindowManager';
 
 export default class EntryAbility extends UIAbility {
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam) {
@@ -47,6 +48,8 @@ export default class EntryAbility extends UIAbility {
   onWindowStageCreate(windowStage: window.WindowStage) {
     // Main window is created, set main page for this ability
     hilog.info(0x0000, 'DemoTag', '%{public}s', 'Ability onWindowStageCreate');
+
+    FloatingWindowManager.getInstance().init(windowStage);
 
     windowStage.loadContent('pages/Index', (err, data) => {
       if (err.code) {
