@@ -29,6 +29,12 @@ namespace hippy {
 inline namespace render {
 inline namespace native {
 
+class PullFooterViewDelegate {
+public:
+  virtual ~PullFooterViewDelegate() = default;
+  virtual void OnCollapsePullFooter() {}
+};
+
 class PullFooterView : public ListItemView {
 public:
   PullFooterView(std::shared_ptr<NativeRenderContext> &ctx);
@@ -45,10 +51,13 @@ public:
   void UpdateRenderViewFrameImpl(const HRRect &frame, const HRPadding &padding) override;
   void Show(bool show);
 
+  void SetPullFooterViewDelegate(PullFooterViewDelegate *delegate) { viewDelegate_ = delegate; }
 private:
   bool isVisible_ = true;
 
   bool sticky_ = false;
+  
+  PullFooterViewDelegate *viewDelegate_ = nullptr;
 };
 
 } // namespace native

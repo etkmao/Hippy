@@ -43,7 +43,8 @@ enum class ScrollAction : int32_t {
   ReleaseFooter
 };
 
-class ListView : public BaseView, public ListNodeDelegate, public ListItemNodeDelegate, public RefreshNodeDelegate, public PullHeaderViewDelegate {
+class ListView : public BaseView, public ListNodeDelegate, public ListItemNodeDelegate
+, public RefreshNodeDelegate, public PullHeaderViewDelegate, public PullFooterViewDelegate {
 public:
   ListView(std::shared_ptr<NativeRenderContext> &ctx);
   ~ListView();
@@ -87,6 +88,9 @@ public:
   
   // PullHeaderViewDelegate
   void OnPullHeaderViewSizeUpdated(const HRSize &size) override;
+  
+  // PullFooterViewDelegate
+  void OnCollapsePullFooter() override;
   
   // pull head
   void OnHeadRefreshFinish(int32_t delay);
@@ -173,6 +177,8 @@ private:
   bool isListZeroSize = false;
   
   bool isInitListReadyNotified = false;
+  
+//  bool isDesktopDevice_ = true;
 };
 
 } // namespace native

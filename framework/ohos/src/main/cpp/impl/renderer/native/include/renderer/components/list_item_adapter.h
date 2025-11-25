@@ -34,9 +34,9 @@ inline namespace native {
 
 class ListItemAdapter {
 public:
-  ListItemAdapter(std::vector<std::shared_ptr<BaseView>> &itemViews, uint32_t firstItemIndex)
-      : handle_(OH_ArkUI_NodeAdapter_Create()), itemViews_(itemViews), firstItemIndex_(firstItemIndex) {
-    OH_ArkUI_NodeAdapter_SetTotalNodeCount(handle_, static_cast<uint32_t>(itemViews.size()-firstItemIndex));
+  ListItemAdapter(std::vector<std::shared_ptr<BaseView>> &itemViews, uint32_t firstItemIndex, uint32_t trimFooterItem)
+      : handle_(OH_ArkUI_NodeAdapter_Create()), itemViews_(itemViews), firstItemIndex_(firstItemIndex), trimFooterItem_(trimFooterItem) {
+    SetTotalNodeCount();
     OH_ArkUI_NodeAdapter_RegisterEventReceiver(handle_, this, OnStaticAdapterEvent);
   }
 
@@ -48,15 +48,15 @@ public:
   
   void ClearAll() {
     OH_ArkUI_NodeAdapter_UnregisterEventReceiver(handle_);
-    OH_ArkUI_NodeAdapter_RemoveItem(handle_, 0, static_cast<uint32_t>(itemViews_.size())-firstItemIndex_);
-    OH_ArkUI_NodeAdapter_SetTotalNodeCount(handle_, 0);
+    OH_ArkUI_NodeAdapter_RemoveItem(handle_, 0, static_cast<uint32_t>(itemViews_.size())-firstItemIndex_-trimFooterItem_);
+    ClearTotalNodeCount();
     cachedTypeRecycleViews_.clear();
     attachedHandleViewMap_.clear();
   }
   
   void RestoreAll() {
     OH_ArkUI_NodeAdapter_RegisterEventReceiver(handle_, this, OnStaticAdapterEvent);
-    OH_ArkUI_NodeAdapter_SetTotalNodeCount(handle_, static_cast<uint32_t>(itemViews_.size())-firstItemIndex_);
+    SetTotalNodeCount();
   }
 
   ArkUI_NodeAdapterHandle GetHandle() const { return handle_; }
@@ -68,7 +68,7 @@ public:
     // 如果index会导致可视区域元素发生可见性变化，则会回调NODE_ADAPTER_EVENT_ON_REMOVE_NODE_FROM_ADAPTER事件删除元素，
     // 根据是否有新增元素回调NODE_ADAPTER_EVENT_ON_GET_NODE_ID和NODE_ADAPTER_EVENT_ON_ADD_NODE_TO_ADAPTER事件
     OH_ArkUI_NodeAdapter_RemoveItem(handle_, static_cast<uint32_t>(index) - firstItemIndex_, 1);
-    OH_ArkUI_NodeAdapter_SetTotalNodeCount(handle_, static_cast<uint32_t>(itemViews_.size()) - firstItemIndex_);
+    SetTotalNodeCount();
   }
 
   void InsertItem(int32_t index) {
@@ -78,13 +78,37 @@ public:
     // 如果index会导致可视区域元素发生可见性变化，则会回调NODE_ADAPTER_EVENT_ON_GET_NODE_ID和NODE_ADAPTER_EVENT_ON_ADD_NODE_TO_ADAPTER事件，
     // 根据是否有删除元素回调NODE_ADAPTER_EVENT_ON_REMOVE_NODE_FROM_ADAPTER事件
     OH_ArkUI_NodeAdapter_InsertItem(handle_, static_cast<uint32_t>(index) - firstItemIndex_, 1);
-    OH_ArkUI_NodeAdapter_SetTotalNodeCount(handle_, static_cast<uint32_t>(itemViews_.size()) - firstItemIndex_);
+    SetTotalNodeCount();
+  }
+
+  void AddFooterItem() {
+    trimFooterItem_ = 0;
+    OH_ArkUI_NodeAdapter_InsertItem(handle_, static_cast<uint32_t>(itemViews_.size()) - 1 - firstItemIndex_, 1);
+    SetTotalNodeCount();
+  }
+
+  void RemoveFooterItem() {
+    trimFooterItem_ = 1;
+    OH_ArkUI_NodeAdapter_RemoveItem(handle_, static_cast<uint32_t>(itemViews_.size()) - 1 - firstItemIndex_, 1);
+    SetTotalNodeCount();
+  }
+
+  bool HasFooterItem() {
+    return trimFooterItem_ ? false : true;
   }
 
 private:
   static void OnStaticAdapterEvent(ArkUI_NodeAdapterEvent *event) {
     auto itemAdapter = reinterpret_cast<ListItemAdapter *>(OH_ArkUI_NodeAdapterEvent_GetUserData(event));
     itemAdapter->OnAdapterEvent(event);
+  }
+  
+  void SetTotalNodeCount() {
+    OH_ArkUI_NodeAdapter_SetTotalNodeCount(handle_, static_cast<uint32_t>(itemViews_.size()) - firstItemIndex_ - trimFooterItem_);
+  }
+  
+  void ClearTotalNodeCount() {
+    OH_ArkUI_NodeAdapter_SetTotalNodeCount(handle_, 0);
   }
 
   void OnAdapterEvent(ArkUI_NodeAdapterEvent *event) {
@@ -171,6 +195,7 @@ private:
 
   std::vector<std::shared_ptr<BaseView>> &itemViews_;
   uint32_t firstItemIndex_ = 0;
+  uint32_t trimFooterItem_ = 0;
 
   std::unordered_map<std::string, std::stack<std::shared_ptr<RecycleView>>> cachedTypeRecycleViews_;
   

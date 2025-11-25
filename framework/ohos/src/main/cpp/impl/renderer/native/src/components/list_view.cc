@@ -58,6 +58,9 @@ ListView::~ListView() {
     headerView_->SetPullHeaderViewDelegate(nullptr);
     headerView_->DestroyArkUINode();
   }
+  if (footerView_) {
+    footerView_->SetPullFooterViewDelegate(nullptr);
+  }
 }
 
 void ListView::Init() {
@@ -341,7 +344,15 @@ void ListView::OnReachStart() {
 
 void ListView::OnReachEnd() {
   FOOTSTONE_DLOG(INFO) << "ListView onReachEnd";
-  SendOnReachedEvent();
+  if (footerView_) {
+    if (!adapter_->HasFooterItem()) {
+      adapter_->AddFooterItem();
+    } else {
+      SendOnReachedEvent();
+    }
+  } else {
+    SendOnReachedEvent();
+  }
 }
 
 void ListView::OnTouch(int32_t actionType, const HRPosition &screenPosition) {
@@ -409,6 +420,14 @@ void ListView::OnPullHeaderViewSizeUpdated(const HRSize &size) {
   }
 }
 
+void ListView::OnCollapsePullFooter() {
+  if (footerView_) {
+    if (adapter_->HasFooterItem()) {
+      adapter_->RemoveFooterItem();
+    }
+  }
+}
+
 void ListView::OnHeadRefreshFinish(int32_t delay) {
   FOOTSTONE_DLOG(INFO) << __FUNCTION__ << " delay = " << delay;
   refreshNode_->SetRefreshRefreshing(false);
@@ -445,6 +464,7 @@ void ListView::HandleOnChildrenUpdated() {
     }
     if (children_[childrenCount - 1]->GetViewType() == PULL_FOOTER_VIEW_TYPE) {
       footerView_ = std::static_pointer_cast<PullFooterView>(children_[childrenCount - 1]);
+      footerView_->SetPullFooterViewDelegate(this);
       footerView_->Show(false);
     }
     
@@ -497,7 +517,7 @@ void ListView::CreateArkUINodeAfterHeaderCheck() {
     stackNode_->InsertChild(listNode_.get(), 0);
   }
   if (!adapter_) {
-    adapter_ = std::make_shared<ListItemAdapter>(children_, hasPullHeader_ ? 1 : 0);
+    adapter_ = std::make_shared<ListItemAdapter>(children_, hasPullHeader_ ? 1 : 0, footerView_ ? 1 : 0);
     listNode_->SetLazyAdapter(adapter_->GetHandle());
   }
 }

@@ -75,6 +75,9 @@ void PullFooterView::CallImpl(const std::string &method, const std::vector<Hippy
                           std::function<void(const HippyValue &result)> callback) {
   FOOTSTONE_DLOG(INFO)<<__FUNCTION__<<" method = "<<method;
   if (method == "collapsePullFooter") {
+    if (viewDelegate_) {
+      viewDelegate_->OnCollapsePullFooter();
+    }
     Show(false);
   } else {
     BaseView::CallImpl(method, params, callback);
@@ -82,13 +85,13 @@ void PullFooterView::CallImpl(const std::string &method, const std::vector<Hippy
 }
 
 void PullFooterView::Show(bool show) {
-  if (show != isVisible_) {
-    auto node = GetLocalRootArkUINode();
-    if (node) {
-      isVisible_ = show;
-      node->SetVisibility(show);
-    }
-  }
+//  if (show != isVisible_) {
+//    auto node = GetLocalRootArkUINode();
+//    if (node) {
+//      isVisible_ = show;
+//      node->SetVisibility(show);
+//    }
+//  }
 }
 
 void PullFooterView::UpdateRenderViewFrameImpl(const HRRect &frame, const HRPadding &padding){
