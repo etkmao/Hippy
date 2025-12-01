@@ -23,6 +23,7 @@
 #include "renderer/components/extend/bidirection_list_view.h"
 #include "renderer/utils/hr_convert_utils.h"
 #include "renderer/utils/hr_event_utils.h"
+#include "renderer/utils/hr_pixel_utils.h"
 #include "renderer/utils/hr_value_utils.h"
 
 namespace hippy {
@@ -51,9 +52,10 @@ void BidirectionListView::HandleOnChildrenUpdated() {
 
   if (GetLocalRootArkUINode()) {
     if (deltaHeightToAppend_ != 0) {
-      float dOff = (float)deltaHeightToAppend_;
-      float xOff = isVertical_ ? 0 : dOff;
-      float yOff = isVertical_ ? dOff : 0;
+      auto current = listNode_->GetScrollOffset();
+      float dOff = HRPixelUtils::DpToVp((float)deltaHeightToAppend_);
+      float xOff = isVertical_ ? 0 : (current.x + dOff);
+      float yOff = isVertical_ ? (current.y + dOff) : 0;
       listNode_->ScrollTo(xOff, yOff, false);
       deltaHeightToAppend_ = 0;
     }
