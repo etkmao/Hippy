@@ -22,6 +22,7 @@
 
 #include "renderer/arkui/list_node.h"
 #include "renderer/arkui/native_node_api.h"
+#include "renderer/utils/hr_pixel_utils.h"
 
 namespace hippy {
 inline namespace render {
@@ -75,8 +76,8 @@ HRPoint ListNode::GetScrollOffset() {
 }
 
 void ListNode::ScrollTo(float offsetX, float offsetY, bool animated) {
-  ArkUI_NumberValue value[] = {{.f32 = offsetX},
-                               {.f32 = offsetY},
+  ArkUI_NumberValue value[] = {{.f32 = HRPixelUtils::DpToVp(offsetX)},
+                               {.f32 = HRPixelUtils::DpToVp(offsetY)},
                                {.i32 = animated ? 1000 : 0},
                                {.i32 = ArkUI_AnimationCurve::ARKUI_CURVE_SMOOTH},
                                {.i32 = 0}};
