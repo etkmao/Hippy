@@ -267,11 +267,15 @@ void ScrollView::OnScrollStop() {
 }
 
 void ScrollView::OnReachStart() {
-  EmitScrollEvent(HREventUtils::EVENT_SCROLLER_ON_SCROLL);
+  if (isScrollStarted_) {
+    EmitScrollEvent(HREventUtils::EVENT_SCROLLER_ON_SCROLL);
+  }
 }
   
 void ScrollView::OnReachEnd() {
-  EmitScrollEvent(HREventUtils::EVENT_SCROLLER_ON_SCROLL);
+  if (isScrollStarted_) {
+    EmitScrollEvent(HREventUtils::EVENT_SCROLLER_ON_SCROLL);
+  }
 }
 
 void ScrollView::CallImpl(const std::string &method, const std::vector<HippyValue> params,
