@@ -4,6 +4,7 @@ import demoVueNative from './demo-vue-native.vue';
 import demoAnimation from './demo-animation.vue';
 import demoDialog from './demo-dialog.vue';
 import demoSwiper from './demo-swiper.vue';
+import demoSwiperList from './demo-swiper-list.vue';
 import demoPullHeaderFooter from './demo-pull-header-footer.vue';
 import demoWaterfall from './demo-waterfall.vue';
 import demoNestedScroll from './demo-nested-scroll.vue';
@@ -28,6 +29,10 @@ if (Vue.Native) {
     demoSwiper: {
       name: 'swiper 组件',
       component: demoSwiper,
+    },
+    demoSwiperList: {
+      name: 'swiper + list 下拉刷新示例',
+      component: demoSwiperList,
     },
     demoPullHeaderFooter: {
       name: 'pull-header/footer 组件',
