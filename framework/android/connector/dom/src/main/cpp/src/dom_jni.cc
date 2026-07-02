@@ -195,10 +195,11 @@ void DestroyDomManager(__unused JNIEnv* j_env, __unused jobject j_obj, jint j_do
   auto flag = hippy::global_data_holder.Find(dom_manager_id, dom_manager);
   FOOTSTONE_CHECK(flag);
   auto dom_manager_object = std::any_cast<std::shared_ptr<DomManager>>(dom_manager);
+  dom_manager_object->BeginShutdown();
   auto count = dom_manager_object->GetWorker()->FetchAndSubReuseCount();
   FOOTSTONE_DLOG(ERROR) << "DestroyDomManager worker reuse count " << count << ", dom manager id " << dom_manager_id;
   if (count == 0) {
-    dom_manager_object->GetWorker()->Terminate();
+    dom_manager_object->GetWorker()->Terminate(true);
   }
   flag = hippy::global_data_holder.Erase(dom_manager_id);
   FOOTSTONE_DCHECK(flag);

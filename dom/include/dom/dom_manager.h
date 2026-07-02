@@ -21,6 +21,7 @@
 #pragma once
 
 #include <cstdint>
+#include <atomic>
 #include <future>
 #include <map>
 #include <memory>
@@ -129,6 +130,8 @@ class DomManager : public std::enable_shared_from_this<DomManager> {
   void PostTask(const Scene&& scene);
   uint32_t PostDelayedTask(const Scene&& scene, footstone::TimeDelta delay);
   void CancelTask(uint32_t id);
+  void BeginShutdown();
+  inline bool IsShuttingDown() const { return shutting_down_.load(); }
 
   static byte_string GetSnapShot(const std::shared_ptr<RootNode>& root_node);
   bool SetSnapShot(const std::shared_ptr<RootNode>& root_node, const byte_string& buffer);
@@ -151,6 +154,7 @@ class DomManager : public std::enable_shared_from_this<DomManager> {
   std::unordered_map<uint32_t, std::shared_ptr<BaseTimer>> timer_map_;
   std::shared_ptr<TaskRunner> task_runner_;
   std::shared_ptr<Worker> worker_;
+  std::atomic<bool> shutting_down_ {false};
 
   std::unordered_map<uint32_t, footstone::TimePoint> dom_start_time_point_;
   std::unordered_map<uint32_t, footstone::TimePoint> dom_end_time_point_;

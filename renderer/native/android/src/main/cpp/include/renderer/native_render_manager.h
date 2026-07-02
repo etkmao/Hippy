@@ -107,7 +107,13 @@ class NativeRenderManager : public RenderManager, public std::enable_shared_from
     return style_filter;
   }
 
+  void SetDispatchEnabled(bool enabled) override {
+    RenderManager::SetDispatchEnabled(enabled);
+  }
+
  private:
+  inline bool ShouldSkipDispatch() const { return !IsDispatchEnabled(); }
+
   inline void MarkTextDirty(std::weak_ptr<RootNode> weak_root_node, uint32_t node_id);
 
   inline float DpToPx(float dp) const;

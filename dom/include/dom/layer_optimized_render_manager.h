@@ -49,6 +49,8 @@ class LayerOptimizedRenderManager : public RenderManager {
                     const DomArgument &param,
                     uint32_t cb_Id) override;
 
+  void SetDispatchEnabled(bool enabled) override;
+
  protected:
   bool ComputeLayoutOnly(const std::shared_ptr<DomNode>& node) const;
 

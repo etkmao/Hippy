@@ -123,6 +123,9 @@ void DomManager::DeleteDomNodes(const std::weak_ptr<RootNode>& weak_root_node,
 }
 
 void DomManager::EndBatch(const std::weak_ptr<RootNode>& weak_root_node) {
+  if (shutting_down_.load()) {
+    return;
+  }
   auto render_manager = render_manager_;
   FOOTSTONE_DCHECK(render_manager);
   if (!render_manager) {
@@ -183,6 +186,9 @@ void DomManager::SetRootSize(const std::weak_ptr<RootNode>& weak_root_node, floa
 }
 
 void DomManager::DoLayout(const std::weak_ptr<RootNode>& weak_root_node) {
+  if (shutting_down_.load()) {
+    return;
+  }
   auto root_node = weak_root_node.lock();
   if (!root_node) {
     return;
@@ -197,11 +203,17 @@ void DomManager::DoLayout(const std::weak_ptr<RootNode>& weak_root_node) {
 }
 
 void DomManager::PostTask(const Scene&& scene) {
+  if (shutting_down_.load()) {
+    return;
+  }
   auto func = [scene = scene] { scene.Build(); };
   task_runner_->PostTask(std::move(func));
 }
 
 uint32_t DomManager::PostDelayedTask(const Scene&& scene, TimeDelta delay) {
+  if (shutting_down_.load()) {
+    return 0;
+  }
   auto func = [scene] { scene.Build(); };
   auto task = std::make_unique<Task>(std::move(func));
   auto id = task->GetId();
@@ -213,6 +225,18 @@ uint32_t DomManager::PostDelayedTask(const Scene&& scene, TimeDelta delay) {
 
 void DomManager::CancelTask(uint32_t id) {
   timer_map_.erase(id);
+}
+
+void DomManager::BeginShutdown() {
+  bool expected = false;
+  if (!shutting_down_.compare_exchange_strong(expected, true)) {
+    return;
+  }
+  timer_map_.clear();
+  auto render_manager = render_manager_;
+  if (render_manager) {
+    render_manager->SetDispatchEnabled(false);
+  }
 }
 
 DomManager::byte_string DomManager::GetSnapShot(const std::shared_ptr<RootNode>& root_node) {

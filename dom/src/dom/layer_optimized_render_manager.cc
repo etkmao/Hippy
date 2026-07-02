@@ -186,6 +186,13 @@ void LayerOptimizedRenderManager::CallFunction(std::weak_ptr<RootNode> root_node
   render_manager_->CallFunction(root_node, dom_node, name, param, cb_id);
 }
 
+void LayerOptimizedRenderManager::SetDispatchEnabled(bool enabled) {
+  RenderManager::SetDispatchEnabled(enabled);
+  if (render_manager_) {
+    render_manager_->SetDispatchEnabled(enabled);
+  }
+}
+
 bool LayerOptimizedRenderManager::ComputeLayoutOnly(const std::shared_ptr<DomNode>& node) const {
   return node->GetViewName() == kTagNameView
          && CheckStyleJustLayout(node)

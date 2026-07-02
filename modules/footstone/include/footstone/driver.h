@@ -52,6 +52,10 @@ class Driver {
     return is_terminated_ && is_exit_immediately_;
   }
 
+  inline void SetExitImmediately(bool exit_immediately) {
+    is_exit_immediately_ = exit_immediately;
+  }
+
  protected:
   std::function<void()> unit_;
   bool is_terminated_;

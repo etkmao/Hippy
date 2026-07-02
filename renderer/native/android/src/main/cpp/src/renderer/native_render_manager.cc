@@ -119,6 +119,9 @@ void NativeRenderManager::InitDensity() {
 
 void NativeRenderManager::CreateRenderNode(std::weak_ptr<RootNode> root_node,
                                            std::vector<std::shared_ptr<hippy::dom::DomNode>>&& nodes) {
+  if (ShouldSkipDispatch()) {
+    return;
+  }
   auto root = root_node.lock();
   if (!root) {
     return;
@@ -189,6 +192,9 @@ void NativeRenderManager::CreateRenderNode(std::weak_ptr<RootNode> root_node,
 
 void NativeRenderManager::UpdateRenderNode(std::weak_ptr<RootNode> root_node,
                                            std::vector<std::shared_ptr<DomNode>>&& nodes) {
+  if (ShouldSkipDispatch()) {
+    return;
+  }
   auto root = root_node.lock();
   if (!root) {
     return;
@@ -249,6 +255,9 @@ void NativeRenderManager::UpdateRenderNode(std::weak_ptr<RootNode> root_node,
 
 void NativeRenderManager::MoveRenderNode(std::weak_ptr<RootNode> root_node,
                                          std::vector<std::shared_ptr<DomNode>> &&nodes) {
+  if (ShouldSkipDispatch()) {
+    return;
+  }
   auto root = root_node.lock();
   if (!root) {
     return;
@@ -299,6 +308,9 @@ void NativeRenderManager::MoveRenderNode(std::weak_ptr<RootNode> root_node,
 
 void NativeRenderManager::DeleteRenderNode(std::weak_ptr<RootNode> root_node,
                                            std::vector<std::shared_ptr<DomNode>>&& nodes) {
+  if (ShouldSkipDispatch()) {
+    return;
+  }
   auto root = root_node.lock();
   if (!root) {
     return;
@@ -338,6 +350,9 @@ void NativeRenderManager::DeleteRenderNode(std::weak_ptr<RootNode> root_node,
 
 void NativeRenderManager::UpdateLayout(std::weak_ptr<RootNode> root_node,
                                        const std::vector<std::shared_ptr<DomNode>>& nodes) {
+  if (ShouldSkipDispatch()) {
+    return;
+  }
   auto root = root_node.lock();
   if (!root) {
     return;
@@ -376,6 +391,9 @@ void NativeRenderManager::MoveRenderNode(std::weak_ptr<RootNode> root_node,
                                          int32_t from_pid,
                                          int32_t to_pid,
                                          int32_t index) {
+  if (ShouldSkipDispatch()) {
+    return;
+  }
   auto root = root_node.lock();
   if (!root) {
     return;
@@ -409,6 +427,9 @@ void NativeRenderManager::MoveRenderNode(std::weak_ptr<RootNode> root_node,
 }
 
 void NativeRenderManager::EndBatch(std::weak_ptr<RootNode> root_node) {
+  if (ShouldSkipDispatch()) {
+    return;
+  }
   auto root = root_node.lock();
   if (root) {
     CallNativeMethod("endBatch", root->GetId());
@@ -441,6 +462,9 @@ void NativeRenderManager::RemoveEventListener(std::weak_ptr<RootNode> root_node,
 void NativeRenderManager::CallFunction(std::weak_ptr<RootNode> root_node,
                                        std::weak_ptr<DomNode> domNode, const std::string& name, const DomArgument& param,
                                       uint32_t cb_id) {
+  if (ShouldSkipDispatch()) {
+    return;
+  }
   auto root = root_node.lock();
   if (!root) {
     return;
@@ -491,7 +515,7 @@ void NativeRenderManager::ReceivedEvent(std::weak_ptr<RootNode> root_node, uint3
                                         bool capture, bool bubble) {
   auto manager = dom_manager_.lock();
   FOOTSTONE_DCHECK(manager != nullptr);
-  if (manager == nullptr) return;
+  if (manager == nullptr || manager->IsShuttingDown()) return;
 
   auto root = root_node.lock();
   FOOTSTONE_DCHECK(root != nullptr);
@@ -520,6 +544,9 @@ float NativeRenderManager::DpToPx(float dp) const { return dp * density_; }
 float NativeRenderManager::PxToDp(float px) const { return px / density_; }
 
 void NativeRenderManager::CallNativeMethod(const std::string& method, uint32_t root_id, const std::pair<uint8_t*, size_t>& buffer) {
+  if (ShouldSkipDispatch()) {
+    return;
+  }
   std::shared_ptr<JNIEnvironment> instance = JNIEnvironment::GetInstance();
   JNIEnv* j_env = instance->AttachCurrentThread();
 
@@ -549,6 +576,9 @@ void NativeRenderManager::CallNativeMethod(const std::string& method, uint32_t r
 }
 
 void NativeRenderManager::CallNativeMethod(const std::string& method, uint32_t root_id) {
+  if (ShouldSkipDispatch()) {
+    return;
+  }
   std::shared_ptr<JNIEnvironment> instance = JNIEnvironment::GetInstance();
   JNIEnv* j_env = instance->AttachCurrentThread();
 
@@ -600,6 +630,10 @@ void NativeRenderManager::CallNativeMeasureMethod(const uint32_t root_id, const 
 void NativeRenderManager::HandleListenerOps(std::weak_ptr<RootNode> root_node,
                                             std::map<uint32_t, std::vector<ListenerOp>>& ops,
                                             const std::string& method_name) {
+  if (ShouldSkipDispatch()) {
+    ops.clear();
+    return;
+  }
   auto root = root_node.lock();
   if (!root) {
     return;

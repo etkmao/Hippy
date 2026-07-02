@@ -156,7 +156,8 @@ void Worker::Notify() {
   driver_->Notify();
 }
 
-void Worker::Terminate() {
+void Worker::Terminate(bool exit_immediately) {
+  driver_->SetExitImmediately(exit_immediately);
   driver_->Terminate();
   if (thread_.joinable()) {
     thread_.join();

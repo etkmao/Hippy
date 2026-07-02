@@ -21,6 +21,7 @@
 #pragma once
 
 #include <any>
+#include <atomic>
 #include <cstdint>
 #include <memory>
 
@@ -73,6 +74,9 @@ class RenderManager {
                             const DomArgument& param,
                             uint32_t cb_id) = 0;
 
+  virtual void SetDispatchEnabled(bool enabled) { dispatch_enabled_.store(enabled); }
+  bool IsDispatchEnabled() const { return dispatch_enabled_.load(); }
+
   void SetDensity(float density) { density_ = density; }
   float GetDensity() { return density_; }
   void SetName(const std::string& name) { name_ = name; }
@@ -84,6 +88,7 @@ protected:
   float font_weight_scale_;
 #endif
   std::string name_;
+  std::atomic<bool> dispatch_enabled_ {true};
 };
 
 }  // namespace dom
