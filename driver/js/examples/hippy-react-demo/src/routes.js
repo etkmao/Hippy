@@ -259,6 +259,14 @@ const demos = [
       type: Type.OTHER,
     },
   },
+  {
+    path: '/SetTimeoutTest',
+    name: 'setTimeout 延迟诊断',
+    component: PAGE_LIST.SetTimeoutTest,
+    meta: {
+      type: Type.OTHER,
+    },
+  },
 ];
 function checkModulesStart(demo) {
     return demo.name == 'Modules';
